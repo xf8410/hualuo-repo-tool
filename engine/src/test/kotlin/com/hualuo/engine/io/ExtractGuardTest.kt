@@ -1,6 +1,7 @@
 package com.hualuo.engine.io
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -14,6 +15,8 @@ import java.nio.file.Files
  * 测试名全中文且**不带点号**（点号在 Kotlin 反引号方法名里非法，M0 就是这么把编译搞挂的），
  * 这样 CI 日志里能直接读到"哪一条拦住了什么"。每条都对应旧 Agora 真出过的一类事故。
  * 上限一律注入小数值，避免为了测试真造几个 G 的文件。
+ *
+ * 断言总数刻意停在 30（CI 红线之一：单文件断言数 ≤30）。再加就得拆文件，不要塞进这一份。
  */
 class ExtractGuardTest {
 
@@ -22,6 +25,7 @@ class ExtractGuardTest {
 
     private fun root(): File = folder.newFolder("包根目录")
 
+    /** 断言"必须抛错"，并把消息原文取回来继续验内容——消息含糊等于没做对。 */
     private fun reject(block: () -> Unit): String =
         runCatching(block).exceptionOrNull()?.message ?: error("本该抛错却安静通过了")
 
@@ -33,7 +37,8 @@ class ExtractGuardTest {
 
     @Test
     fun `绝对路径条目名必须被拒绝`() {
-        assertTrue(reject { normalizeEntryPath(root(), "/etc/hosts") }.contains("绝对路径"))
+        val message = reject { normalizeEntryPath(root(), "/etc/hosts") }
+        assertTrue("要说是绝对路径：$message", message.contains("绝对路径"))
     }
 
     @Test
@@ -44,9 +49,11 @@ class ExtractGuardTest {
     }
 
     @Test
-    fun `百分号编码藏住的穿越同样拦不住落盘`() {
-        val message = reject { normalizeEntryPath(root(), "%2e%2e%2f%2e%2e%2f坏东西.bin") }
-        assertTrue("还原之后必须仍然认出越界：$message", message.contains(".."))
+    fun `百分号编码藏住的穿越拦得住且双层编码也拦得住`() {
+        val single = reject { normalizeEntryPath(root(), "%2e%2e%2f坏东西.bin") }
+        assertTrue("单层还原后必须认出越界：$single", single.contains(".."))
+        val double = reject { normalizeEntryPath(root(), "%252e%252e%252f坏东西.bin") }
+        assertTrue("双层还原后必须认出越界：$double", double.contains(".."))
     }
 
     @Test
@@ -64,7 +71,14 @@ class ExtractGuardTest {
         val dest = normalizeEntryPath(root, "./子包//再下一层/文件.bin")
         assertEquals("文件.bin", dest.name)
         assertTrue("落点必须还在根目录里：${dest.path}", dest.path.startsWith(root.path))
-        assertEquals("根目录下面应该是三层名字", 3, segmentsUnderRoot(dest, root))
+        assertEquals("根下面应该是三层名字", 3, segmentsUnderRoot(dest, root))
+    }
+
+    @Test
+    fun `反斜杠开头与网络共享路径都算绝对路径`() {
+        assertTrue(reject { normalizeEntryPath(root(), "\\\\服务器\\共享\\文件.bin") }.contains("绝对路径"))
+        val unc = reject { normalizeEntryPath(root(), "//服务器/共享/文件.bin") }
+        assertTrue("UNC 要专门说清：$unc", unc.contains("网络共享"))
     }
 
     @Test
@@ -73,9 +87,18 @@ class ExtractGuardTest {
         val outside = folder.newFolder("外面的目录")
         val link = File(root, "链接目录")
         runCatching { Files.createSymbolicLink(link.toPath(), outside.toPath()) }
-            .onFailure { return } // 文件系统不支持符号链接就跳过，不算失败
+            .onFailure { return } // 文件系统不支持符号链接就跳过，不算失败也不算验过
         val message = reject { normalizeEntryPath(root, "链接目录/写出去的文件.bin") }
         assertTrue("符号链接越界必须被 canonical 复核拦住：$message", message.contains("外面"))
+    }
+
+    @Test
+    fun `异常消息里的原始名会被脱敏`() {
+        val withNewline = reject { normalizeEntryPath(root(), "..\n伪造一行日志") }
+        assertFalse("原始名里的换行不许进消息，否则能伪造日志行：$withNewline", withNewline.contains('\n'))
+        val tooLong = reject { normalizeEntryPath(root(), "x".repeat(300) + "/../坏.bin") }
+        assertTrue("超长名要截断：$tooLong", tooLong.contains("等截"))
+        assertTrue("整条消息不许被名字撑爆", tooLong.length < 400)
     }
 
     @Test
