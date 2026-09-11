@@ -1,0 +1,147 @@
+name: 自检（每次提交都跑）
+
+# 这个 CI 的定位：先证明"没犯错"，再证明"能打包"。
+# 规矩：任何步骤都不许写 continue-on-error（旧 Agora 三步全开这个开关，
+# 结果红被伪装成跳过、真正的编译错误被 tail 截断看不见）。
+# 失败时把完整错误原文贴进日志和摘要，不许只给一句"失败了"。
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: 自检-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  自检:
+    name: 编译 + 测试 + 打包 + 七条红线
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 取出代码
+        uses: actions/checkout@v4
+
+      - name: 装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 装 Gradle（不提交二进制包装器，版本在这里写死一次）
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+
+      - name: 红线一 · 禁止构建时改源码（python/sed 写 .kt 一律红）
+        run: |
+          set -uo pipefail
+          echo "为什么查：旧 Agora 的 CI 每次构建用 python 重新生成源码，产物和仓库对不上，没人能审计。"
+          bad=$(grep -R -n -E '(python3?[^|;]*>+[[:space:]]*[^ ]*\.kt|sed -i[^;]*\.kt|git[[:space:]]+push|gh[[:space:]]+api[[:space:]]+(contents|git/refs))' .github/workflows || true)
+          if [ -n "$bad" ]; then
+            echo "发现"构建时改源码/自己往仓库推"的写法："
+            printf '%s\n' "$bad"
+            exit 1
+          fi
+          echo "没有。构建只编译提交进来的字节。"
+
+      - name: 红线二 · 禁止把整个文件读进内存（大文件闪退的老根）
+        run: |
+          set -uo pipefail
+          echo "为什么查：旧 Agora 传大文件闪退的根因就是 readAllBytes / readBytes() 整文件进内存。"
+          bad=$(grep -R -n -E 'readAllBytes|\.readBytes\(\)' engine app --include='*.kt' || true)
+          if [ -n "$bad" ]; then
+            echo "出现整文件读入内存的写法："
+            printf '%s\n' "$bad"
+            echo "改法：用 com.hualuo.engine.io.streamingCopy，一次搬 64 KiB。"
+            exit 1
+          fi
+          echo "没有。全部走流式。"
+
+      - name: 红线三 · 单文件不许超过 999 行
+        run: |
+          set -uo pipefail
+          echo "为什么查：旧 Agora 有 20 多个 20KB 以上的巨型文件（最大 57KB），补丁摞补丁没法维护。"
+          over=$(find engine app -name '*.kt' -o -name '*.kts' | xargs -r wc -l | awk '$1>999 {print}' || true)
+          if [ -n "$over" ]; then
+            echo "以下文件超过 999 行，必须拆："
+            printf '%s\n' "$over"
+            exit 1
+          fi
+          echo "全部在 999 行以内。"
+
+      - name: 红线四 · 版本号只能有一个来源
+        run: |
+          set -uo pipefail
+          file_version=$(grep '^versionName=' version.properties | cut -d= -f2)
+          gradle_version=$(gradle -q :app:printVersion 2>/dev/null | sed -n 's/^versionName=//p')
+          echo "version.properties = ${file_version}；构建实际生效 = ${gradle_version}"
+          if [ -z "$file_version" ] || [ "$file_version" != "$gradle_version" ]; then
+            echo "两边不一致：说明有第二处写死了版本号。全项目只许改 version.properties。"
+            exit 1
+          fi
+          stray=$(grep -R -n -E 'versionName *= *"' app engine --include='*.kts' --include='*.kt' || true)
+          if [ -n "$stray" ]; then
+            echo "源码里还有写死的版本号："; printf '%s\n' "$stray"; exit 1
+          fi
+          echo "一致。"
+
+      - name: 跑引擎测试（纯逻辑，不需要手机）
+        id: 测试
+        run: |
+          set -o pipefail
+          mkdir -p 日志
+          gradle --no-daemon --stacktrace :engine:test 2>&1 | tee 日志/引擎测试.log
+
+      - name: 打安卓包（debug 签名，不设任何密钥）
+        id: 打包
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace :app:assembleDebug 2>&1 | tee 日志/打包.log
+
+      - name: 确认包真的存在且非空
+        run: |
+          set -euo pipefail
+          apk=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -n "$apk"; test -s "$apk"
+          sha256sum "$apk" | tee 日志/安装包.sha256
+          cp "$apk" 日志/Hualuo-debug.apk
+          echo "包路径：$apk（大小 $(stat -c%s "$apk") 字节）"
+
+      - name: 出错了就把完整原因贴出来（不许 tail 截断）
+        if: failure()
+        run: |
+          set -uo pipefail
+          {
+            echo "# 失败现场"
+            for f in 日志/*.log; do
+              [ -f "$f" ] || continue
+              echo
+              echo "## $f（共 $(wc -c < "$f") 字节）"
+              echo '```'
+              if [ "$(wc -c < "$f")" -gt 60000 ]; then
+                head -c 20000 "$f"
+                echo
+                echo "……（中间省略 $(( $(wc -c < "$f") - 40000 )) 字节，完整日志在本 CI 的产物里）……"
+                echo
+                tail -c 20000 "$f"
+              else
+                cat "$f"
+              fi
+              echo '```'
+            done
+          } | tee "$GITHUB_STEP_SUMMARY"
+          echo
+          echo "如果这里看不到具体错误行：那是 CI 写错了，不是"没有错误"。请把本步骤的产物日志全文贴给我。"
+
+      - name: 收日志（成功也要留，方便回溯改了什么）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 自检日志-${{ github.run_id }}-${{ github.sha }}
+          path: 日志/
+          if-no-files-found: error
+          retention-days: 90
