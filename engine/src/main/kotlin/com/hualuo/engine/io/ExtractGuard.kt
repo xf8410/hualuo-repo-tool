@@ -14,10 +14,17 @@ import java.util.Locale
  *
  * 四道上限（对应旧 Agora 缺的四件事）：条目数 / 单条目体积 / 整包总量 / 压缩比。
  * 压缩比那道对炸弹最灵敏：几十 KB 解出几个 G，只有这一道能提前拦住。
+ *
+ * CI 教出来的两条规矩（别再依赖平台行为）：
+ *   1) 校验一律在**字符串层面**做，不靠 java.io.File 帮忙规范化——Linux 上反斜杠
+ *      是合法文件名，Windows 上 `C:` 能挂出"同一目录的两种写法"（C: 与 C:\），
+ *      把这些交给 File 比较就会漏。现在全部拆成段、逐段判、最后才比前缀。
+ *   2) 异常消息里带用户可控的原始名时，先脱敏（去控制字符 + 限长），
+ *      否则一个换行就能在日志里伪造出一条"看起来是我自己打印的"记录。
  */
 class ExtractReject(reason: String) : Exception(reason)
 
-/** 上限全部可注入，是为了让测试能用几十字节验证，而不是造一个真几个 G 的包。 */
+/** 上限全部可注入，是为了让测试能用几十字节验证，而不是造一个几个 G 的包。 */
 data class ExtractLimits(
     val maxEntries: Int = 20000,
     val maxEntryBytes: Long = 512L * 1024 * 1024,
@@ -37,60 +44,87 @@ data class ExtractLimits(
         "条目数≤$maxEntries，单条目≤${maxEntryBytes}字节，总量≤${maxTotalBytes}字节，压缩比≤$maxRatio"
 }
 
+/** 用户可控文本进日志/异常消息之前一律脱敏：控制字符换成点，超过 120 字符截断。 */
+internal fun sanitizeForLog(raw: String): String {
+    val clean = raw.map { if (it.code < 0x20 || it.code == 0x7F) '.' else it }
+        .joinToString("")
+    return if (clean.length <= 120) clean else clean.take(117) + "等截"
+}
+
 /**
  * 条目名先还原再校验，顺序不能反。
  *
  * 很多打包工具（以及网页下载落下来的名字）会把中文写成百分号编码；
  * 如果先按字面量校验、后还原，`%2e%2e%2f` 这种就绕过了全部检查——还原完才发现是 `../`。
- * URLDecoder 会把加号当空格，那是表单规则的锅，文件名里加号是字面量，所以先把它转义回去。
- * 还原失败（半截百分号之类）就保留原样：宁可拒掉一个怪名字，也不要崩在这儿。
+ * 所以这里**反复还原直到不再变化**（最多三轮），双层编码也压平，然后兜底判断：
+ * 还原完的结果只要有任何一段是 `..`、或者带绝对路径/盘符，一律拒绝。
+ * 加号是文件名里的字面量，不能当空格，所以先把它转义回去；
+ * 还原失败（半截百分号之类）就保留原样——反正下面还有一整套硬校验。
  */
 fun percentDecodeName(raw: String): String {
-    val escaped = raw.replace("+", "%2B")
-    return runCatching { URLDecoder.decode(escaped, "UTF-8") }.getOrElse { raw }
+    var current = raw
+    repeat(3) {
+        val next = runCatching {
+            URLDecoder.decode(current.replace("+", "%2B"), "UTF-8")
+        }.getOrElse { return@repeat }
+        if (next == current) return@percentDecodeName current
+        current = next
+    }
+    return current
 }
+
+/** 一段名字是不是盘符：`C:` `D:` 老写法，以及用竖线绕检查的 `C|`。 */
+private fun isDriveSegment(segment: String): Boolean =
+    segment.length == 2 && segment[segment.lastIndex] == ':' &&
+        segment[0].isLetterOrDigit() ||
+        segment.length == 2 && segment[segment.lastIndex] == '|' && segment[0].isLetterOrDigit()
 
 /**
  * 把包内条目名翻译成本机上的落点，并且**只允许落在 targetRoot 里面**。
  *
- * 拦的四样：空名、绝对路径、盘符写法、任意一层 `..`；
- * 最后还有一次 canonical 复核，专治"名字干净但中间某层是符号链接"的越界。
+ * 拦的五样：空名/含零字节、还原后仍藏着的越界、绝对路径（含 UNC）、盘符、任意一层 `..`；
+ * 最后还有 canonical 前缀复核，专治"名字干净但中间某层是符号链接"。
  */
 fun normalizeEntryPath(targetRoot: File, rawName: String): File {
-    val name = percentDecodeName(rawName).trim()
-    if (name.isEmpty()) throw ExtractReject("条目名为空，无法确定落点")
-    if (name.indexOf('\u0000') >= 0) throw ExtractReject("条目名里含零字节，拒绝")
+    if (rawName.indexOf('\u0000') >= 0) throw ExtractReject("条目名里含零字节，拒绝")
+    val decoded = percentDecodeName(rawName).trim()
+    if (decoded.isEmpty()) throw ExtractReject("条目名为空，无法确定落点")
+    if (decoded.indexOf('\u0000') >= 0) throw ExtractReject("还原后的条目名含零字节，拒绝")
 
-    val unified = name.replace('\\', '/')
-    if (unified.startsWith("/")) throw ExtractReject("条目名是绝对路径，拒绝：$rawName")
-    // "C:/x" 与 "C|/x" 两种盘符写法都要挡，后者是老工具用来绕检查的
-    if (unified.matches(Regex("^[A-Za-z]:.*")) || unified.matches(Regex("^[A-Za-z]\\|.*"))) {
-        throw ExtractReject("条目名带盘符，拒绝：$rawName")
+    // 斜杠与反斜杠一律当分隔符。Windows 解包工具确实会写出反斜杠条目名，
+    // 而 Linux 上它是合法文件名字符——不能指望 File 替我们认它。
+    val segments = decoded.split('/', '\\').filter { it.isNotEmpty() && it != "." }
+    val label = sanitizeForLog(rawName)
+
+    if (segments.any { it == ".." }) {
+        throw ExtractReject("条目名试图跳出目标目录（含 .. ），拒绝：$label")
     }
-
-    val parts = mutableListOf<String>()
-    for (segment in unified.split("/")) {
-        when {
-            segment.isEmpty() || segment == "." -> Unit
-            segment == ".." -> throw ExtractReject("条目名试图跳出目标目录（含 .. ），拒绝：$rawName")
-            segment.indexOf('\u0000') >= 0 -> throw ExtractReject("条目名分段里含零字节，拒绝：$rawName")
-            else -> parts.add(segment)
-        }
+    if (segments.any { it.codePointCount(0, it.length) == 0 }) {
+        throw ExtractReject("条目名归一化之后什么都不剩，拒绝：$label")
     }
-    if (parts.isEmpty()) throw ExtractReject("条目名归一化之后什么都不剩，拒绝：$rawName")
+    if (decoded.startsWith("//")) {
+        throw ExtractReject("条目名是网络共享路径（UNC），拒绝：$label")
+    }
+    if (segments.firstOrNull()?.isEmpty() == true || decoded.startsWith("/")) {
+        throw ExtractReject("条目名是绝对路径，拒绝：$label")
+    }
+    if (segments.isNotEmpty() && isDriveSegment(segments.first())) {
+        throw ExtractReject("条目名带盘符，拒绝：$label")
+    }
+    if (segments.isEmpty()) throw ExtractReject("条目名拆完是空的，拒绝：$label")
 
-    val dest = parts.fold(targetRoot) { acc, part -> File(acc, part) }
+    val dest = segments.fold(targetRoot) { acc, part -> File(acc, part) }
     val rootCanon = targetRoot.invariantCanonicalPath()
     val destCanon = dest.invariantCanonicalPath()
     if (destCanon != rootCanon && !destCanon.startsWith(rootCanon + File.separator)) {
-        throw ExtractReject("条目落点跑到目标目录外面（多半是符号链接在作怪），拒绝：$rawName → $destCanon")
+        throw ExtractReject("条目落点跑到目标目录外面（多半是符号链接在作怪），拒绝：$label → ${sanitizeForLog(destCanon)}")
     }
     return dest
 }
 
 /**
- * canonicalPath 在"路径还不存在"时也要能算，且不允许抛 IOException 打断校验流程；
- * 取不到就退回绝对路径——两种情况下都会走同一套前缀比较，越界仍然拦得住。
+ * canonicalPath 在"路径还不存在"时也要能算，且不许抛 IOException 打断校验；
+ * 取不到就退回规范化绝对路径——两种情况都走同一套前缀比较，越界仍然拦得住。
  */
 private fun File.invariantCanonicalPath(): String =
     runCatching { canonicalPath }.getOrElse { absoluteFile.normalize().path }
@@ -98,9 +132,9 @@ private fun File.invariantCanonicalPath(): String =
 /**
  * 有状态的解压配额器：一次解压用一个实例，绝不复用。
  *
- * 用法是硬性的三步，缺一步就是不安全的：
+ * 用法是硬性的三步，缺一步就不安全：
  *   beginEntry(根目录, 条目名, 压缩前字节) → 边搬边 accept(每次字节数) → endEntry(压缩前字节)
- * 注意 accept 是"已经打算搬这么多"就先记账再搬，所以越限时连一个字节都不会写出去。
+ * accept 是"已经打算搬这么多"就先记账再搬，所以越限时连一个字节都不会写出去。
  */
 class ExtractGuard(private val limits: ExtractLimits = ExtractLimits()) {
 
