@@ -15,12 +15,15 @@ import java.util.Locale
  * 四道上限（对应旧 Agora 缺的四件事）：条目数 / 单条目体积 / 整包总量 / 压缩比。
  * 压缩比那道对炸弹最灵敏：几十 KB 解出几个 G，只有这一道能提前拦住。
  *
- * CI 那一轮教出来的三条规矩（不许再依赖平台语义）：
+ * CI 那一轮教出来的四条规矩（不许再依赖平台语义）：
  *   1) 路径判断**全在字符串层面做完**，最后才交给 File。Linux 上反斜杠是合法文件名字符，
- *      Windows 上 `C:` 与 `C:\` 指的是同一个目录——把这些交给 File 去比较就会漏。
+ *      Windows 上 `C:` 与 `C:\` 指同一个目录——交给 File 去比较就会漏。
  *   2) 百分号还原要**做到不再变化为止**，只还原一次的话 `%252e` 这类双层编码能绕过全部检查。
  *   3) 异常消息里带用户可控的原始名时必须脱敏（控制字符换点 + 限长），
  *      否则一个换行就能在日志里伪造出一条"看起来是我自己写的"记录。
+ *   4) 跨层控制流只用 `for` + `break@标签`。上一版在 `repeat(3) {}` 里写
+ *      `return@percentDecodeName`，那是把函数名当标签用，编译器不认（顶层函数没有隐式标签），
+ *      差点又白跑一轮 CI。
  */
 class ExtractReject(reason: String) : Exception(reason)
 
@@ -61,10 +64,10 @@ internal fun sanitizeForLog(raw: String): String {
  */
 fun percentDecodeName(raw: String): String {
     var current = raw
-    repeat(3) {
-        val next = runCatching { URLDecoder.decode(current.replace("+", "%2B"), "UTF-8") }
-            .getOrNull() ?: return@percentDecodeName current
-        if (next == current) return@percentDecodeName current
+    for (round in 0 until 3) {
+        val next = runCatching { URLDecoder.decode(current.replace("+", "%2B"), "UTF-8") }.getOrNull()
+            ?: break
+        if (next == current) break
         current = next
     }
     return current
