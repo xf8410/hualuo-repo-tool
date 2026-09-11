@@ -11,7 +11,7 @@ import java.nio.file.Files
 /**
  * 解压安全闸的行为测试。
  *
- * 测试名全中文且**不带点号**（点号在 Kotlin 反引号方法名里非法，上一版就是这么把编译搞挂的），
+ * 测试名全中文且**不带点号**（点号在 Kotlin 反引号方法名里非法，M0 就是这么把编译搞挂的），
  * 这样 CI 日志里能直接读到"哪一条拦住了什么"。每条都对应旧 Agora 真出过的一类事故。
  * 上限一律注入小数值，避免为了测试真造几个 G 的文件。
  */
@@ -52,7 +52,7 @@ class ExtractGuardTest {
     @Test
     fun `中文条目名被百分号编码时能还原`() {
         assertEquals("中文 说明.txt", percentDecodeName("%E4%B8%AD%E6%96%87%20%E8%AF%B4%E6%98%8E.txt"))
-        // 文件名里加号是字面量，不能被当成空格（那是表单规则的锅）
+        // 文件名里的加号是字面量，不能被当成空格（那是表单规则的锅）
         assertEquals("a+b.bin", percentDecodeName("a+b.bin"))
         // 半截百分号不许抛，保留原样，由后面的校验决定去留
         assertEquals("坏%zz名", percentDecodeName("坏%zz名"))
@@ -63,8 +63,8 @@ class ExtractGuardTest {
         val root = root()
         val dest = normalizeEntryPath(root, "./子包//再下一层/文件.bin")
         assertEquals("文件.bin", dest.name)
-        assertTrue(dest.path.startsWith(root.path))
-        assertEquals(2, dest.inRootDepthFrom(root))
+        assertTrue("落点必须还在根目录里：${dest.path}", dest.path.startsWith(root.path))
+        assertEquals("根目录下面应该是三层名字", 3, segmentsUnderRoot(dest, root))
     }
 
     @Test
@@ -145,6 +145,10 @@ class ExtractGuardTest {
         assertTrue(reject { guard.accept(-1L) }.contains("字节数不能为负"))
     }
 
-    private fun File.inRootDepthFrom(root: File): Int =
-        absolutePath.removePrefix(root.absolutePath).trim(File.separatorChar).split(File.separatorChar).size
+    /** 数一下落点在根目录之下有几层名字（斜杠分隔）。 */
+    private fun segmentsUnderRoot(dest: File, root: File): Int =
+        dest.absolutePath.removePrefix(root.absolutePath)
+            .trim(File.separatorChar)
+            .split(File.separatorChar)
+            .count { it.isNotEmpty() }
 }
