@@ -15,15 +15,21 @@ import java.util.Locale
  * 四道上限（对应旧 Agora 缺的四件事）：条目数 / 单条目体积 / 整包总量 / 压缩比。
  * 压缩比那道对炸弹最灵敏：几十 KB 解出几个 G，只有这一道能提前拦住。
  *
- * CI 那一轮教出来的四条规矩（不许再依赖平台语义）：
+ * 分成两层是有意的：`ruleOutEntryName` 只做字符串判断，不碰磁盘，所以能整表对照着验；
+ * `normalizeEntryPath` 在它之后再加一次 canonical 复核，专治"名字干净但中间某层是符号链接"。
+ *
+ * CI 与真机教出来的五条规矩（不许再依赖平台语义）：
  *   1) 路径判断**全在字符串层面做完**，最后才交给 File。Linux 上反斜杠是合法文件名字符，
  *      Windows 上 `C:` 与 `C:\` 指同一个目录——交给 File 去比较就会漏。
  *   2) 百分号还原要**做到不再变化为止**，只还原一次的话 `%252e` 这类双层编码能绕过全部检查。
  *   3) 异常消息里带用户可控的原始名时必须脱敏（控制字符换点 + 限长），
  *      否则一个换行就能在日志里伪造出一条"看起来是我自己写的"记录。
- *   4) 跨层控制流只用 `for` + `break@标签`。上一版在 `repeat(3) {}` 里写
+ *   4) 跨层控制流只用 `for` + `break`。上一版在 `repeat(3) {}` 里写
  *      `return@percentDecodeName`，那是把函数名当标签用，编译器不认（顶层函数没有隐式标签），
  *      差点又白跑一轮 CI。
+ *   5) 条目名里**一个控制字符都不许有**（U+0000–U+001F 与 U+007F），原始名和还原后的名都查。
+ *      换行能伪造日志行、ESC 能伪造终端输出、制表符让同一条路径在终端里看着是另一条。
+ *      正经归档包的文件名不需要同这些字符，所以这里一律硬拒，不留开关、不留"宽容模式"。
  */
 class ExtractReject(reason: String) : Exception(reason)
 
@@ -60,7 +66,7 @@ internal fun sanitizeForLog(raw: String): String {
  * 如果先按字面量校验、后还原，`%2e%2e%2f` 就绕过了全部检查——还原完才现出 `../`。
  * 这里循环还原到不再变化（最多三轮，防死循环），双层编码也压平。
  * 加号是文件名里的字面量、不能当空格（那是表单规则的锅），所以先转义回去；
- * 还原失败（半截百分号之类）就保留原样——反正后面还有一整套硬校验。
+ * 还原失败（半截百分号之类）就停止还原、保留上一层——反正后面还有一整套硬校验。
  */
 fun percentDecodeName(raw: String): String {
     var current = raw
@@ -78,36 +84,73 @@ private fun isDriveSegment(segment: String): Boolean =
     segment.length == 2 && segment[0].isLetterOrDigit() &&
         (segment[1] == ':' || segment[1] == '|')
 
+/** 找出第一个控制字符并给成人话写法（U+000A 这种）；没有就返回 null。 */
+private fun controlCharIn(text: String): String? {
+    val ch = text.firstOrNull { it.code < 0x20 || it.code == 0x7F } ?: return null
+    return "U+" + ch.code.toString(16).uppercase(Locale.US).padStart(4, '0')
+}
+
+/** 名字层面的判定结果：拒绝就给原因，放行就给拆好的段名（不含落点，便于纯字符串验证）。 */
+sealed interface NameRuling {
+    data class Rejected(val reason: String) : NameRuling
+    data class Accepted(val segments: List<String>) : NameRuling
+}
+
 /**
- * 把包内条目名翻译成本机上的落点，并且**只允许落在 targetRoot 里面**。
+ * 只看条目名本身行不行，一行磁盘都不碰——所以能整表对照着测。
  *
- * 拦的六样：含零字节、任意一层 `..`（含双层编码还原后的）、绝对路径（正斜杠/反斜杠/UNC）、
- * 盘符、还原后为空；最后再加一次 canonical 前缀复核，专治"名字干净但中间某层是符号链接"。
+ * 拦的七样：含零字节、含控制字符（原始或还原后）、还原后为空、任意一层 `..`
+ * （含双层百分号编码还原后的）、绝对路径（正斜杠/反斜杠/UNC）、盘符写法、拆完什么都不剩。
  */
-fun normalizeEntryPath(targetRoot: File, rawName: String): File {
-    if (rawName.indexOf('\u0000') >= 0) throw ExtractReject("条目名里含零字节，拒绝")
+fun ruleOutEntryName(rawName: String): NameRuling {
+    if (rawName.indexOf('\u0000') >= 0) return NameRuling.Rejected("条目名里含零字节，拒绝")
     val label = sanitizeForLog(rawName)
+    val rawControl = controlCharIn(rawName)
+    if (rawControl != null) {
+        return NameRuling.Rejected("条目名含控制字符 $rawControl（能伪造日志行或终端输出），拒绝：$label")
+    }
     val decoded = percentDecodeName(rawName).trim()
-    if (decoded.isEmpty()) throw ExtractReject("条目名还原并去空白之后是空的，无法确定落点：$label")
-    if (decoded.indexOf('\u0000') >= 0) throw ExtractReject("还原后的条目名含零字节，拒绝：$label")
+    if (decoded.isEmpty()) {
+        return NameRuling.Rejected("条目名还原并去空白之后是空的，无法确定落点：$label")
+    }
+    val decodedControl = controlCharIn(decoded)
+    if (decodedControl != null) {
+        return NameRuling.Rejected("还原后的条目名含控制字符 $decodedControl（百分号编码藏不住），拒绝：$label")
+    }
 
     // 正斜杠和反斜杠一律当分隔符：Windows 解包工具真会写出反斜杠条目名，
     // 而 Linux 上它是合法文件名字符，绝不能指望 File 替我们认出来。
     val segments = decoded.split('/', '\\').filter { it.isNotEmpty() && it != "." }
-    if (segments.isEmpty()) throw ExtractReject("条目名拆完什么都不剩，无法确定落点：$label")
+    if (segments.isEmpty()) return NameRuling.Rejected("条目名拆完什么都不剩，无法确定落点：$label")
     if (segments.any { it == ".." }) {
-        throw ExtractReject("条目名试图跳出目标目录（含 .. ），拒绝：$label")
+        return NameRuling.Rejected("条目名试图跳出目标目录（含 .. ），拒绝：$label")
     }
-    if (decoded.startsWith("//")) throw ExtractReject("条目名是网络共享路径（UNC），拒绝：$label")
-    if (decoded.startsWith("/")) throw ExtractReject("条目名是绝对路径，拒绝：$label")
-    if (decoded.startsWith("\\")) throw ExtractReject("条目名是绝对路径（反斜杠开头），拒绝：$label")
-    if (isDriveSegment(segments.first())) throw ExtractReject("条目名带盘符，拒绝：$label")
+    if (decoded.startsWith("//")) return NameRuling.Rejected("条目名是网络共享路径（UNC），拒绝：$label")
+    if (decoded.startsWith("/")) return NameRuling.Rejected("条目名是绝对路径，拒绝：$label")
+    if (decoded.startsWith("\\")) return NameRuling.Rejected("条目名是绝对路径（反斜杠开头），拒绝：$label")
+    if (isDriveSegment(segments.first())) return NameRuling.Rejected("条目名带盘符，拒绝：$label")
+    return NameRuling.Accepted(segments)
+}
 
+/**
+ * 把包内条目名翻译成本机上的落点，并且**只允许落在 targetRoot 里面**。
+ *
+ * 先过 `ruleOutEntryName`，再拼路径，最后加一次 canonical 前缀复核：
+ * 那一道专防"名字看起来干净、但中间某层目录其实是条符号链接"的情况。
+ */
+fun normalizeEntryPath(targetRoot: File, rawName: String): File {
+    val segments = when (val ruling = ruleOutEntryName(rawName)) {
+        is NameRuling.Rejected -> throw ExtractReject(ruling.reason)
+        is NameRuling.Accepted -> ruling.segments
+    }
     val dest = segments.fold(targetRoot) { acc, part -> File(acc, part) }
     val rootCanon = targetRoot.invariantCanonicalPath()
     val destCanon = dest.invariantCanonicalPath()
     if (destCanon != rootCanon && !destCanon.startsWith(rootCanon + File.separator)) {
-        throw ExtractReject("条目落点跑到目标目录外面（多半是符号链接在作怪），拒绝：$label → ${sanitizeForLog(destCanon)}")
+        throw ExtractReject(
+            "条目落点跑到目标目录外面（多半是符号链接在作怪），拒绝：" +
+                sanitizeForLog(rawName) + " → " + sanitizeForLog(destCanon),
+        )
     }
     return dest
 }
