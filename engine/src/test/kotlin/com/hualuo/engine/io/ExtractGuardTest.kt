@@ -86,10 +86,12 @@ class ExtractGuardTest {
 
     @Test
     fun `反斜杠开头与网络共享路径都算绝对路径`() {
-        val unc = reject("\\\\服务器\\共享\\文件.bin") { normalizeEntryPath(root(), "\\\\服务器\\共享\\文件.bin") }
-        assertTrue("反斜杠开头必须算绝对路径，实际是：$unc", unc.contains("绝对路径"))
-        val slashes = reject("//服务器/共享/文件.bin") { normalizeEntryPath(root(), "//服务器/共享/文件.bin") }
-        assertTrue("正斜杠 UNC 要专门说清，实际是：$slashes", slashes.contains("网络共享"))
+        val backslashRoot = reject("\\\\服务器\\共享\\文件.bin") {
+            normalizeEntryPath(root(), "\\\\服务器\\共享\\文件.bin")
+        }
+        assertTrue("反斜杠开头必须算绝对路径，实际是：$backslashRoot", backslashRoot.contains("绝对路径"))
+        val unc = reject("//服务器/共享/文件.bin") { normalizeEntryPath(root(), "//服务器/共享/文件.bin") }
+        assertTrue("正斜杠 UNC 要专门说清，实际是：$unc", unc.contains("网络共享"))
     }
 
     @Test
@@ -107,8 +109,11 @@ class ExtractGuardTest {
 
     @Test
     fun `异常消息里的原始名会被脱敏`() {
-        val withNewline = reject("..加换行") { normalizeEntryPath(root(), "..\n伪造一行日志") }
-        assertFalse("原始名里的换行不许进消息，否则能伪造日志行：$withNewline", withNewline.contains('\n'))
+        val withNewline = reject("点点加换行") { normalizeEntryPath(root(), "..\n伪造一行日志") }
+        assertFalse(
+            "原始名里的换行不许进消息，否则能伪造日志行：$withNewline",
+            withNewline.contains('\n'),
+        )
         val tooLong = reject("三百个x/../坏.bin") {
             normalizeEntryPath(root(), "x".repeat(300) + "/../坏.bin")
         }
@@ -167,31 +172,21 @@ class ExtractGuardTest {
 
     @Test
     fun `上限写零或负数当场就被拦住`() {
-        assertTrue(
-            "要写明条目数上限，实际是：" + reject("maxEntries=0") { ExtractLimits(maxEntries = 0) },
-            reject("maxEntries=0") { ExtractLimits(maxEntries = 0) }.contains("条目数上限必须大于零"),
-        )
-        assertTrue(
-            "要写明单条目上限，实际是：" + reject("maxEntryBytes=-1") { ExtractLimits(maxEntryBytes = -1L) },
-            reject("maxEntryBytes=-1") { ExtractLimits(maxEntryBytes = -1L) }.contains("单条目上限必须大于零"),
-        )
-        assertTrue(
-            "要写明压缩比下限，实际是：" + reject("maxRatio=0.5") { ExtractLimits(maxRatio = 0.5) },
-            reject("maxRatio=0.5") { ExtractLimits(maxRatio = 0.5) }.contains("压缩比上限必须大于一"),
-        )
-        assertTrue(
-            "总量小于单条目时必须点名两者关系，实际是：" +
-                reject("总量<单条目") { ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 50L) },
-            reject("总量<单条目") { ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 50L) }
-                .contains("不能小于单条目上限"),
-        )
+        val entries = reject("maxEntries=0") { ExtractLimits(maxEntries = 0) }
+        assertTrue("要写明条目数上限，实际是：$entries", entries.contains("条目数上限必须大于零"))
+        val single = reject("maxEntryBytes=-1") { ExtractLimits(maxEntryBytes = -1L) }
+        assertTrue("要写明单条目上限，实际是：$single", single.contains("单条目上限必须大于零"))
+        val ratio = reject("maxRatio=0.5") { ExtractLimits(maxRatio = 0.5) }
+        assertTrue("要写明压缩比下限，实际是：$ratio", ratio.contains("压缩比上限必须大于一"))
+        val inverted = reject("总量小于单条目") { ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 50L) }
+        assertTrue("两边写反时必须点名关系，实际是：$inverted", inverted.contains("不能小于单条目上限"))
     }
 
     @Test
     fun `记账字节数为负要报参数错`() {
         val guard = ExtractGuard()
         guard.beginEntry(root(), "正常.bin", 5L)
-        val message = reject("accept(-1)") { guard.accept(-1L) }
+        val message = reject("accept 负数") { guard.accept(-1L) }
         assertTrue("要说是字节数不能为负，实际是：$message", message.contains("字节数不能为负"))
     }
 
