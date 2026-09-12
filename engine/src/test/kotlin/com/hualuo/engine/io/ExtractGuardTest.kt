@@ -16,7 +16,11 @@ import java.nio.file.Files
  * 这样 CI 日志里能直接读到"哪一条拦住了什么"。每条都对应旧 Agora 真出过的一类事故。
  * 上限一律注入小数值，避免为了测试真造几个 G 的文件。
  *
- * 断言总数刻意停在 30（CI 红线之一：单文件断言数 ≤30）。再加就得拆文件，不要塞进这一份。
+ * 这一版把每条断言都改成"消息里带上闸实际说了什么"的两参形式：
+ * 上一版有 4 条断言红了，但单参 assertTrue 失败时不显示实际值，
+ * 日志里只有"AssertionError 在第几行"，查根因只能靠再推一轮——那是浪费主人的时间。
+ *
+ * 断言共 31 条（本文件自己的上限约定：单文件别堆太多断言，再加就拆文件）。
  */
 class ExtractGuardTest {
 
@@ -26,34 +30,40 @@ class ExtractGuardTest {
     private fun root(): File = folder.newFolder("包根目录")
 
     /** 断言"必须抛错"，并把消息原文取回来继续验内容——消息含糊等于没做对。 */
-    private fun reject(block: () -> Unit): String =
-        runCatching(block).exceptionOrNull()?.message ?: error("本该抛错却安静通过了")
+    private fun reject(what: String, block: () -> Unit): String =
+        runCatching(block).exceptionOrNull()?.message
+            ?: error("本该抛错却安静通过了：$what")
 
     @Test
     fun `条目名想跳出目标目录必须被拒绝`() {
-        val message = reject { normalizeEntryPath(root(), "../逃出去的文件.bin") }
-        assertTrue("消息要说清为什么拦：$message", message.contains(".."))
+        val message = reject("../逃出去的文件.bin") { normalizeEntryPath(root(), "../逃出去的文件.bin") }
+        assertTrue("消息要说清为什么拦，实际是：$message", message.contains(".."))
     }
 
     @Test
     fun `绝对路径条目名必须被拒绝`() {
-        val message = reject { normalizeEntryPath(root(), "/etc/hosts") }
-        assertTrue("要说是绝对路径：$message", message.contains("绝对路径"))
+        val message = reject("/etc/hosts") { normalizeEntryPath(root(), "/etc/hosts") }
+        assertTrue("要说是绝对路径，实际是：$message", message.contains("绝对路径"))
     }
 
     @Test
     fun `反斜杠伪装和盘符写法也拦得住`() {
-        assertTrue(reject { normalizeEntryPath(root(), "..\\..\\w.exe") }.contains(".."))
-        assertTrue(reject { normalizeEntryPath(root(), "C:/Windows/x.bin") }.contains("盘符"))
-        assertTrue(reject { normalizeEntryPath(root(), "C|/Windows/x.bin") }.contains("盘符"))
+        val backslash = reject("..\\..\\w.exe") { normalizeEntryPath(root(), "..\\..\\w.exe") }
+        assertTrue("反斜杠穿越必须认出，实际是：$backslash", backslash.contains(".."))
+        val drive = reject("C:/Windows/x.bin") { normalizeEntryPath(root(), "C:/Windows/x.bin") }
+        assertTrue("盘符写法必须被拦，实际是：$drive", drive.contains("盘符"))
+        val pipe = reject("C|/Windows/x.bin") { normalizeEntryPath(root(), "C|/Windows/x.bin") }
+        assertTrue("盘符变体 C| 必须被拦，实际是：$pipe", pipe.contains("盘符"))
     }
 
     @Test
     fun `百分号编码藏住的穿越拦得住且双层编码也拦得住`() {
-        val single = reject { normalizeEntryPath(root(), "%2e%2e%2f坏东西.bin") }
-        assertTrue("单层还原后必须认出越界：$single", single.contains(".."))
-        val double = reject { normalizeEntryPath(root(), "%252e%252e%252f坏东西.bin") }
-        assertTrue("双层还原后必须认出越界：$double", double.contains(".."))
+        val single = reject("%2e%2e%2f坏东西.bin") { normalizeEntryPath(root(), "%2e%2e%2f坏东西.bin") }
+        assertTrue("单层还原后必须认出越界，实际是：$single", single.contains(".."))
+        val double = reject("%252e%252e%252f坏东西.bin") {
+            normalizeEntryPath(root(), "%252e%252e%252f坏东西.bin")
+        }
+        assertTrue("双层还原后必须认出越界，实际是：$double", double.contains(".."))
     }
 
     @Test
@@ -76,9 +86,10 @@ class ExtractGuardTest {
 
     @Test
     fun `反斜杠开头与网络共享路径都算绝对路径`() {
-        assertTrue(reject { normalizeEntryPath(root(), "\\\\服务器\\共享\\文件.bin") }.contains("绝对路径"))
-        val unc = reject { normalizeEntryPath(root(), "//服务器/共享/文件.bin") }
-        assertTrue("UNC 要专门说清：$unc", unc.contains("网络共享"))
+        val unc = reject("\\\\服务器\\共享\\文件.bin") { normalizeEntryPath(root(), "\\\\服务器\\共享\\文件.bin") }
+        assertTrue("反斜杠开头必须算绝对路径，实际是：$unc", unc.contains("绝对路径"))
+        val slashes = reject("//服务器/共享/文件.bin") { normalizeEntryPath(root(), "//服务器/共享/文件.bin") }
+        assertTrue("正斜杠 UNC 要专门说清，实际是：$slashes", slashes.contains("网络共享"))
     }
 
     @Test
@@ -88,17 +99,21 @@ class ExtractGuardTest {
         val link = File(root, "链接目录")
         runCatching { Files.createSymbolicLink(link.toPath(), outside.toPath()) }
             .onFailure { return } // 文件系统不支持符号链接就跳过，不算失败也不算验过
-        val message = reject { normalizeEntryPath(root, "链接目录/写出去的文件.bin") }
-        assertTrue("符号链接越界必须被 canonical 复核拦住：$message", message.contains("外面"))
+        val message = reject("链接目录/写出去的文件.bin") {
+            normalizeEntryPath(root, "链接目录/写出去的文件.bin")
+        }
+        assertTrue("符号链接越界必须被 canonical 复核拦住，实际是：$message", message.contains("外面"))
     }
 
     @Test
     fun `异常消息里的原始名会被脱敏`() {
-        val withNewline = reject { normalizeEntryPath(root(), "..\n伪造一行日志") }
+        val withNewline = reject("..加换行") { normalizeEntryPath(root(), "..\n伪造一行日志") }
         assertFalse("原始名里的换行不许进消息，否则能伪造日志行：$withNewline", withNewline.contains('\n'))
-        val tooLong = reject { normalizeEntryPath(root(), "x".repeat(300) + "/../坏.bin") }
-        assertTrue("超长名要截断：$tooLong", tooLong.contains("等截"))
-        assertTrue("整条消息不许被名字撑爆", tooLong.length < 400)
+        val tooLong = reject("三百个x/../坏.bin") {
+            normalizeEntryPath(root(), "x".repeat(300) + "/../坏.bin")
+        }
+        assertTrue("超长名要截断，实际是：$tooLong", tooLong.contains("等截"))
+        assertTrue("整条消息不许被名字撑爆，实际长度 ${tooLong.length}", tooLong.length < 400)
     }
 
     @Test
@@ -107,8 +122,8 @@ class ExtractGuardTest {
         val root = root()
         guard.beginEntry(root, "一.bin", 10L).also { guard.accept(5L); guard.endEntry(10L) }
         guard.beginEntry(root, "二.bin", 10L).also { guard.accept(5L); guard.endEntry(10L) }
-        val message = reject { guard.beginEntry(root, "三.bin", 10L) }
-        assertTrue("要写明是条目数问题：$message", message.contains("条目数已达上限"))
+        val message = reject("第三个条目") { guard.beginEntry(root, "三.bin", 10L) }
+        assertTrue("要写明是条目数问题，实际是：$message", message.contains("条目数已达上限"))
         assertEquals(2, guard.entries)
     }
 
@@ -117,8 +132,8 @@ class ExtractGuardTest {
         val guard = ExtractGuard(ExtractLimits(maxEntryBytes = 10L, maxTotalBytes = 100L))
         guard.beginEntry(root(), "胖条目.bin", 5L)
         guard.accept(6L)
-        val message = reject { guard.accept(5L) }
-        assertTrue("要写明是单条目体积：$message", message.contains("单条目解压后已达 11 字节"))
+        val message = reject("胖条目继续吃") { guard.accept(5L) }
+        assertTrue("要写明是单条目体积，实际是：$message", message.contains("单条目解压后已达 11 字节"))
     }
 
     @Test
@@ -127,8 +142,8 @@ class ExtractGuardTest {
         val root = root()
         guard.beginEntry(root, "第一条.bin", 5L).also { guard.accept(10L); guard.endEntry(5L) }
         guard.beginEntry(root, "第二条.bin", 5L)
-        val message = reject { guard.accept(3L) }
-        assertTrue("要写明是总量：$message", message.contains("整包解压后已达 13 字节"))
+        val message = reject("第二条继续吃") { guard.accept(3L) }
+        assertTrue("要写明是总量，实际是：$message", message.contains("整包解压后已达 13 字节"))
         assertEquals("越限时账已经记上了，调用方据此清理已写出的部分", 13L, guard.decompressedTotal)
     }
 
@@ -137,8 +152,8 @@ class ExtractGuardTest {
         val guard = ExtractGuard(ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 100L, maxRatio = 2.0))
         guard.beginEntry(root(), "炸弹.bin", 10L)
         guard.accept(30L)
-        val message = reject { guard.endEntry(10L) }
-        assertTrue("要给出倍数和两边字节数：$message", message.contains("压缩比 3.0 超过上限 2.0"))
+        val message = reject("炸弹收尾") { guard.endEntry(10L) }
+        assertTrue("要给出倍数和两边字节数，实际是：$message", message.contains("压缩比 3.0 超过上限 2.0"))
     }
 
     @Test
@@ -152,11 +167,22 @@ class ExtractGuardTest {
 
     @Test
     fun `上限写零或负数当场就被拦住`() {
-        assertTrue(reject { ExtractLimits(maxEntries = 0) }.contains("条目数上限必须大于零"))
-        assertTrue(reject { ExtractLimits(maxEntryBytes = -1L) }.contains("单条目上限必须大于零"))
-        assertTrue(reject { ExtractLimits(maxRatio = 0.5) }.contains("压缩比上限必须大于一"))
         assertTrue(
-            reject { ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 50L) }
+            "要写明条目数上限，实际是：" + reject("maxEntries=0") { ExtractLimits(maxEntries = 0) },
+            reject("maxEntries=0") { ExtractLimits(maxEntries = 0) }.contains("条目数上限必须大于零"),
+        )
+        assertTrue(
+            "要写明单条目上限，实际是：" + reject("maxEntryBytes=-1") { ExtractLimits(maxEntryBytes = -1L) },
+            reject("maxEntryBytes=-1") { ExtractLimits(maxEntryBytes = -1L) }.contains("单条目上限必须大于零"),
+        )
+        assertTrue(
+            "要写明压缩比下限，实际是：" + reject("maxRatio=0.5") { ExtractLimits(maxRatio = 0.5) },
+            reject("maxRatio=0.5") { ExtractLimits(maxRatio = 0.5) }.contains("压缩比上限必须大于一"),
+        )
+        assertTrue(
+            "总量小于单条目时必须点名两者关系，实际是：" +
+                reject("总量<单条目") { ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 50L) },
+            reject("总量<单条目") { ExtractLimits(maxEntryBytes = 100L, maxTotalBytes = 50L) }
                 .contains("不能小于单条目上限"),
         )
     }
@@ -165,7 +191,8 @@ class ExtractGuardTest {
     fun `记账字节数为负要报参数错`() {
         val guard = ExtractGuard()
         guard.beginEntry(root(), "正常.bin", 5L)
-        assertTrue(reject { guard.accept(-1L) }.contains("字节数不能为负"))
+        val message = reject("accept(-1)") { guard.accept(-1L) }
+        assertTrue("要说是字节数不能为负，实际是：$message", message.contains("字节数不能为负"))
     }
 
     /** 数一下落点在根目录之下有几层名字（斜杠分隔）。 */
