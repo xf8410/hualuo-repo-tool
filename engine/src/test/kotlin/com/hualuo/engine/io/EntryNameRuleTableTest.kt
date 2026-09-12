@@ -34,23 +34,23 @@ class EntryNameRuleTableTest {
 
     private val rows = listOf(
         Row("../逃出去的文件.bin", "跳出目标目录"),
-        Row("/etc/hosts", "绝对路径"),
         Row("..\\..\\w.exe", "跳出目标目录"),
-        Row("C:/Windows/x.bin", "盘符"),
-        Row("C|/Windows/x.bin", "盘符"),
+        Row("..", "跳出目标目录"),
+        Row("./..", "跳出目标目录"),
+        Row("a/../../b", "跳出目标目录"),
+        Row("..%2f..%2fetc%2fpasswd", "跳出目标目录"),
         Row("%2e%2e%2f坏东西.bin", "跳出目标目录"),
         Row("%252e%252e%252f坏东西.bin", "跳出目标目录"),
         Row("%2e%2e%2f%252e%252e%2f.bin", "跳出目标目录"),
+        Row("x".repeat(300) + "/../坏.bin", "跳出目标目录"),
+        Row("/etc/hosts", "绝对路径"),
         Row("//服务器/共享/文件.bin", "网络共享"),
         Row("\\\\服务器\\共享\\文件.bin", "反斜杠开头"),
-        Row("..", "跳出目标目录"),
-        Row("a/../../b", "跳出目标目录"),
-        Row("..", "跳出目标目录"),
-        Row("..", "跳出目标目录"),
+        Row("C:/Windows/x.bin", "盘符"),
+        Row("C|/Windows/x.bin", "盘符"),
         Row("../伪造\n一行日志", "控制字符"),
         Row("带\t制表符.bin", "控制字符"),
         Row("换%0a行.bin", "控制字符"),
-        Row("x".repeat(300) + "/../坏.bin", "跳出目标目录"),
         Row("", "去空白之后是空的"),
         Row("   ", "去空白之后是空的"),
         Row("./子包//再下一层/文件.bin", null, 3),
@@ -67,13 +67,17 @@ class EntryNameRuleTableTest {
 
     @Test
     fun `对照表逐行核对且打印实际判定`() {
-        println("环境 file.encoding=" + System.getProperty("file.encoding") +
-            " sun.jnu.encoding=" + System.getProperty("sun.jnu.encoding"))
+        println(
+            "环境 file.encoding=" + System.getProperty("file.encoding") +
+                " sun.jnu.encoding=" + System.getProperty("sun.jnu.encoding"),
+        )
         println("根目录=" + root.path + " 存在=" + root.exists())
         var rejected = 0
         var accepted = 0
         rows.forEachIndexed { index, row ->
-            val verdict = when (val ruling = ruleOutEntryName(row.name)) {
+            val where = "第 ${index + 1} 行「${visible(row.name)}」"
+            val ruling = ruleOutEntryName(row.name)
+            val verdict = when (ruling) {
                 is NameRuling.Rejected -> {
                     rejected += 1
                     "拒绝：" + ruling.reason
@@ -92,8 +96,6 @@ class EntryNameRuleTableTest {
                     verdict,
                 ),
             )
-            val where = "第 ${index + 1} 行「${visible(row.name)}」"
-            val ruling = ruleOutEntryName(row.name)
             if (row.keyword == null) {
                 assertTrue("$where 必须放行，实际：$verdict", ruling is NameRuling.Accepted)
                 val segments = (ruling as NameRuling.Accepted).segments
