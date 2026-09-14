@@ -19,13 +19,15 @@ import org.junit.Test
  *     代理对必须**两段合起来判**（单独一段是 0xD800 段，看不出是表情）；
  *     并且只认**紧挨着**的两段，中间夹了别的字符就不算一对。
  *
- * 号段是逐段列出来的，第一段就是我自己查漏补上的：几何图形（▶ ■ ⊙ ▾ ●）与杂项技术
- * （⏰ ⏳ ⌨ ⛶）原先**不在**禁止范围里，等于闸门对它们装看不见 —— 那句「扫干净」就是假的。
+ * 号段是逐段列出来的，其中几段是我自己查漏补上的：几何图形（播放键、方块、圆中点、尖角、圆点）
+ * 与杂项技术（闹钟、漏沙、键盘、全屏方框）原先**不在**禁止范围里 —— 漏一段就等于对它们装看不见，
+ * 那"扫干净"这句话就是假的。
  *
- * 要显示图形字符就放资源文件（res/values/icons.xml），代码里只留 IconKey 键名。
- * 本文件自己也不许写下被禁写法，否则被自己判红 —— 样本一律运行时按码位拼出来。
+ * **写法教训（run 34904613303 就是这个红）**：带主语的 when 里分支只能写值或区间，
+ * 不能写 `code == 0x200D` 这种布尔表达式 —— 它拿 true 跟 Int 比，编译直接崩。
+ * 这个错我犯过两次，第二次是重写文件时把旧写法抄回去的。
  *
- * 中文与中文标点不在禁止范围：界面文案和注释本来就该是中文。
+ * 中文与中文标点、常用排版符（行尾尖括号、乘号）不在禁止范围：界面文案和注释本来就该是中文。
  */
 class NoEmojiInSourceTest {
 
@@ -102,19 +104,22 @@ class NoEmojiInSourceTest {
         }
     }
 
+    /**
+     * 被禁号段。带主语的 when：分支只写值或区间，**不许**写 code == 某个值。
+     */
     private fun isBannedCodePoint(code: Int): Boolean = when (code) {
         in 0x1F000..0x1FAFF -> true // 牌面、象形文字、图形扩展（含国旗）
         in 0x2600..0x27BF -> true // 杂项符号与装饰符号
         in 0x2190..0x21FF -> true // 箭头
         in 0x2B00..0x2BFF -> true // 方块箭头与几何扩展
         in 0xFE00..0xFE0F -> true // 变体选择符
-        in 0x25A0..0x25FF -> true // 几何图形：▶ ■ ⊙ ▾ ▸（原先漏了，等于装看不见）
-        in 0x2300..0x23FF -> true // 杂项技术符号：⏰ ⏳ ⏱ ⌨ ⛶（原先漏了）
-        in 0x2100..0x214F -> true // 类字母符号：ℹ ℡ 之类（原先漏了）
+        in 0x25A0..0x25FF -> true // 几何图形：播放键、方块、圆中点、尖角（原先漏了）
+        in 0x2300..0x23FF -> true // 杂项技术符号：闹钟、漏沙、键盘、全屏方框（原先漏了）
+        in 0x2100..0x214F -> true // 类字母符号：信息符之类（原先漏了）
         in 0x2900..0x297F -> true // 补充箭头
         in 0x2A00..0x2AFF -> true // 补充数学符号与箭头
-        code == 0x200D -> true // 零宽连接符：表情组合用它
-        code == 0x20E3 -> true // 组合用键帽
+        in 0x200D..0x200D -> true // 零宽连接符：表情组合用它
+        in 0x20E3..0x20E3 -> true // 组合用键帽
         else -> false
     }
 
@@ -150,6 +155,8 @@ class NoEmojiInSourceTest {
             assertTrue("技术符号该禁：U+${"%04X".format(code)}", isBannedCodePoint(code))
         }
         assertTrue("类字母符号该禁：U+2139", isBannedCodePoint(0x2139))
+        assertTrue("零宽连接符该禁", isBannedCodePoint(0x200D))
+        assertTrue("组合用键帽该禁", isBannedCodePoint(0x20E3))
     }
 
     @Test
@@ -162,7 +169,7 @@ class NoEmojiInSourceTest {
 
     @Test
     fun chineseAndAsciiStayAllowed() {
-        // 反例：中文、中文标点、ASCII 与常用排版符号必须放过，否则闸门就是捣乱
+        // 反例：中文、中文标点、ASCII 与常用排版符必须放过，否则闸门就是捣乱
         val hits = ArrayList<Hit>()
         scanLine("网关掐了自动重发一次（默认关），temp=0.7", "Sample.kt", 1, hits)
         scanLine("上限 1 MiB；键名 ui.retry_costly_on_gateway", "Sample.kt", 2, hits)
