@@ -111,18 +111,21 @@ class GenerationSlot(
         synchronized(lock) { watchdog?.beat() }
     }
 
-    /** 是否已判卡死；没人在生成、或没装看门狗时永远 false。 */
+    /**
+     * 是否已判卡死；没人在生成、或没装看门狗时永远 false。
+     * 写成纯表达式（不在 synchronized 里 return）：整块都是 return 的 lambda 类型推不出来，不赌。
+     */
     fun stalled(nowMs: Long? = null): Boolean = synchronized(lock) {
-        if (holder == null) return false
-        val dog = watchdog ?: return false
-        return if (nowMs == null) dog.stalled() else dog.stalled(nowMs)
+        val dog = watchdog
+        if (holder == null || dog == null) false
+        else if (nowMs == null) dog.stalled() else dog.stalled(nowMs)
     }
 
     /** 当前静默了多久（没人在生成时返回 0）。 */
     fun idleMs(nowMs: Long? = null): Long = synchronized(lock) {
-        if (holder == null) return 0L
-        val dog = watchdog ?: return 0L
-        return if (nowMs == null) dog.idleMs() else dog.idleMs(nowMs)
+        val dog = watchdog
+        if (holder == null || dog == null) 0L
+        else if (nowMs == null) dog.idleMs() else dog.idleMs(nowMs)
     }
 
     /**
