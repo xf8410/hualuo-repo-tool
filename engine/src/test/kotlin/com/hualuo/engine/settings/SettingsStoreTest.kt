@@ -14,7 +14,7 @@ import org.junit.rules.TemporaryFolder
  * 设置存储的纯 JVM 测试（不用手机、不用安卓）。测试名一律 ASCII，说明和断言消息用中文。
  *
  * 覆盖面按旧仓踩过的坑排：内容必须逐字往返、未知键不许丢、坏数据必须出声、
- * 写失败不许报成功、大文件不许整份吞进内存。
+ * 写失败不许报成功、大文件不许整份吞进内存、半个表情不许变成烂字节。
  */
 class SettingsStoreTest {
 
@@ -70,6 +70,42 @@ class SettingsStoreTest {
 
         assertEquals("控制字符必须逐字还原", tricky, restored.string("system.prompt"))
         assertFalse("转义后不该出现裸换行", store.text().contains("两行\n"))
+    }
+
+    @Test
+    fun surrogatePairRoundTripsAsPlainText() {
+        val store = storeOf()
+        store.setString("draft.text", "收到 ✅ 开工 😀")
+        store.drainIssues()
+
+        assertTrue("正常表情不该被转义成乱码", store.text().contains("😀"))
+        val reopened = storeOf(store.text())
+        assertEquals("收到 ✅ 开工 😀", reopened.string("draft.text"))
+        assertTrue("正常表情不该出声：${reopened.issues().map { it.detail }}", reopened.issues().isEmpty())
+    }
+
+    @Test
+    fun loneHighSurrogateIsEscapedAndVoiced() {
+        val half = "前半\uD83D后半"
+        val store = storeOf()
+        store.setString("draft.text", half)
+
+        assertEquals(1, store.issues().count { it is SettingsIssue.LoneSurrogate })
+        assertFalse("半个表情不许以裸码元形式进文件", store.text().contains("\uD83D"))
+        assertTrue("必须转义存起来", store.text().contains("\\ud83d"))
+        assertTrue(store.save().persisted)
+
+        val reopened = storeOf(store.text())
+        assertEquals("读回来还得逐字相同（不许悄悄修成别的）", half, reopened.string("draft.text"))
+        assertEquals("再读一次同样要出声", 1, reopened.issues().count { it is SettingsIssue.LoneSurrogate })
+    }
+
+    @Test
+    fun loneLowSurrogateIsAlsoCaught() {
+        val store = storeOf("draft.text=尾巴\uDC00占位")
+
+        assertEquals(1, store.issues().count { it is SettingsIssue.LoneSurrogate })
+        assertEquals("尾巴\uDC00占位", store.string("draft.text"))
     }
 
     @Test
@@ -293,6 +329,46 @@ class SettingsStoreTest {
         assertEquals("qwen3.8-flash", reopened.string("model.current"))
         assertEquals(300, reopened.int("tool.idle_timeout_seconds", MISSING))
         assertTrue("正常文件不该有坏消息：${reopened.issues().map { it.detail }}", reopened.issues().isEmpty())
+    }
+
+    @Test
+    fun fileBackendOverwriteKeepsExactlyOneGoodCopy() {
+        val file = File(folder.root, "settings.txt")
+        val first = SettingsStore(FileSettingsStorage(file))
+        first.setString("model.current", "旧值")
+        assertTrue(first.save().persisted)
+
+        val second = SettingsStore(FileSettingsStorage(file))
+        assertEquals("旧值", second.string("model.current"))
+        second.setString("model.current", "新值")
+        assertTrue(second.save().persisted)
+
+        val reopened = SettingsStore(FileSettingsStorage(file))
+        assertEquals("改名盖过旧文件后必须读出新值", "新值", reopened.string("model.current"))
+
+        val leftovers = folder.root.listFiles()?.filter { !it.name.endsWith(".tmp") } ?: emptyList()
+        assertEquals("目录里只该留一份设置文件：${folder.root.walkTopDown().filter { it.isFile }.map { it.name }.toList()}",
+            1, leftovers.count { it.isFile })
+        assertFalse("不该留下临时文件残渣", folder.root.walkTopDown().any { it.name.endsWith(".tmp") })
+    }
+
+    @Test
+    fun missingFileReadsAsNullAndOccupiedPathFailsLoudly() {
+        val absent = File(folder.root, "never-written.txt")
+        assertNull(FileSettingsStorage(absent).read())
+
+        val occupied = File(folder.root, "is-a-dir")
+        assertTrue(occupied.mkdirs())
+
+        try {
+            SettingsStore(FileSettingsStorage(occupied))
+            assertTrue("路径被目录占住本该抛异常", false)
+        } catch (expected: IOException) {
+            assertTrue(
+                "报错得带上是哪个路径：${expected.message}",
+                expected.message.orEmpty().contains("is-a-dir"),
+            )
+        }
     }
 
     @Test(expected = SettingsTooLargeException::class)
