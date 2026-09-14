@@ -6,13 +6,13 @@ package com.hualuo.repotool.ui.model
 /** 底栏五页（v13 nav）：回合流 / 长任务 / 工具 / 仓库CI / 观测。 */
 enum class NavTab(val title: String, val icon: String) {
     Chat("回合流", "\uD83D\uDCAC"),
-    Tasks("长任务", "⏱"),
+    Tasks("长任务", "\u23F1"),
     ToolsPage("工具", "\uD83D\uDD2E"),
     Repo("仓库CI", "\uD83D\uDCE6"),
     Observe("观测", "\uD83D\uDCE1"),
 }
 
-/** 徽标色：g=成功绿 y=警告红 r=错误红 n=中性灰（对应原型 .badge.g/.y/.r）。 */
+/** 徽标色：g=成功绿 y=警告黄 r=错误红 n=中性灰（对应原型 .badge.g/.y/.r）。 */
 enum class Tone { Neutral, Ok, Warn, Err }
 
 data class Badge(val text: String, val tone: Tone = Tone.Neutral)
@@ -50,7 +50,14 @@ data class ModelRow(
 )
 
 /** 长任务页一行（含详情弹层三字段，对应 data-task/data-st/data-last/data-note）。 */
-data class TaskRow(val name: String, val value: String, val status: String, val last: String, val note: String, val tone: Tone)
+data class TaskRow(
+    val name: String,
+    val value: String,
+    val status: String,
+    val last: String,
+    val note: String,
+    val tone: Tone,
+)
 
 /** 工具页四态：注册 / 接线 / 开关 / 可执行（g/y/r/n 四灯）。 */
 data class ToolState(val name: String, val states: List<Tone>)
@@ -75,7 +82,16 @@ sealed class SubField {
     data class Switch(val label: String, val on: Boolean) : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
-    data class Slider(val label: String, val min: Int, val max: Int, val value: Int) : SubField()
+
+    /** 滑条：温度/top_p 是小数，超时/内存是整数——统一 Double，步长自己带。 */
+    data class Slider(
+        val label: String,
+        val min: Double,
+        val max: Double,
+        val value: Double,
+        val step: Double = 1.0,
+    ) : SubField()
+
     data class Note(val text: String) : SubField()
     data class Sec(val text: String) : SubField()
     data class Action(val icon: String, val title: String, val desc: String) : SubField()
