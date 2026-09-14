@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -28,21 +27,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.components.BadgeChip
+import com.hualuo.repotool.ui.data.DemoMessages
 import com.hualuo.repotool.ui.model.ChatMsg
 import com.hualuo.repotool.ui.state.AppUiState
-import com.hualuo.repotool.ui.data.DemoMessages
 import com.hualuo.repotool.ui.theme.ErrRed
 import com.hualuo.repotool.ui.theme.Hairline
 import com.hualuo.repotool.ui.theme.Ink
-import com.hualuo.repotool.ui.theme.MebubbleOrCard
+import com.hualuo.repotool.ui.theme.MeBubble
 import com.hualuo.repotool.ui.theme.SubInk
 import com.hualuo.repotool.ui.theme.WarnAmber
 
-/** 回合流页（v13 #p-chat）：证据卡列表，滚动只发生在这一列里。 */
+/** 回合流页（v13 #p-chat)：证据卡列表，滚动只发生在这一列里。 */
 @Composable
 fun ChatScreen(state: AppUiState) {
     LazyColumn(
@@ -66,7 +64,7 @@ private fun MessageCard(state: AppUiState, msg: ChatMsg) {
                 .padding(bottom = 11.dp)
                 .padding(start = 36.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(MebubbleOrCard())
+                .background(MeBubble)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Text(msg.text, fontSize = 14.sp, color = Ink)
@@ -81,8 +79,11 @@ private fun MessageCard(state: AppUiState, msg: ChatMsg) {
             .background(if (msg.isError) Color(0xFFFFF5F5) else Color.White)
             .then(
                 if (msg.isError) {
-                    Modifier.border(width = 3.dp, color = ErrRed, shape = RoundedCornerShape(topStart = 18.dp, bottomStart = 18.dp))
-                        .padding(start = 3.dp)
+                    Modifier.border(
+                        width = 3.dp,
+                        color = ErrRed,
+                        shape = RoundedCornerShape(topStart = 18.dp, bottomStart = 18.dp),
+                    ).padding(start = 3.dp)
                 } else {
                     Modifier
                 },
@@ -219,6 +220,3 @@ private fun DashedBody(text: String) {
         Text(text, fontSize = 12.5.sp, color = SubInk, lineHeight = 19.sp)
     }
 }
-
-@Composable
-private fun FontWeightRef() = FontWeight.Normal
