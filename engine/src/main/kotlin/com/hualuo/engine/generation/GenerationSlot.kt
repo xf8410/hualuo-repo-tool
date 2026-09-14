@@ -39,6 +39,7 @@ data class GuardedResult<out T>(
  *     放不成时 [GuardedResult.stranded] 为真 —— 绝不留下「界面还在转圈、其实早就没人干活」的空气泡。
  *
  * 线程模型：全部方法在 [lock] 下同步，可以跨线程调用；但「该排队还是该并发」这类决策仍归调用方。
+ * 干活本体（[runGuarded] 的 block）在锁**外面**跑，槽只做占与放 —— 绝不在持锁时等网络。
  */
 class GenerationSlot(
     private val watchdog: IdleWatchdog? = null,
@@ -81,6 +82,8 @@ class GenerationSlot(
      * 用户按停止，或看门狗判定卡死后由调用方收尾：取消在跑的活、令牌往前推、腾出槽。
      * 之后再回来的旧回调会因令牌失效被 [end] 拒掉，不会误伤下一次生成。
      * 幂等：没人持有时也只是推一下令牌，不会抛。
+     *
+     * 取消动作抛异常也**照样腾槽**：旧仓那种「取消失败就一直挂着转圈」是这条测试堵住的。
      */
     fun stop(): StopOutcome = synchronized(lock) {
         val previous = holder
@@ -132,6 +135,10 @@ class GenerationSlot(
      * 占着槽跑一段活，**不管怎么收场都放一次槽**。
      * 异常不吞也不就地消化：原样放进 [GuardedResult.failure]，由调用方决定重试、报用户还是存检查点。
      * 只捕 Exception：`Error`（OOM 之类）不在本层掩饰，直接往上抛。
+     *
+     * **取消归谁**：本方法不替你取消底层流 —— 槽只管占与放，谁开的流谁负责在 catch 里
+     * `call.cancel()`（接线那批必须做到，否则会漏一条半死的连接到 GC 为止；[stop] 是唯一
+     * 由槽代劳取消的入口，因为它发生在「人已经不在等这条流」的时刻）。
      */
     fun <T> runGuarded(claim: Long, block: () -> T): GuardedResult<T> {
         var value: T? = null
