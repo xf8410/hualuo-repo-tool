@@ -5,20 +5,16 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,21 +24,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.chat.ChatScreen
-import com.hualuo.repotool.ui.components.toastText
+import com.hualuo.repotool.ui.chat.Composer
+import com.hualuo.repotool.ui.chat.SheetsLayer
+import com.hualuo.repotool.ui.components.ConfirmDialog
 import com.hualuo.repotool.ui.data.DemoCtx
+import com.hualuo.repotool.ui.drawer.DrawerOverlay
 import com.hualuo.repotool.ui.model.NavTab
 import com.hualuo.repotool.ui.observe.ObserveScreen
 import com.hualuo.repotool.ui.repo.RepoScreen
@@ -52,10 +48,10 @@ import com.hualuo.repotool.ui.tasks.TasksScreen
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
-import com.hualuo.repotool.ui.theme.ChevGray
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 import com.hualuo.repotool.ui.tools.ToolsScreen
+import kotlinx.coroutines.delay
 
 /**
  * 根界面：v13.1 的骨架——顶栏（☰/页名/ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
@@ -64,7 +60,7 @@ import com.hualuo.repotool.ui.tools.ToolsScreen
  */
 @Composable
 fun HualuoApp() {
-    val state = remember { AppUiState() }
+    val state = androidx.compose.runtime.remember { AppUiState() }
     Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -83,22 +79,21 @@ fun HualuoApp() {
                     }
                 }
                 if (state.tab == NavTab.Chat) {
-                    com.hualuo.repotool.ui.chat.Composer(state)
+                    Composer(state)
                 }
                 BottomNav(state)
             }
 
-            // 抽屉（左滑入）
+            // 抽屉（左侧滑入，自带遮罩）
             AnimatedVisibility(
                 visible = state.drawerOpen,
-                enter = slideInHorizontally(tween(200)) { -it / 2 } + fadeIn(tween(120)),
-                exit = slideOutHorizontally(tween(200)) { -it / 2 } + fadeOut(tween(120)),
-                modifier = Modifier.matchParentSize(),
+                enter = slideInHorizontally(tween(200)) { -it },
+                exit = slideOutHorizontally(tween(200)) { -it },
             ) {
-                com.hualuo.repotool.ui.drawer.DrawerOverlay(state)
+                DrawerOverlay(state)
             }
 
-            // 设置层（右滑入，盖满）
+            // 设置层（右滑入，盖满整壳）
             AnimatedVisibility(
                 visible = state.settingsOpen,
                 enter = slideInHorizontally(tween(220)) { it },
@@ -108,8 +103,8 @@ fun HualuoApp() {
             }
 
             // 原位弹层（模型/工具/任务详情）+ 确认框 + toast
-            com.hualuo.repotool.ui.chat.SheetsLayer(state)
-            com.hualuo.repotool.ui.components.ConfirmDialog(state)
+            SheetsLayer(state)
+            ConfirmDialog(state)
             ToastBubble(state)
         }
     }
@@ -127,9 +122,9 @@ private fun TopBar(state: AppUiState) {
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .clip_circle()
+                .clip(CircleShape)
                 .background(CardBg)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(50))
+                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                 .clickable { state.drawerOpen = !state.drawerOpen },
             contentAlignment = Alignment.Center,
         ) {
@@ -169,11 +164,7 @@ private fun BottomNav(state: AppUiState) {
                     .clickable { state.tab = tab },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    tab.icon,
-                    fontSize = 18.sp,
-                    color = if (on) Accent else SubInk,
-                )
+                Text(tab.icon, fontSize = 18.sp, color = if (on) Accent else SubInk)
                 Text(
                     tab.title,
                     fontSize = 10.5.sp,
@@ -187,6 +178,13 @@ private fun BottomNav(state: AppUiState) {
 
 @Composable
 private fun ToastBubble(state: AppUiState) {
+    // 原型行为：toast 1.8 秒自动收（clearTimeout + setTimeout 的 Compose 等价）
+    LaunchedEffect(state.toastToken) {
+        if (state.toastToken > 0) {
+            delay(1800)
+            state.toastVisible = false
+        }
+    }
     AnimatedVisibility(
         visible = state.toastVisible,
         enter = fadeIn(tween(150)),
@@ -201,16 +199,9 @@ private fun ToastBubble(state: AppUiState) {
                 color = Color.White,
                 fontSize = 12.5.sp,
                 modifier = Modifier
-                    .background(
-                        Color(0xDD22262B),
-                        RoundedCornerShape(18.dp),
-                    )
+                    .background(Color(0xDD22262B), RoundedCornerShape(18.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
     }
 }
-
-// Modifier.clip 的简写，避免每个文件重复长导入
-private fun Modifier.clip_circle(): Modifier =
-    this.then(Modifier.size(34.dp))
