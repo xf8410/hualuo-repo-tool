@@ -25,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,10 +58,13 @@ import kotlinx.coroutines.delay
  * 根界面：v13.1 的骨架——顶栏（☰/页名/ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
  * 上面盖抽屉、设置层、弹层、toast。所有浮层都是「壳内」的 Box 层：
  * 外壳锁高、滚动只发生在各层内部（原型漂移病的根治，Compose 版同方）。
+ *
+ * @param versionLabel 版本串由入口从 BuildConfig 注入（单源=version.properties），界面不写死。
  */
 @Composable
-fun HualuoApp() {
-    val state = androidx.compose.runtime.remember { AppUiState() }
+fun HualuoApp(versionLabel: String) {
+    val state = remember { AppUiState() }
+    state.versionLabel = versionLabel
     Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
