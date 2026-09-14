@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,7 +40,6 @@ import com.hualuo.repotool.ui.chat.SheetsLayer
 import com.hualuo.repotool.ui.components.ConfirmDialog
 import com.hualuo.repotool.ui.data.DemoCtx
 import com.hualuo.repotool.ui.drawer.DrawerOverlay
-import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.NavTab
 import com.hualuo.repotool.ui.observe.ObserveScreen
 import com.hualuo.repotool.ui.repo.RepoScreen
@@ -63,11 +59,13 @@ import kotlinx.coroutines.delay
 private const val AUTO_SAVE_DEBOUNCE_MS = 600L
 
 /**
- * 根界面：v13.1 的骨架——顶栏（三横线 / 页名 / ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
+ * 根界面：顶栏（菜单 / 页名 / ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
  * 上面盖抽屉、设置层、弹层、toast。所有浮层都是「壳内」的 Box 层：
  * 外壳锁高、滚动只发生在各层内部（原型漂移病的根治，Compose 版同方）。
  *
- * 图标一律走 `stringResource(IconKey.X.resId)`：图形字符不进源码（家规，闸门 NoEmojiInSourceTest）。
+ * **这一层不画任何图形字符**（用户 2026-09-15 拍板：原版界面无表情，看懂优先）。
+ * 顶栏用「菜单」两个字，底栏只有页名。将来要图标就走 vector drawable，那是另一次设计，
+ * 不是把表情搬回来。数据模型里那个 iconKey 字段暂时没人用，是给矢量图标留的位子。
  *
  * 持久化从这里进：启动时读一份设置（读不懂会带原因退化，不炸界面），
  * 之后界面字段变了就攒着，停 AUTO_SAVE_DEBOUNCE_MS 落一次盘，离开时再兜一次。
@@ -173,19 +171,20 @@ private fun TopBar(state: AppUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .background(Bg)
-            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
+            .padding(start = 14.dp, end = 14.dp, top = 13.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 「菜单」两个字，不是三横线图形：点开抽屉这个动作要能读出来
         Box(
             modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(10.dp))
                 .background(CardBg)
-                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                .clickable { state.drawerOpen = !state.drawerOpen },
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+                .clickable { state.drawerOpen = !state.drawerOpen }
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(stringResource(IconKey.Menu.resId), fontSize = 15.sp, color = Ink)
+            Text("菜单", fontSize = 13.sp, color = Ink, fontWeight = FontWeight.Medium)
         }
         Spacer(Modifier.width(10.dp))
         Text(state.tab.title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
@@ -211,20 +210,20 @@ private fun BottomNav(state: AppUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .background(CardBg)
-            .padding(top = 5.dp, bottom = 11.dp),
+            .padding(top = 9.dp, bottom = 11.dp),
     ) {
         NavTab.entries.forEach { tab ->
             val on = state.tab == tab
-            Column(
+            Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { state.tab = tab },
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .clickable { state.tab = tab }
+                    .padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(stringResource(tab.iconKey.resId), fontSize = 18.sp, color = if (on) Accent else SubInk)
                 Text(
                     tab.title,
-                    fontSize = 10.5.sp,
+                    fontSize = 13.5.sp,
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (on) Accent else SubInk,
                 )
