@@ -19,6 +19,7 @@ import kotlin.reflect.KProperty
  *  - 传 UiPersistence.None（默认）时行为与接线前逐字一致，纯 JVM 测试就这么跑。
  *
  * 键名进过真机就不许改（改了老设置读不到），清单在 UiKeys。
+ * 委托一律和声明写在同一行：属性声明在语法上是完整的，换行放 by 有被当成分句结束的风险，不赌。
  */
 class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
 
@@ -45,8 +46,11 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
 
     var relayOn: Boolean by saved(UiKeys.RELAY_ON, readBool(UiKeys.RELAY_ON, false), { it.toString() })
 
-    var lockToConversation: Boolean
-        by saved(UiKeys.LOCK_TO_CONVERSATION, readBool(UiKeys.LOCK_TO_CONVERSATION, false), { it.toString() })
+    var lockToConversation: Boolean by saved(
+        UiKeys.LOCK_TO_CONVERSATION,
+        readBool(UiKeys.LOCK_TO_CONVERSATION, false),
+        { it.toString() },
+    )
 
     /** 把攒着的改动落盘。返回 null 表示没问题；返回字符串是失败原因，界面必须 toast 出来。 */
     fun flushPersistence(): String? = persist.flush()
@@ -140,9 +144,7 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
         confirmAction = {
             convs = convs.filter { it.id !in selectedIds }
             selectedIds = emptySet()
-            selecting = false
-            confirmOpen = false
-            drawerOpen = false
+            confirming = false
         }
         confirmOpen = true
     }
