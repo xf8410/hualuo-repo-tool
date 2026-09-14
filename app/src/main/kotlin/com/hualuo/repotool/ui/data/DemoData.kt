@@ -15,8 +15,8 @@ import com.hualuo.repotool.ui.model.ToolState
 // 后端（会话库/任务库/CI 客户端/观测桥）接线之前，界面先按这份数据跑通全部交互；
 // 接线之后这些 val 换成仓库/接口来的 state，形状不变。
 //
-// 家规：图形字符不进源码。原先拼在文案里的图标一律拆成 IconKey 键名，由渲染处取值摆出去，
-// 外观不变；纯当语气用的符号改成文字（下面注释逐条标了改哪几处）。
+// 家规：图形字符不进源码。原先拼在文案里的图标一律拆成 IconKey，由渲染处取值摆出去，外观不变；
+// 纯当语气用的符号改成文字（下面逐条标了改哪几处）。
 
 val DemoMessages: List<ChatMsg> = listOf(
     ChatMsg(
@@ -36,7 +36,7 @@ val DemoMessages: List<ChatMsg> = listOf(
         time = "08:12",
         text = "分卷引擎已跑通：part_001.zip + manifest.json，断点续传以 sha256 对账。" +
             "CI run 34723037840 绿，APK 63.5MB。",
-        // 原样是「▸ 思考过程（7.2s）」：小三角是折叠区的图形前缀，改由渲染处取 IconKey.Expand 摆
+        // 原样是「小三角 + 思考过程（7.2s）」：小三角是折叠区的图形前缀，改由渲染处取 IconKey.Expand
         thinkLabel = "思考过程（7.2s）",
         thinkBody = "1) 先拉 CI 列表与最近提交；2) 核对分卷 manifest 的 sha256 链；" +
             "3) 校验 APK 体积与签名；4) 汇总结论并标注未验证项。",
@@ -116,8 +116,14 @@ val DemoLoopBar = "会话循环 4/20 · 每 300s"
 val DemoQueueIcon = IconKey.Hourglass
 val DemoQueueBar = "排队中 1 条：「继续挖 phase2」"
 
-/** 输入区已挂附件的缩略（演示）：只有图形键名，真接线后换成真实缩略。 */
-val DemoComposerThumbs = listOf(IconKey.Picture, IconKey.Clip, IconKey.Question)
+/**
+ * 输入区已挂附件的缩略（演示）。
+ *
+ * 这里存的是 **IconKey 的键名字符串**，不是图形字符：缩略列表要进 AppUiState（可增删的运行时状态），
+ * 那边一直是字符串列表，改类型会牵动状态层。渲染处用 `IconKey.fromKey(name)` 解回键名取图，
+ * 解不出来按「未识别」处理并出声 —— 不许悄悄换成别的图标。
+ */
+val DemoComposerThumbs = listOf("Picture", "Clip", "Question")
 
 /** 顶栏上下文账本（原型固定演示值；接线后换成真实 token 计数）。 */
 val DemoCtx = "ctx 21.4k/1M · 发 856"
