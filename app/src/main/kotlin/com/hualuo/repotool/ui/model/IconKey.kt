@@ -70,7 +70,7 @@ enum class IconKey(@param:StringRes val resId: Int) {
     ActionDownload(R.string.icon_action_download),
 
     // 消息卡与输入区
-    Link(R.string.icon_link),
+    Telescope(R.string.icon_telescope),
     PageUp(R.string.icon_page_up),
     Picture(R.string.icon_picture),
     Book(R.string.icon_book),
