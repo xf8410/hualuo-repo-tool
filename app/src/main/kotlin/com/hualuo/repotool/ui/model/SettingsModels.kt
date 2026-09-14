@@ -68,6 +68,13 @@ sealed class SubField {
 
     data class Head(val title: String, val desc: String) : SubField()
     data class BigInput(val placeholder: String) : SubField()
-    data class Button(val text: String) : SubField()
+
+    /**
+     * 主按钮：文字必给，图标可选（同样只写键名）。
+     * 原型里按钮上那个下载图形原先是拼在文案里的字符，现在拆成 iconKey，
+     * 渲染时按「图标 + 空格 + 文字」摆，外观不变。
+     */
+    data class Button(val text: String, val iconKey: IconKey? = null) : SubField()
+
     data class Radio(val label: String, val options: List<RadioChoice>, val selId: String) : SubField()
 }
