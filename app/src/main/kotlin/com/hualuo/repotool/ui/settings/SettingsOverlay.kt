@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +44,7 @@ import com.hualuo.repotool.ui.data.DefaultSearchProviderId
 import com.hualuo.repotool.ui.data.mergedSettingsSections
 import com.hualuo.repotool.ui.data.orphanAdditions
 import com.hualuo.repotool.ui.data.subPage
+import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.SettingsItem
 import com.hualuo.repotool.ui.model.SubField
 import com.hualuo.repotool.ui.state.AppUiState
@@ -58,7 +60,10 @@ import com.hualuo.repotool.ui.theme.SubInk
 
 /**
  * 设置层（v13 #settings + #sub）：主页 8 组 27 项 + 子页栈。
- * 主页搜索框实时过滤（组内无命中则整组隐藏）；← 逐级返回（对应 SUBSTACK pop）。
+ * 主页搜索框实时过滤（组内无命中则整组隐藏）；左箭头逐级返回（对应 SUBSTACK pop）。
+ *
+ * 图标一律走资源：`stringResource(IconKey.X.resId)`。图形字符不进源码，也不以转义写法出现
+ * （家规，闸门 NoEmojiInSourceTest），行尾那个尖括号也一样当图标处理。
  *
  * 两类开关要分清：演示态 `SubField.Switch` 的状态只活在本次 remember 里（照原型搬来的行，
  * 退出即丢）；真设置 `SubField.PersistedSwitch` 走 `AppUiState` 的按键名通道，改完立刻落盘，
@@ -89,7 +94,7 @@ fun SettingsOverlay(state: AppUiState) {
                     .clickable { state.backFromSettings() },
                 contentAlignment = Alignment.Center,
             ) {
-                Text("\u2190", fontSize = 16.sp, color = Ink)
+                Text(stringResource(IconKey.Back.resId), fontSize = 16.sp, color = Ink)
             }
             Spacer(Modifier.width(12.dp))
             Text(
@@ -110,7 +115,7 @@ fun SettingsOverlay(state: AppUiState) {
                     .padding(horizontal = 14.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("\uD83D\uDD0D", fontSize = 14.sp, color = SubInk)
+                Text(stringResource(IconKey.Search.resId), fontSize = 14.sp, color = SubInk)
                 Spacer(Modifier.width(8.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (state.settingsQuery.isEmpty()) {
@@ -201,7 +206,7 @@ private fun SettingsItemRow(state: AppUiState, item: SettingsItem) {
                 .background(IconTile),
             contentAlignment = Alignment.Center,
         ) {
-            Text(item.icon, fontSize = 17.sp)
+            Text(stringResource(item.iconKey.resId), fontSize = 17.sp)
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -221,7 +226,12 @@ private fun SettingsItemRow(state: AppUiState, item: SettingsItem) {
                     modifier = Modifier.width(92.dp),
                 )
             }
-            Text("\u203A", color = ChevGray, fontSize = 14.sp, modifier = Modifier.padding(start = 6.dp))
+            Text(
+                stringResource(IconKey.Chevron.resId),
+                color = ChevGray,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 }
@@ -263,7 +273,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                     if (f.gotoKey != null) {
                         val goto = f.gotoKey
                         Text(
-                            "\u203A",
+                            stringResource(IconKey.Chevron.resId),
                             color = ChevGray,
                             fontSize = 14.sp,
                             modifier = Modifier
@@ -337,7 +347,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
                 )
                 is SubField.Action -> FRow {
-                    Text(f.icon, fontSize = 17.sp, color = Accent)
+                    Text(stringResource(f.iconKey.resId), fontSize = 17.sp, color = Accent)
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(f.title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = Ink)
@@ -381,7 +391,14 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                         .clickable { state.toast("已提交（演示，接线后生效）") }
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                 ) {
-                    Text(f.text, color = Color.White, fontSize = 13.5.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // 图标原先是拼在文案里的字符，现在按「图标 + 空格 + 文字」摆，外观不变
+                        f.iconKey?.let {
+                            Text(stringResource(it.resId), color = Color.White, fontSize = 13.5.sp)
+                            Spacer(Modifier.width(6.dp))
+                        }
+                        Text(f.text, color = Color.White, fontSize = 13.5.sp)
+                    }
                 }
                 is SubField.Radio -> Column(Modifier.fillMaxWidth()) {
                     Text(
