@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import com.hualuo.repotool.ui.chat.SheetsLayer
 import com.hualuo.repotool.ui.components.ConfirmDialog
 import com.hualuo.repotool.ui.data.DemoCtx
 import com.hualuo.repotool.ui.drawer.DrawerOverlay
+import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.NavTab
 import com.hualuo.repotool.ui.observe.ObserveScreen
 import com.hualuo.repotool.ui.repo.RepoScreen
@@ -61,12 +63,14 @@ import kotlinx.coroutines.delay
 private const val AUTO_SAVE_DEBOUNCE_MS = 600L
 
 /**
- * 根界面：v13.1 的骨架——顶栏（☰/页名/ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
+ * 根界面：v13.1 的骨架——顶栏（三横线 / 页名 / ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
  * 上面盖抽屉、设置层、弹层、toast。所有浮层都是「壳内」的 Box 层：
  * 外壳锁高、滚动只发生在各层内部（原型漂移病的根治，Compose 版同方）。
  *
+ * 图标一律走 `stringResource(IconKey.X.resId)`：图形字符不进源码（家规，闸门 NoEmojiInSourceTest）。
+ *
  * 持久化从这里进：启动时读一份设置（读不懂会带原因退化，不炸界面），
- * 之后界面字段变了就攒着，停 [AUTO_SAVE_DEBOUNCE_MS] 落一次盘，离开时再兜一次。
+ * 之后界面字段变了就攒着，停 AUTO_SAVE_DEBOUNCE_MS 落一次盘，离开时再兜一次。
  * 任何一次「没存上」或「设置里有读不懂的项」都必须走 toast，不许静默。
  *
  * @param versionLabel 版本串由入口从 BuildConfig 注入（单源=version.properties），界面不写死。
@@ -181,7 +185,7 @@ private fun TopBar(state: AppUiState) {
                 .clickable { state.drawerOpen = !state.drawerOpen },
             contentAlignment = Alignment.Center,
         ) {
-            Text("\u2630", fontSize = 15.sp, color = Ink)
+            Text(stringResource(IconKey.Menu.resId), fontSize = 15.sp, color = Ink)
         }
         Spacer(Modifier.width(10.dp))
         Text(state.tab.title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
@@ -217,7 +221,7 @@ private fun BottomNav(state: AppUiState) {
                     .clickable { state.tab = tab },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(tab.icon, fontSize = 18.sp, color = if (on) Accent else SubInk)
+                Text(stringResource(tab.iconKey.resId), fontSize = 18.sp, color = if (on) Accent else SubInk)
                 Text(
                     tab.title,
                     fontSize = 10.5.sp,
