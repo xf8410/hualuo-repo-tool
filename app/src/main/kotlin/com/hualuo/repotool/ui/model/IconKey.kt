@@ -68,6 +68,22 @@ enum class IconKey(@param:StringRes val resId: Int) {
     ActionStop(R.string.icon_action_stop),
     ActionObserve(R.string.icon_action_observe),
     ActionDownload(R.string.icon_action_download),
+
+    // 消息卡与输入区
+    Link(R.string.icon_link),
+    PageUp(R.string.icon_page_up),
+    Picture(R.string.icon_picture),
+    Book(R.string.icon_book),
+    Clapper(R.string.icon_clapper),
+    Question(R.string.icon_question),
+    Warn(R.string.icon_warn),
+    Hourglass(R.string.icon_hourglass),
+    Expand(R.string.icon_expand),
+    Loop(R.string.icon_loop),
+    Phone(R.string.icon_phone),
+    Clip(R.string.icon_clip),
+    Mic(R.string.icon_mic),
+    Send(R.string.icon_send),
     ;
 
     companion object {
