@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,10 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hualuo.repotool.R
 import com.hualuo.repotool.ui.chat.ChatScreen
 import com.hualuo.repotool.ui.chat.Composer
 import com.hualuo.repotool.ui.chat.SheetsLayer
@@ -59,13 +63,26 @@ import kotlinx.coroutines.delay
 private const val AUTO_SAVE_DEBOUNCE_MS = 600L
 
 /**
- * 根界面：顶栏（菜单 / 页名 / ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
+ * 底栏图标：画出来的矢量图（res/drawable/ic_nav_*.xml），不是表情字符。
+ *
+ * 这里的对应关系故意不放进 NavTab：模型层只管「有什么」，长什么样是渲染层的事，
+ * 换图只动这张表和 drawable，数据表不跟着改。
+ */
+private val NavTabIcons = mapOf(
+    NavTab.Chat to R.drawable.ic_nav_chat,
+    NavTab.Tasks to R.drawable.ic_nav_tasks,
+    NavTab.ToolsPage to R.drawable.ic_nav_tools,
+    NavTab.Repo to R.drawable.ic_nav_repo,
+    NavTab.Observe to R.drawable.ic_nav_observe,
+)
+
+/**
+ * 根界面：顶栏（菜单钮 / 页名 / ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
  * 上面盖抽屉、设置层、弹层、toast。所有浮层都是「壳内」的 Box 层：
  * 外壳锁高、滚动只发生在各层内部（原型漂移病的根治，Compose 版同方）。
  *
- * **这一层不画任何图形字符**（用户 2026-09-15 拍板：原版界面无表情，看懂优先）。
- * 顶栏用「菜单」两个字，底栏只有页名。将来要图标就走 vector drawable，那是另一次设计，
- * 不是把表情搬回来。数据模型里那个 iconKey 字段暂时没人用，是给矢量图标留的位子。
+ * 图形一律 vector drawable（用户拍板：UI 不是表情，要画图）。tint 走主题色：
+ * 选中主色、未选次要灰，跟文字同一条规则。
  *
  * 持久化从这里进：启动时读一份设置（读不懂会带原因退化，不炸界面），
  * 之后界面字段变了就攒着，停 AUTO_SAVE_DEBOUNCE_MS 落一次盘，离开时再兜一次。
@@ -174,16 +191,23 @@ private fun TopBar(state: AppUiState) {
             .padding(start = 14.dp, end = 14.dp, top = 13.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 「菜单」两个字，不是三横线图形：点开抽屉这个动作要能读出来
-        Box(
+        // 三横线 + 「菜单」两个字：图形给人扫，文字给人读，缺一边都会看不懂
+        Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(CardBg)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                 .clickable { state.drawerOpen = !state.drawerOpen }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
-            contentAlignment = Alignment.Center,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_menu),
+                contentDescription = null,
+                tint = Ink,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(6.dp))
             Text("菜单", fontSize = 13.sp, color = Ink, fontWeight = FontWeight.Medium)
         }
         Spacer(Modifier.width(10.dp))
@@ -210,22 +234,33 @@ private fun BottomNav(state: AppUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .background(CardBg)
-            .padding(top = 9.dp, bottom = 11.dp),
+            .padding(top = 7.dp, bottom = 11.dp),
     ) {
         NavTab.entries.forEach { tab ->
             val on = state.tab == tab
-            Box(
+            val color = if (on) Accent else SubInk
+            Column(
                 modifier = Modifier
                     .weight(1f)
                     .clickable { state.tab = tab }
-                    .padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(vertical = 3.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                // 图上只给一个 tint：选中就实心（视觉更重），未选描线本来就淡
+                NavTabIcons[tab]?.let { res ->
+                    Icon(
+                        painter = painterResource(res),
+                        contentDescription = tab.title,
+                        tint = color,
+                        modifier = Modifier.size(if (on) 22.dp else 21.dp),
+                    )
+                }
+                Spacer(Modifier.size(2.dp))
                 Text(
                     tab.title,
-                    fontSize = 13.5.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (on) Accent else SubInk,
+                    color = color,
                 )
             }
         }
