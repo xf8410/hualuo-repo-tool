@@ -41,6 +41,11 @@ val PageShadow = Color(0x0D000000)
 val Scrim = Color(0x47000000)
 val ToastBg = Color(0xFF22262B)
 
+/** 四态灯的中性档（原型 .dot.n）与徽标默认字色分开摆在这儿。 */
+object ToneColors {
+    val NeutralDot = Color(0xFFC6CCD6)
+}
+
 private val HualuoScheme = lightColorScheme(
     primary = Accent,
     onPrimary = Color.White,
