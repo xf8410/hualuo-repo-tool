@@ -27,6 +27,16 @@
     <string name="icon_chevron">&#x203A;</string>
     <string name="icon_search">&#x1F50D;</string>
 
+    <!-- 输入区与胶囊上的小图形：全角加号 / 竖三点 / 圆点 / 下尖角 / 上尖角 / 发送箭头 / 全屏方框 / 叉 -->
+    <string name="icon_plus">&#xFF0B;</string>
+    <string name="icon_dots_v">&#x22EE;</string>
+    <string name="icon_dot">&#x25CF;</string>
+    <string name="icon_caret_down">&#x25BE;</string>
+    <string name="icon_caret_up">&#x25B4;</string>
+    <string name="icon_send_arrow">&#x27A4;</string>
+    <string name="icon_expand_screen">&#x26F6;</string>
+    <string name="icon_cross">&#x00D7;</string>
+
     <!-- 设置主页 27 项（SettingsSections）：图标 + 一句大白话 -->
     <string name="icon_settings_provider">&#x2601;&#xFE0F;</string>      <!-- 云：AI 服务地址与密钥 -->
     <string name="icon_settings_model">&#x1F5A5;&#xFE0F;</string>        <!-- 台式机：模型清单 -->
@@ -79,5 +89,5 @@
     <string name="icon_phone">&#x1F4DE;</string>                         <!-- 话机：附件菜单第三项（照原型码位） -->
     <string name="icon_clip">&#x1F4CE;</string>                          <!-- 回形针：附件按钮 -->
     <string name="icon_mic">&#x1F3A4;</string>                           <!-- 话筒：语音输入 -->
-    <string name="icon_send">&#x1F4E4;</string>                          <!-- 托盘向上：发送 -->
+    <string name="icon_send">&#x1F4E4;</string>                          <!-- 托盘向上：备用发送图形（发送钮实际用 icon_send_arrow） -->
 </resources>
