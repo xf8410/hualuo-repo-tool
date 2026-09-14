@@ -9,8 +9,8 @@ import org.junit.Test
  * 准入测试的立场就一句话：什么文件都得能传（用户原话），
  * 所以这里既测"奇怪名字全部收"，也测"报告不许少报"，还测"将来谁想加类型白名单会红"。
  *
- * 带表情的文件名照样要测，但**源码里写 Kotlin 转义**（家规禁裸表情，闸门 NoEmojiInSourceTest）：
- * 运行时拿到的仍是真表情，文件字节保持纯 ASCII。
+ * 带表情的文件名照样要测，但**源码里不写裸表情**（家规，闸门 NoEmojiInSourceTest）：
+ * 样本用码位拼出来（见 [GRINNING_NAME]），运行时仍是真表情文件名。
  */
 class FileAdmissionTest {
 
@@ -53,7 +53,7 @@ class FileAdmissionTest {
         val names = listOf(
             "noext", "archive.tar.gz", "photo.JPG", "脚本.sh", "a b c.txt",
             "中文文件名（最终版）.docx", "con", "nul.txt", "file.", "-rf", "..weird",
-            ".hidden", "emoji😀.png", "data.par2", "x".repeat(200), "!@#\$%^&()[]{}'=,;",
+            ".hidden", GRINNING_NAME, "data.par2", "x".repeat(200), "!@#\$%^&()[]{}'=,;",
             "global-metadata.dat", "lib.so", "boot.img", "录像.MP4", "无扩展名",
         )
         for (name in names) {
@@ -222,4 +222,9 @@ class FileAdmissionTest {
 
     /** 取路径尾名做断言用，省得每处都 substring。 */
     private fun Admission.Rejected.tailName(): String = path.substringAfterLast('/')
+
+    companion object {
+        /** 表情文件名的样本：按码位拼，源码保持纯 ASCII（家规：禁裸表情）。 */
+        private val GRINNING_NAME: String = "emoji" + String(Character.toChars(0x1F600)) + ".png"
+    }
 }
