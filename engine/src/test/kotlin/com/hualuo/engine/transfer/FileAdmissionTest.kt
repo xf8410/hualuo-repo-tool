@@ -9,8 +9,8 @@ import org.junit.Test
  * 准入测试的立场就一句话：什么文件都得能传（用户原话），
  * 所以这里既测"奇怪名字全部收"，也测"报告不许少报"，还测"将来谁想加类型白名单会红"。
  *
- * 带表情的文件名照样要测，但**源码里不写裸表情**（家规，闸门 NoEmojiInSourceTest）：
- * 样本用码位拼出来（见 [GRINNING_NAME]），运行时仍是真表情文件名。
+ * 带表情的文件名照样要测，但源码里不写裸表情（家规，闸门 NoEmojiInSourceTest）：
+ * 样本用码位拼出来（见 GRINNING_NAME），运行时仍是真表情文件名。
  */
 class FileAdmissionTest {
 
@@ -21,9 +21,10 @@ class FileAdmissionTest {
         regular: Boolean = true,
         inside: Boolean = true,
         symlink: Boolean = false,
+        name: String = path.substringAfterLast('/'),
     ) = FileCandidate(
         path = path,
-        name = path.substringAfterLast('/'),
+        name = name,
         sizeBytes = size,
         readable = readable,
         isRegularFile = regular,
@@ -57,7 +58,7 @@ class FileAdmissionTest {
             "global-metadata.dat", "lib.so", "boot.img", "录像.MP4", "无扩展名",
         )
         for (name in names) {
-            val verdict = plain.admit(candidate("/sdcard/$name"))
+            val verdict = plain.admit(candidate("/sdcard/$name", name = name))
             assertTrue("这种名字必须收：$name（$verdict）", verdict is Admission.Accepted)
         }
     }
@@ -108,9 +109,18 @@ class FileAdmissionTest {
 
     @Test
     fun namesThatCannotGoIntoAnArchiveAreRejected() {
-        for (path in listOf("/sdcard/", "/sdcard/.", "/sdcard/..", "/sdcard/a/b")) {
+        // 尾名为空或只有点号：从路径就能推出来
+        for (path in listOf("/sdcard/", "/sdcard/.", "/sdcard/..")) {
             val verdict = plain.admit(candidate(path))
             assertTrue("放不进产物的名字该拒：$path", verdict is Admission.Rejected)
+            assertEquals(RejectReason.Unnameable, (verdict as Admission.Rejected).reason)
+        }
+
+        // 名字里带斜杠或 NUL：只能直接构造（从路径尾名推不出来）。
+        // 真实来源是 SAF 文档名与 zip 条目名，它们可以带斜杠，这种名字进清单会毁掉整个产物。
+        for (badName in listOf("a/b", "a\u0000b", "", ".", "..")) {
+            val verdict = plain.admit(candidate("/sdcard/x", name = badName))
+            assertTrue("这种名字进不了产物清单：[$badName]", verdict is Admission.Rejected)
             assertEquals(RejectReason.Unnameable, (verdict as Admission.Rejected).reason)
         }
     }
@@ -199,13 +209,13 @@ class FileAdmissionTest {
     fun limitsMustBeSaneNumbers() {
         try {
             FileAdmission(maxFileBytes = 0L)
-            org.junit.Assert.fail("0 当上限本该抛")
+            throw AssertionError("0 当上限本该抛")
         } catch (expected: IllegalArgumentException) {
             assertTrue(expected.message!!.contains("正数"))
         }
         try {
             FileAdmission(maxTotalBytes = -5L)
-            org.junit.Assert.fail("负数当上限本该抛")
+            throw AssertionError("负数当上限本该抛")
         } catch (expected: IllegalArgumentException) {
             assertTrue(expected.message!!.contains("正数"))
         }
