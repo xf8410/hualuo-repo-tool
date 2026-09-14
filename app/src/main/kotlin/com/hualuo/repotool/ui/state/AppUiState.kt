@@ -19,7 +19,7 @@ import kotlin.reflect.KProperty
  *  - 传 UiPersistence.None（默认）时行为与接线前逐字一致，纯 JVM 测试就这么跑。
  *
  * 键名进过真机就不许改（改了老设置读不到），清单在 UiKeys。
- * 委托一律和声明写在同一行：属性声明在语法上是完整的，换行放 by 有被当成分句结束的风险，不赌。
+ * 委托一律和声明写在同一行：属性声明在语法上本身就是完整的，把 by 挪到下一行有被当成分句结束的风险，不赌。
  */
 class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
 
@@ -60,7 +60,7 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
 
     // ── 仍是演示态的字段 ────────────────────────────────────────────────────
 
-    /** 版本串由入口注入（BuildConfig 来自 version.properties 单源），界面里不许写死。 */
+    /** 版本串由入口注入（BuildConfig ← version.properties 单源），界面里不许写死。 */
     var versionLabel by mutableStateOf("")
 
     // 抽屉（会话列表从演示数据起步；删除/新建都作用在这份可变副本上）
@@ -91,7 +91,7 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
     var settingsOpen by mutableStateOf(false)
     var settingsQuery by mutableStateOf("")
 
-    /** 子页栈：空表示停在设置主页；栈顶是当前二级页 key（对应原型 SUBSTACK）。 */
+    /** 子页栈：空=停在设置主页；栈顶=当前二级页 key（对应原型 SUBSTACK）。 */
     var subStack by mutableStateOf(listOf<String>())
 
     // toast
@@ -144,7 +144,9 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
         confirmAction = {
             convs = convs.filter { it.id !in selectedIds }
             selectedIds = emptySet()
-            confirming = false
+            selecting = false
+            confirmOpen = false
+            drawerOpen = false
         }
         confirmOpen = true
     }
@@ -169,7 +171,7 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
 
     /**
      * 「改了就记一笔」的状态位：值没变不记（免得白写盘），变了才既更新界面状态、又交给 persist。
-     * 界面读它依旧是快照状态，重组行为与 by mutableStateOf 一致。
+     * 界面读它照样是快照状态，重组行为与 by mutableStateOf 一致。
      */
     private inner class Saved<T>(
         private val key: String,
