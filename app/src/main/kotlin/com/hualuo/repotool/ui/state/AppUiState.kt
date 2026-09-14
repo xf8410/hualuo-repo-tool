@@ -11,10 +11,14 @@ import com.hualuo.repotool.ui.model.NavTab
 /**
  * 全局界面状态（v13.1 的 JS 变量一对一翻译）。
  * 目前只有「演示态」：所有值可交互但无后端；M2 接线时把这些字段逐个换成仓库/接口来源。
+ * 这些增减/弹栈/多选逻辑是纯 JVM 可测的——AppUiStateTest 看着它们，CI 每次跑。
  */
 class AppUiState {
     // 底栏五页
     var tab by mutableStateOf(NavTab.Chat)
+
+    /** 版本串由入口注入（BuildConfig ← version.properties 单源），界面里不许写死。 */
+    var versionLabel by mutableStateOf("")
 
     // 抽屉（会话列表从演示数据起步；删除/新建都作用在这份可变副本上）
     var drawerOpen by mutableStateOf(false)
