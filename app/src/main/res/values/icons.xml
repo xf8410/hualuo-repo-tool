@@ -66,7 +66,7 @@
     <string name="icon_action_download">&#x2B07;</string>
 
     <!-- 消息卡与输入区（DemoData / Composer / ChatScreen） -->
-    <string name="icon_link">&#x1F517;</string>                          <!-- 链扣：工具回显行 -->
+    <string name="icon_telescope">&#x1F52D;</string>                     <!-- 望远镜：工具回显行开头 -->
     <string name="icon_page_up">&#x1F4C4;</string>                       <!-- 纸页向上：manifest 之类 -->
     <string name="icon_picture">&#x1F5BC;</string>                       <!-- 画框：图片附件 -->
     <string name="icon_book">&#x1F4D5;</string>                          <!-- 闭着的书：PDF -->
