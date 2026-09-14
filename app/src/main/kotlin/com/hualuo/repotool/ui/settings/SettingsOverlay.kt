@@ -58,6 +58,7 @@ import com.hualuo.repotool.ui.theme.SubInk
  * 设置层（v13 #settings + #sub）：主页 8 组 27 项 + 子页栈。
  * 主页搜索框实时过滤（组内无命中则整组隐藏）；← 逐级返回（对应 SUBSTACK pop）。
  * 控件状态暂存本地（演示态），M4 接线时换成 DataStore。
+ * %VERSION% 占位在渲染时替换为注入的版本串（单源链的最后一环）。
  */
 @Composable
 fun SettingsOverlay(state: AppUiState) {
@@ -235,8 +236,10 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                 is SubField.Row -> FRow {
                     Text(f.label, fontSize = 14.sp, color = Ink)
                     Spacer(Modifier.weight(1f))
-                    if (f.value.isNotEmpty()) {
-                        Text(f.value, fontSize = 12.5.sp, color = SubInk, fontFamily = FontFamily.Monospace)
+                    // 版本占位在这里落地：数据文件不写死号，渲染时注入
+                    val shown = f.value.replace("%VERSION%", state.versionLabel)
+                    if (shown.isNotEmpty()) {
+                        Text(shown, fontSize = 12.5.sp, color = SubInk, fontFamily = FontFamily.Monospace)
                     }
                     if (f.gotoKey != null) {
                         val goto = f.gotoKey
