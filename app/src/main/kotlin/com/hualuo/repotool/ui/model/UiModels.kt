@@ -23,7 +23,7 @@ data class Badge(val text: String, val tone: Tone = Tone.Neutral)
 
 /**
  * 附件：type 未知也必须出现（原型「未识别 type（占位不丢）」——治旧 Agora 白名单丢附件的病）。
- * 图标用键名；不认识的类型也给一个通用键，不许留空假装没有附件。
+ * 图标用键名；不认识的类型也给一个键（问号那枚），不许留空假装没有附件。
  */
 data class Attachment(val iconKey: IconKey, val label: String, val unknown: Boolean = false)
 
@@ -36,6 +36,12 @@ data class ChatMsg(
     val thinkLabel: String? = null,
     val thinkBody: String? = null,
     val toolLine: String? = null,
+
+    /**
+     * 工具回显行开头的图形（原型每行都带一枚）。
+     * 它和文字分开存：图形走资源键名，工具名与结果走 toolLine 文本。
+     */
+    val toolIconKey: IconKey? = null,
     val attachments: List<Attachment> = emptyList(),
     val dropLabel: String? = null,
     val dropBody: String? = null,
