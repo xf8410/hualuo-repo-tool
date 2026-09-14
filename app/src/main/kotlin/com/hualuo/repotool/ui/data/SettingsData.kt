@@ -9,6 +9,7 @@ import com.hualuo.repotool.ui.model.SubPage
 // 设置页信息架构：照抄 ui/v13.html 的 8 组 27 项 + 全部二级页字段表。
 // 文案规矩（原型页脚）：每项一句大白话说清「干什么、数据去哪」，不许出现「管理 XX」这种绕话。
 // 命名红线：新界面一律不再出现「Agora」字样（地基红线 10），原型里残留的几处已改为「内置/本应用」。
+// 版本行用 %VERSION% 占位，渲染时由界面状态替换——数据文件里同样不许写死版本号。
 
 /**
  * 网页搜索提供商 = 移植 Agora 内置那五家（用户截图「选择搜索提供商」对话框原文），
@@ -269,7 +270,7 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Note("只换界面文字；AI 回复语言看系统指令"),
     )),
     "about" to SubPage("关于", listOf(
-        SubField.Row("版本", "0.1.0 (1) · 单源 ›"),
+        SubField.Row("版本", "%VERSION% · 单源 ›"),
         SubField.Row("检查更新", "›"),
         SubField.Switch("崩溃报告：本地留一份，启动问一次", true),
         SubField.Row("提 issue", "xf8410/hualuo-repo-tool ›"),
