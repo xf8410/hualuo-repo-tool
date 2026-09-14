@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -30,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -44,7 +41,6 @@ import com.hualuo.repotool.ui.data.DefaultSearchProviderId
 import com.hualuo.repotool.ui.data.mergedSettingsSections
 import com.hualuo.repotool.ui.data.orphanAdditions
 import com.hualuo.repotool.ui.data.subPage
-import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.SettingsItem
 import com.hualuo.repotool.ui.model.SubField
 import com.hualuo.repotool.ui.state.AppUiState
@@ -54,16 +50,17 @@ import com.hualuo.repotool.ui.theme.CardBg
 import com.hualuo.repotool.ui.theme.ChevGray
 import com.hualuo.repotool.ui.theme.ErrRed
 import com.hualuo.repotool.ui.theme.Hairline
-import com.hualuo.repotool.ui.theme.IconTile
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 
 /**
- * 设置层（v13 #settings + #sub）：主页 8 组 27 项 + 子页栈。
- * 主页搜索框实时过滤（组内无命中则整组隐藏）；左箭头逐级返回（对应 SUBSTACK pop）。
+ * 设置层（#settings + #sub）：主页分组 + 子页栈，**全部用文字，不画图形字符**。
  *
- * 图标一律走资源：`stringResource(IconKey.X.resId)`。图形字符不进源码，也不以转义写法出现
- * （家规，闸门 NoEmojiInSourceTest），行尾那个尖括号也一样当图标处理。
+ * 为什么去掉图标（用户 2026-09-15 拍板）：原版界面无表情；一排小图标对认路没用，
+ * 反而挤掉正事 —— 每一项那句大白话。撤掉图标之后标题与说明能占满整行，读起来省劲。
+ * 数据模型里的 iconKey 先留着不渲染，将来要图标走 vector drawable，那是独立一次设计。
+ *
+ * 主页搜索框实时过滤（组内无命中则整组隐藏）；「返回」两个字逐级返回（对应子页栈 pop）。
  *
  * 两类开关要分清：演示态 `SubField.Switch` 的状态只活在本次 remember 里（照原型搬来的行，
  * 退出即丢）；真设置 `SubField.PersistedSwitch` 走 `AppUiState` 的按键名通道，改完立刻落盘，
@@ -82,19 +79,18 @@ fun SettingsOverlay(state: AppUiState) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 6.dp),
+                .padding(start = 14.dp, end = 14.dp, top = 13.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(10.dp))
                     .background(CardBg)
-                    .border(1.dp, Hairline, CircleShape)
-                    .clickable { state.backFromSettings() },
-                contentAlignment = Alignment.Center,
+                    .border(1.dp, Hairline, RoundedCornerShape(10.dp))
+                    .clickable { state.backFromSettings() }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
-                Text(stringResource(IconKey.Back.resId), fontSize = 16.sp, color = Ink)
+                Text("返回", fontSize = 13.sp, color = Ink, fontWeight = FontWeight.Medium)
             }
             Spacer(Modifier.width(12.dp))
             Text(
@@ -109,14 +105,12 @@ fun SettingsOverlay(state: AppUiState) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp)
+                    .padding(horizontal = 14.dp, vertical = 2.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(CardBg)
                     .padding(horizontal = 14.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(stringResource(IconKey.Search.resId), fontSize = 14.sp, color = SubInk)
-                Spacer(Modifier.width(8.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (state.settingsQuery.isEmpty()) {
                         Text("搜设置，比如「代理」「备份」", fontSize = 14.sp, color = SubInk)
@@ -199,19 +193,10 @@ private fun SettingsItemRow(state: AppUiState, item: SettingsItem) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(IconTile),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(stringResource(item.iconKey.resId), fontSize = 17.sp)
-        }
-        Spacer(Modifier.width(12.dp))
+        // 原来这里是一枚 36dp 的图标方块：撤掉，标题与说明占满整行
         Column(modifier = Modifier.weight(1f)) {
-            Text(item.title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-            Text(item.desc, fontSize = 11.5.sp, color = SubInk)
+            Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+            Text(item.desc, fontSize = 12.sp, color = SubInk, lineHeight = 17.sp)
         }
         if (item.subKey == "title") {
             SwitchPill(sw) { sw = !sw }
@@ -226,12 +211,6 @@ private fun SettingsItemRow(state: AppUiState, item: SettingsItem) {
                     modifier = Modifier.width(92.dp),
                 )
             }
-            Text(
-                stringResource(IconKey.Chevron.resId),
-                color = ChevGray,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(start = 6.dp),
-            )
         }
     }
 }
@@ -273,11 +252,12 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                     if (f.gotoKey != null) {
                         val goto = f.gotoKey
                         Text(
-                            stringResource(IconKey.Chevron.resId),
-                            color = ChevGray,
-                            fontSize = 14.sp,
+                            "打开",
+                            fontSize = 12.sp,
+                            color = Accent,
                             modifier = Modifier
-                                .padding(start = 6.dp)
+                                .padding(start = 8.dp)
+                                .clip(RoundedCornerShape(6.dp))
                                 .clickable { state.subStack = state.subStack + goto },
                         )
                     }
@@ -347,8 +327,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
                 )
                 is SubField.Action -> FRow {
-                    Text(stringResource(f.iconKey.resId), fontSize = 17.sp, color = Accent)
-                    Spacer(Modifier.width(12.dp))
+                    // 动作卡原先左侧那枚图形不画了：标题与描述本来就说得清是什么动作
                     Column(modifier = Modifier.weight(1f)) {
                         Text(f.title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = Ink)
                         Text(f.desc, fontSize = 12.5.sp, color = SubInk, lineHeight = 19.sp)
@@ -391,14 +370,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                         .clickable { state.toast("已提交（演示，接线后生效）") }
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 图标原先是拼在文案里的字符，现在按「图标 + 空格 + 文字」摆，外观不变
-                        f.iconKey?.let {
-                            Text(stringResource(it.resId), color = Color.White, fontSize = 13.5.sp)
-                            Spacer(Modifier.width(6.dp))
-                        }
-                        Text(f.text, color = Color.White, fontSize = 13.5.sp)
-                    }
+                    Text(f.text, color = Color.White, fontSize = 13.5.sp)
                 }
                 is SubField.Radio -> Column(Modifier.fillMaxWidth()) {
                     Text(
@@ -419,27 +391,22 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Mod
                                 .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            // 单选指示：用圆环加文字，不靠颜色也不靠图形字符
                             Box(
                                 modifier = Modifier
-                                    .size(22.dp)
-                                    .clip(CircleShape)
-                                    .border(2.dp, if (on) Accent else ChevGray, CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                if (on) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(12.dp)
-                                            .clip(CircleShape)
-                                            .background(Accent),
-                                    )
-                                }
-                            }
+                                    .size(18.dp)
+                                    .border(
+                                        width = if (on) 5.dp else 1.5.dp,
+                                        color = if (on) Accent else ChevGray,
+                                        shape = RoundedCornerShape(9.dp),
+                                    ),
+                            )
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(c.name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
                                 Text(c.desc, fontSize = 12.5.sp, color = SubInk)
                             }
+                            if (c.needsKey) Text("需密钥", fontSize = 11.sp, color = SubInk)
                         }
                     }
                 }
