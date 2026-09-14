@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 生成槽与空闲看门狗的纯 JVM 测试。
+ * 生成槽与空闲看门狗的纯 JVM 测试（17 条）。
  *
  * 排布按「旧仓怎么死的」来排：先证明长传输不会被害，再证明卡死会被抓，
  * 最后证明**任何收场都放槽**（旧仓那条只能重开 App 的路，就是死在只覆盖了正常返回）。
@@ -58,7 +58,7 @@ class GenerationSlotTest {
 
         clock.advance(59_999L)
         assertFalse(dog.stalled(clock.now))
-        assertEquals(60_000L, dog.remainingMs(clock.now))
+        assertEquals("还差 1 毫秒的余地", 1L, dog.remainingMs(clock.now))
 
         clock.advance(1L)
         assertTrue(dog.stalled(clock.now))
@@ -248,11 +248,6 @@ class GenerationSlotTest {
     }
 
     // ── 槽 ↔ 看门狗 ─────────────────────────────────────────────────────────
-
-    @Test
-    slotStalledOnlyWhileHolding() {
-        // (占位见下一条)
-    }
 
     @Test
     fun slotUsesWatchdogAndBeatClearsIt() {
