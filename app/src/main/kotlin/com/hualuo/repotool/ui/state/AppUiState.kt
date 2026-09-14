@@ -3,6 +3,9 @@ package com.hualuo.repotool.ui.state
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.hualuo.repotool.ui.data.DemoComposerThumbs
+import com.hualuo.repotool.ui.data.DemoConversations
+import com.hualuo.repotool.ui.model.Conv
 import com.hualuo.repotool.ui.model.NavTab
 
 /**
@@ -13,13 +16,15 @@ class AppUiState {
     // 底栏五页
     var tab by mutableStateOf(NavTab.Chat)
 
-    // 抽屉
+    // 抽屉（会话列表从演示数据起步；删除/新建都作用在这份可变副本上）
     var drawerOpen by mutableStateOf(false)
     var convQuery by mutableStateOf("")
     var selecting by mutableStateOf(false)
     var selectedIds by mutableStateOf(setOf<String>())
+    var convs by mutableStateOf(DemoConversations)
     var confirmOpen by mutableStateOf(false)
     var confirmText by mutableStateOf("")
+    var confirmAction: (() -> Unit)? = null
 
     // 输入区
     var input by mutableStateOf("")
@@ -28,7 +33,7 @@ class AppUiState {
     var addMenuOpen by mutableStateOf(false)
     var loopBarOn by mutableStateOf(true)
     var queueBarOn by mutableStateOf(true)
-    var attachCount by mutableStateOf(3)
+    var thumbs by mutableStateOf(DemoComposerThumbs)
     var currentModel by mutableStateOf("qwen3.8-flash")
 
     // 原位弹层（模型/工具/任务详情互斥，同原型 closeAll）
@@ -36,6 +41,7 @@ class AppUiState {
     var toolSheetOpen by mutableStateOf(false)
     var taskSheetKey by mutableStateOf<String?>(null)
     var modelQuery by mutableStateOf("")
+    var lockToConversation by mutableStateOf(false)
 
     // 工具表（本回合）
     var thinkOn by mutableStateOf(true)
@@ -75,6 +81,37 @@ class AppUiState {
     fun toggleSelect(id: String) {
         val cur = selectedIds
         selectedIds = if (id in cur) cur - id else cur + id
+    }
+
+    fun addThumb(icon: String) {
+        thumbs = thumbs + icon
+    }
+
+    fun removeThumb(index: Int) {
+        thumbs = thumbs.filterIndexed { i, _ -> i != index }
+    }
+
+    fun newConversation() {
+        val c = Conv("c" + (convs.size + 1) + "-" + System.currentTimeMillis(), "新会话 · 刚刚", "刚刚")
+        convs = listOf(c) + convs
+        selecting = false
+        selectedIds = emptySet()
+        closeSheets()
+        toast("已新建会话（演示数据）")
+    }
+
+    fun askDeleteSelected() {
+        val n = selectedIds.size
+        if (n == 0) return
+        confirmText = "删除 $n 个会话？"
+        confirmAction = {
+            convs = convs.filter { it.id !in selectedIds }
+            selectedIds = emptySet()
+            selecting = false
+            confirmOpen = false
+            drawerOpen = false
+        }
+        confirmOpen = true
     }
 
     fun openSettings(anchorSub: String? = null) {
