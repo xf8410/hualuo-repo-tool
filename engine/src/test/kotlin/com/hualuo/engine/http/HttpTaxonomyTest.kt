@@ -10,9 +10,8 @@ import org.junit.Test
  * 响应上被验证过），后面几条钉的是旧仓漏掉的东西 —— Cloudflare 那一家子状态码，
  * 以及「不许悄悄改正文」的截断规矩。
  *
- * 注意样本的写法：这套正则**全靠分隔符**（空格或下划线）认词，
- * 所以 `ContextWindowTooLarge` / `RequestTooLarge` 这种紧凑驼峰是认不出来的 ——
- * 不是漏写，是这套规则的边界，样本必须留在能力圈内（否则测试会绿得没有意义）。
+ * 样本必须留在能力圈内：这套正则**全靠分隔符**（空格或下划线）认词，紧凑驼峰认不出；
+ * 能力边界由 [compactCamelCaseIsBeyondThisRuleSet] 钉住，将来谁扩展规则，那条会红着提醒同步。
  */
 class HttpTaxonomyTest {
 
@@ -87,7 +86,7 @@ class HttpTaxonomyTest {
             "too many input tokens",
             "max_tokens exceed",
             "request_too_large",
-            "Your prompt is over the maximum number of input tokens",
+            "exceeds the maximum number of input tokens",
         )
         for (sample in samples) {
             assertTrue("该认出超限：$sample", HttpTaxonomy.isContextOverflow(sample))
@@ -96,10 +95,15 @@ class HttpTaxonomyTest {
 
     @Test
     fun compactCamelCaseIsBeyondThisRuleSet() {
-        // 把能力边界钉住：紧凑驼峰没有分隔符，这套正则认不出。
-        // 将来要支持就得加分隔符可选的正则 —— 那时这条测试会红，提醒改的人同步改上面那条。
         assertFalse(HttpTaxonomy.isContextOverflow("ContextWindowTooLarge"))
         assertFalse(HttpTaxonomy.isContextOverflow("RequestTooLarge"))
+    }
+
+    @Test
+    fun wordingWithoutOverflowMeaningIsNotMatched() {
+        // 「over the maximum」这种没有 exceed/greater/more 锚点的说法，规则认不出：
+        // 钉住它，免得有人以为已经覆盖了所有英文表述
+        assertFalse(HttpTaxonomy.isContextOverflow("your prompt is over the limit"))
     }
 
     @Test
@@ -143,6 +147,6 @@ class HttpTaxonomyTest {
         // 国产网关常中英混排：英文锚点在就能认；纯中文目前认不出，这是已知边界。
         assertTrue(HttpTaxonomy.isContextOverflow("上下文长度已超出 maximum context length"))
         assertFalse(HttpTaxonomy.isContextOverflow("上下文已保存"))
-        assertFalse("纯中文超限暂不认（认了就得同步补测试）", HttpTaxonomy.isContextOverflow("上下文长度超出上限"))
+        assertFalse("纯中文超限暂不认（要认就得同步补规则与测试）", HttpTaxonomy.isContextOverflow("上下文长度超出上限"))
     }
 }
