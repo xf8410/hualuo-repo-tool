@@ -23,9 +23,12 @@ class SettingsTooLargeException(
 ) : IOException("设置文件 $actualBytes 字节，超过上限 $limitBytes 字节，拒绝整份读入：$path")
 
 /**
- * 文件后端。写入走「同目录临时文件 → 删旧 → 改名」，尽量做到要么新的要么旧的，
- * 不留半截文件。改名失败时**故意保留临时文件**并把路径写在异常里：内容没丢，
- * 丢的是自动恢复的机会 —— 让人能手动救回来，比静默清空设置强。
+ * 文件后端。写入是「同目录临时文件 → 改名盖过目标」：POSIX（安卓）的 rename 会**原子替换**目标，
+ * 所以正常路径上任何时刻盘上都有一份完整文件，要么旧的要么新的。
+ *
+ * 只有在改名失败时（跨设备、目标被别的程序占住等）才退回「删旧 → 再改名」——那一步**确实存在
+ * 两份都没有的窗口**，所以失败信息里会把临时文件路径写清楚：内容没丢，丢的只是自动恢复的机会，
+ * 让人能手动救回来，比静默清空设置强。临时文件一律不清理（保留现场）。
  */
 class FileSettingsStorage(
     private val file: File,
@@ -34,6 +37,9 @@ class FileSettingsStorage(
 
     override fun read(): String? {
         if (!file.exists()) return null
+        if (!file.isFile) {
+            throw IOException("设置路径不是普通文件（被目录占了？）：${file.path}")
+        }
         val size = file.length()
         if (size > maxBytes) throw SettingsTooLargeException(size, maxBytes, file.path)
         return file.inputStream().bufferedReader(Charsets.UTF_8).use { reader -> reader.readText() }
@@ -46,19 +52,22 @@ class FileSettingsStorage(
             throw IOException("建不出设置目录：${dir.path}")
         }
         val tmp = File.createTempFile(file.name, ".tmp", dir)
-        try {
-            tmp.outputStream().buffered().writer(Charsets.UTF_8).use { writer -> writer.write(text) }
-            if (file.exists() && !file.delete()) {
-                throw IOException("旧设置文件删不掉，新内容留在临时文件里没丢：${tmp.path}")
-            }
-            if (!tmp.renameTo(file)) {
-                throw IOException("改名失败，新内容留在临时文件里：${tmp.path} → ${file.path}")
-            }
-        } catch (e: IOException) {
-            if (tmp.exists()) {
-                throw IOException("${e.message}（临时文件未清理，可能还能救：${tmp.path}）", e)
-            }
-            throw e
+        tmp.outputStream().buffered().writer(Charsets.UTF_8).use { writer -> writer.write(text) }
+
+        if (tmp.renameTo(file)) return
+
+        // 改名没成（少见）：只有退成「先删再改名」，才可能有丢文件窗口。
+        val hadOld = file.isFile
+        val deleted = !hadOld || file.delete()
+        if (!deleted) {
+            throw IOException(
+                "旧设置删不掉且改名失败，旧文件与新内容都在盘上（新内容：${tmp.path}）：${file.path}",
+            )
+        }
+        if (!tmp.renameTo(file)) {
+            throw IOException(
+                "改名失败；旧文件已不在，新内容留在临时文件里没丢：${tmp.path} → ${file.path}",
+            )
         }
     }
 
@@ -98,6 +107,15 @@ sealed class SettingsIssue {
     /** 值里有不认识的转义（含结尾多一个反斜杠）。按字面保留，不猜意思。 */
     data class BadEscape(val lineNumber: Int, val reason: String) : SettingsIssue() {
         override val detail: String get() = "第 $lineNumber 行转义有问题，按字面保留：$reason"
+    }
+
+    /**
+     * 值里有**孤立代理位**（半个表情）：UTF-8 根本编不出它，留在内存里迟早把写库的路炸掉
+     * （旧仓「v11f 烂字节」同款）。内容照旧保留，但必须出声，不许静默修成别的样子。
+     */
+    data class LoneSurrogate(val key: String, val codeUnit: Int) : SettingsIssue() {
+        override val detail: String get() =
+            "设置「$key」里有孤立代理位 U+${"%04X".format(codeUnit)}（半个表情），已原样保留"
     }
 
     /** 值读不成目标类型：用默认值继续跑，但这条必须出声。 */
