@@ -8,6 +8,9 @@ import org.junit.Test
 /**
  * 准入测试的立场就一句话：什么文件都得能传（用户原话），
  * 所以这里既测"奇怪名字全部收"，也测"报告不许少报"，还测"将来谁想加类型白名单会红"。
+ *
+ * 带表情的文件名照样要测，但**源码里写 Kotlin 转义**（家规禁裸表情，闸门 NoEmojiInSourceTest）：
+ * 运行时拿到的仍是真表情，文件字节保持纯 ASCII。
  */
 class FileAdmissionTest {
 
