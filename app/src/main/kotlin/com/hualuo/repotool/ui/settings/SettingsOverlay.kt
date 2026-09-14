@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +49,6 @@ import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
 import com.hualuo.repotool.ui.theme.ChevGray
-import com.hualuo.repotool.ui.theme.ErrRed
 import com.hualuo.repotool.ui.theme.Hairline
 import com.hualuo.repotool.ui.theme.IconTile
 import com.hualuo.repotool.ui.theme.Ink
@@ -94,7 +94,6 @@ fun SettingsOverlay(state: AppUiState) {
         }
 
         if (top == null) {
-            // 设置搜索（原型 .setsearch）
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -123,7 +122,7 @@ fun SettingsOverlay(state: AppUiState) {
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp, vertical = 0.dp)
+                    .padding(horizontal = 14.dp)
                     .padding(bottom = 26.dp),
             ) {
                 val q = state.settingsQuery.trim().lowercase()
@@ -197,15 +196,13 @@ private fun SettingsItemRow(state: AppUiState, item: SettingsItem) {
                     color = SubInk,
                     fontFamily = FontFamily.Monospace,
                     textAlign = TextAlign.End,
-                    modifier = Modifier.widthIn92(),
+                    modifier = Modifier.width(92.dp),
                 )
             }
             Text("\u203A", color = ChevGray, fontSize = 14.sp, modifier = Modifier.padding(start = 6.dp))
         }
     }
 }
-
-private fun Modifier.widthIn92(): Modifier = this.width(92.dp)
 
 @Composable
 private fun SubPageView(state: AppUiState, key: String) {
@@ -240,7 +237,14 @@ private fun SubPageView(state: AppUiState, key: String) {
                         Text(f.value, fontSize = 12.5.sp, color = SubInk, fontFamily = FontFamily.Monospace)
                     }
                     if (f.gotoKey != null) {
-                        Text("\u203A", color = ChevGray, fontSize = 14.sp, modifier = Modifier.padding(start = 6.dp))
+                        Text(
+                            "\u203A",
+                            color = ChevGray,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .padding(start = 6.dp)
+                                .clickable { state.subStack = state.subStack + f.gotoKey },
+                        )
                     }
                 }
                 is SubField.Switch -> FRow {
@@ -259,7 +263,13 @@ private fun SubPageView(state: AppUiState, key: String) {
                     Box(modifier = Modifier.weight(1f)) {
                         val v = inputs[f.label] ?: ""
                         if (v.isEmpty() && f.placeholder.isNotEmpty()) {
-                            Text(f.placeholder, fontSize = 13.sp, color = SubInk, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
+                            Text(
+                                f.placeholder,
+                                fontSize = 13.sp,
+                                color = SubInk,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
                         BasicTextField(
                             value = v,
@@ -286,6 +296,14 @@ private fun SubPageView(state: AppUiState, key: String) {
                     color = SubInk,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
                 )
+                is SubField.Action -> FRow {
+                    Text(f.icon, fontSize = 17.sp, color = Accent)
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(f.title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                        Text(f.desc, fontSize = 12.5.sp, color = SubInk, lineHeight = 19.sp)
+                    }
+                }
                 is SubField.Head -> Column(
                     Modifier
                         .fillMaxWidth()
@@ -374,7 +392,7 @@ private fun SubPageView(state: AppUiState, key: String) {
 }
 
 @Composable
-private fun FRow(content: @Composable RowScopeLike.() -> Unit) {
+private fun FRow(content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -383,10 +401,6 @@ private fun FRow(content: @Composable RowScopeLike.() -> Unit) {
             .background(CardBg)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        content = { content(RowScopeLike(this)) },
+        content = content,
     )
 }
-
-/** 小包装：让 FRow 的调用方拿到 Row 的排布语义（weight 等）。 */
-class RowScopeLike(private val scope: androidx.compose.foundation.layout.RowScope) :
-    androidx.compose.foundation.layout.RowScope by scope
