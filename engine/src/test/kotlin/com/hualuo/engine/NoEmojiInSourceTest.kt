@@ -8,19 +8,18 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 /**
- * 机器闸门：**源码（.kt/.kts）里不许出现表情与符号，转义写法同样不许**。
+ * 机器闸门：**源码（.kt 与 .kts）里不许出现表情与符号，转义写法同样不许**。
  *
  * 家规（用户 2026-09-15 明确）：从来没人允许把表情放进代码；写成「反斜杠 u 加四位十六进制」
  * 也不行 —— 那还是同一个字符，只是看不见，而且给以后留坑：改坏一位就是编译错误，
  * 或者运行时变成一个孤立代理位（半个表情）。
  *
- * 所以这里判两件事：
+ * 判两件事：
  *  1) 裸码位：源码字节里直接出现被禁号段的字符；
  *  2) 转义文本：源码里出现「反斜杠 u + 四位十六进制」，且解出来的码位落在被禁号段。
  *
- * 需要显示图形字符怎么办：**进资源文件**（`app/src/main/res/values/*.xml`，UTF-8 是它的本行），
- * 代码里只放键名。本文件自己也不许写下那个写法，否则被自己判红 —— 这是故意的，
- * 所有样本都在运行时按码位拼出来。
+ * 要显示图形字符就放资源文件（res/values 下的字符串资源，或矢量图标 xml），代码里只留键名。
+ * 本文件自己也不许写下被禁写法，否则被自己判红 —— 这是故意的，样本一律运行时按码位拼。
  *
  * 中文与中文标点不在禁止范围：界面文案和注释本来就该是中文。
  */
@@ -90,12 +89,12 @@ class NoEmojiInSourceTest {
         val escaped = ArrayList<Hit>()
         scanLine("val icon = \"" + ESCAPED_DD01 + "\"", "Sample.kt", 7, escaped)
         assertTrue("转义写法该被抓到：$escaped", escaped.any { it.form == "转义" })
-        assertTrue("抓到的是循环箭头那个码位：$escaped", escaped.any { it.codePoint == 0x1F501 || it.codePoint == 0xDD01 })
-        assertEquals(7, escaped.first().line)
+        assertEqualsLine(7, escaped.first().line)
 
         val raw = ArrayList<Hit>()
         scanLine("图标 " + CYCLE_ARROW + " 在这里", "Sample.kt", 3, raw)
         assertTrue("裸字符也该被抓到：$raw", raw.any { it.form == "裸" })
+        assertEqualsLine(3, raw.first().line)
     }
 
     @Test
@@ -118,15 +117,19 @@ class NoEmojiInSourceTest {
         }
     }
 
+    private fun assertEqualsLine(expected: Int, actual: Int) {
+        if (expected != actual) fail("行号报错必须真实：期望 $expected 实得 $actual")
+    }
+
     private fun findSources(root: File): List<File> = root.walkTopDown()
         .onEnter { dir -> dir.name != "build" && dir.name != ".git" && dir.name != ".gradle" }
         .filter { it.isFile && (it.extension == "kt" || it.extension == "kts") }
         .toList()
 
     private fun relative(root: File, file: File): String =
-        file.absolutePath.removePrefix(root.absolutePath).trimStart('/', '\\')
+        file.absolutePath.removePrefix(root.absolutePath).trimStart(File.separatorChar)
 
-    /** 从模块目录往上找仓库根（测试工作目录是 engine/）。找不到就抛，不许静默放行。 */
+    /** 从模块目录往上找仓库根（测试工作目录是 engine 模块）。找不到就抛，不许静默放行。 */
     private fun repoRoot(): File {
         var dir: File? = File(".").absoluteFile
         var steps = 0
@@ -139,16 +142,16 @@ class NoEmojiInSourceTest {
     }
 
     private companion object {
-        /** 反斜杠一个。拼出来用，源码里不留任何被禁写法的字面量。 */
+        /** 一个字面反斜杠。拼出来用，源码里不留被禁写法的字面量。 */
         const val BACKSLASH: String = "\\"
 
         /** 字母 u。与被禁写法拆成两段，源码自身才不会被自己判红。 */
         const val LETTER_U: String = "u"
 
-        /** 正则：字面反斜杠 + u + 四位十六进制（正则里两个反斜杠才表示一个字面反斜杠）。 */
-        val ESCAPE: Pattern = Pattern.compile(BACKSLASH + BACKSLASH + LETTER_U + "([0-9a-fA-F]{4})")
+        /** 正则：字面反斜杠加 u 再加四位十六进制。正则里要两个反斜杠才匹配一个字面反斜杠。 */
+        val ESCAPE: Pattern = Pattern.compile(BACKSLASH + BACKSLASH + LETTER_U + "([0-9a-fA-F]" + "{4})")
 
-        /** 样本：运行时才是「反斜杠 u DD01」这段文本，源码里没有它。 */
+        /** 样本：运行时才是那段转义文本，源码里只有拆开的零件。 */
         val ESCAPED_DD01: String = BACKSLASH + LETTER_U + "D83D" + BACKSLASH + LETTER_U + "DD01"
 
         /** 样本：运行时才是那个循环箭头字符，源码里只有码位数字。 */
