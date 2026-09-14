@@ -19,7 +19,10 @@ import org.junit.Test
  *     代理对必须**两段合起来判**（单独一段是 0xD800 段，看不出是表情）；
  *     并且只认**紧挨着**的两段，中间夹了别的字符就不算一对。
  *
- * 要显示图形字符就放资源文件（res 下的字符串资源或矢量图标 xml），代码里只留键名。
+ * 号段是逐段列出来的，第一段就是我自己查漏补上的：几何图形（▶ ■ ⊙ ▾ ●）与杂项技术
+ * （⏰ ⏳ ⌨ ⛶）原先**不在**禁止范围里，等于闸门对它们装看不见 —— 那句「扫干净」就是假的。
+ *
+ * 要显示图形字符就放资源文件（res/values/icons.xml），代码里只留 IconKey 键名。
  * 本文件自己也不许写下被禁写法，否则被自己判红 —— 样本一律运行时按码位拼出来。
  *
  * 中文与中文标点不在禁止范围：界面文案和注释本来就该是中文。
@@ -48,11 +51,13 @@ class NoEmojiInSourceTest {
         }
 
         if (hits.isNotEmpty()) {
-            val shown = hits.take(40).joinToString("\n  - ") { it.describe() }
-            val more = if (hits.size > 40) "\n  ...另有 ${hits.size - 40} 处" else ""
+            val byFile = hits.groupingBy { it.file }.eachCount()
+            val summary = byFile.entries.sortedByDescending { it.value }
+                .joinToString("\n  - ") { "${it.key} 共 ${it.value} 处" }
+            val detail = hits.take(60).joinToString("\n  - ") { it.describe() }
             throw AssertionError(
-                "源码里不许有表情与符号，转义写法也不行（要显示就放资源文件）。命中 ${hits.size} 处：\n" +
-                    "  - $shown$more",
+                "源码里不许有表情与符号，转义写法也不行（要显示就放资源 + IconKey 键名）。" +
+                    "命中 ${hits.size} 处，按文件汇总：\n  - $summary\n明细：\n  - $detail",
             )
         }
         assertTrue("闸门必须真扫到东西（扫到 0 个文件就是自己在装样子）", sources.isNotEmpty())
@@ -98,13 +103,18 @@ class NoEmojiInSourceTest {
     }
 
     private fun isBannedCodePoint(code: Int): Boolean = when (code) {
-        in 0x1F000..0x1FAFF -> true // 牌面、象形文字、图形扩展（含区域指示符）
+        in 0x1F000..0x1FAFF -> true // 牌面、象形文字、图形扩展（含国旗）
         in 0x2600..0x27BF -> true // 杂项符号与装饰符号
         in 0x2190..0x21FF -> true // 箭头
         in 0x2B00..0x2BFF -> true // 方块箭头与几何扩展
         in 0xFE00..0xFE0F -> true // 变体选择符
-        0x200D -> true // 零宽连接符：表情组合用它
-        0x20E3 -> true // 组合用键帽
+        in 0x25A0..0x25FF -> true // 几何图形：▶ ■ ⊙ ▾ ▸（原先漏了，等于装看不见）
+        in 0x2300..0x23FF -> true // 杂项技术符号：⏰ ⏳ ⏱ ⌨ ⛶（原先漏了）
+        in 0x2100..0x214F -> true // 类字母符号：ℹ ℡ 之类（原先漏了）
+        in 0x2900..0x297F -> true // 补充箭头
+        in 0x2A00..0x2AFF -> true // 补充数学符号与箭头
+        code == 0x200D -> true // 零宽连接符：表情组合用它
+        code == 0x20E3 -> true // 组合用键帽
         else -> false
     }
 
@@ -131,6 +141,18 @@ class NoEmojiInSourceTest {
     }
 
     @Test
+    fun geometricAndTechnicalBlocksAreCovered() {
+        // 补上的号段要有反例可钉：这几个都是本仓真用过的图形，漏一个就等于白扫
+        for (code in listOf(0x25B6, 0x25A0, 0x25C9, 0x25BE, 0x25CF, 0x25B8)) {
+            assertTrue("几何图形该禁：U+${"%04X".format(code)}", isBannedCodePoint(code))
+        }
+        for (code in listOf(0x23F0, 0x23F1, 0x23F3, 0x2328, 0x26F6)) {
+            assertTrue("技术符号该禁：U+${"%04X".format(code)}", isBannedCodePoint(code))
+        }
+        assertTrue("类字母符号该禁：U+2139", isBannedCodePoint(0x2139))
+    }
+
+    @Test
     fun nonAdjacentSurrogateHalvesAreNotGluedIntoAPair() {
         // 两段中间夹了字符就不是一对，不许硬凑（凑出来的命中会让人查不到东西）
         val hits = ArrayList<Hit>()
@@ -140,14 +162,17 @@ class NoEmojiInSourceTest {
 
     @Test
     fun chineseAndAsciiStayAllowed() {
-        // 反例：中文、中文标点、ASCII 必须放过，否则闸门就是捣乱
+        // 反例：中文、中文标点、ASCII 与常用排版符号必须放过，否则闸门就是捣乱
         val hits = ArrayList<Hit>()
         scanLine("网关掐了自动重发一次（默认关），temp=0.7", "Sample.kt", 1, hits)
         scanLine("上限 1 MiB；键名 ui.retry_costly_on_gateway", "Sample.kt", 2, hits)
+        scanLine("行尾尖括号 › 与乘号 × 属排版符号：a × b ›", "Sample.kt", 3, hits)
         assertTrue("中文与 ASCII 不该命中：$hits", hits.isEmpty())
         assertFalse(isBannedCodePoint('中'.code))
         assertFalse(isBannedCodePoint('。'.code))
         assertFalse(isBannedCodePoint('《'.code))
+        assertFalse(isBannedCodePoint(0x203A)) // › 行尾排版符
+        assertFalse(isBannedCodePoint(0x00D7)) // × 乘号
     }
 
     @Test
