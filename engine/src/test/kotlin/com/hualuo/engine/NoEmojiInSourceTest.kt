@@ -1,6 +1,7 @@
 package com.hualuo.engine
 
 import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -54,20 +55,37 @@ class NoEmojiInSourceTest {
 
     @Test
     fun bannedRangesCoverTheRealIconBlocks() {
-        // 钉住判定表本身：这几个号段是表情/符号真正住的地方，谁删一段就得有理由
+        // 钉住判定表本身：这几段是表情与符号真正住的地方，谁删一段都得有理由
         assertTrue(isBanned(0x1F600)) // 笑脸类
         assertTrue(isBanned(0x1F501)) // 循环箭头类
         assertTrue(isBanned(0x2705)) // 白勾
-        assertTrue(isBanned(0x2630)) // 三横（顶栏图标）
+        assertTrue(isBanned(0x2630)) // 三横（顶栏那个按钮）
         assertTrue(isBanned(0x2192)) // 右箭头
         assertTrue(isBanned(0x2B06)) // 粗上箭头
         assertTrue(isBanned(0xFE0F)) // 变体选择符
         assertTrue(isBanned(0x200D)) // 零宽连接符
-        // 反例：中文、ASCII、常用标点必须放过
-        assertTrue(!isBanned('中'.code))
-        assertTrue(!isBanned('。'.code))
-        assertTrue(!isBanned('→'.code.not()))
-        assertTrue(!isBanned('A'.code))
+        // 反例：中文、中文标点、ASCII 必须放过，否则闸门就是捣乱
+        assertFalse(isBanned('中'.code))
+        assertFalse(isBanned('。'.code))
+        assertFalse(isBanned('《'.code))
+        assertFalse(isBanned('A'.code))
+        assertFalse(isBanned(' '.code))
+    }
+
+    @Test
+    fun scannerReportsTheLineItActuallyFoundItOn() {
+        // 拿一段带命中的文本喂扫描器，确认行号不是写死的 0（上一版就是这么撒谎的）
+        val hits = ArrayList<Hit>()
+        scan("干净的一行", "Sample.kt", 1, hits)
+        scan("另一行也干净", "Sample.kt", 2, hits)
+        scan("这一行有符号 ${ARROW_TEST_STRING}", "Sample.kt", 3, hits)
+
+        assertTrue("该扫到东西：$hits", hits.isNotEmpty())
+        assertEqualsLine(3, hits.first().line)
+    }
+
+    private fun assertEqualsLine(expected: Int, actual: Int) {
+        if (expected != actual) fail("行号报错必须真实：期望 $expected 实得 $actual")
     }
 
     private fun scan(line: String, file: String, lineNo: Int, hits: ArrayList<Hit>) {
@@ -109,5 +127,13 @@ class NoEmojiInSourceTest {
             steps += 1
         }
         fail("找不到仓库根（没有 settings.gradle.kts），闸门不许静默放行")
+    }
+
+    companion object {
+        /**
+         * 扫描器自测用的样本：用码位构造，源码里不留裸字符 ——
+         * 否则这条测试自己就会被上面那个全仓扫描判红。
+         */
+        private val ARROW_TEST_STRING: String = String(Character.toChars(0x2192))
     }
 }
