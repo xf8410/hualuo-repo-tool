@@ -13,7 +13,7 @@ import com.hualuo.repotool.ui.model.SubPage
  *
  * 规矩一：能接真电的项一律用 PersistedSwitch，不许再用演示态 Switch ——
  * 后者状态只活在 remember 里，拿它冒充设置就是「绿勾勾撒谎」的同款病。
- * 规矩二：图标一律写转义形式（源码保持 ASCII），家规禁裸表情，闸门是 NoEmojiInSourceTest。
+ * 规矩二：图标一律写转义形式（源码保持纯 ASCII），家规禁裸表情，闸门是 NoEmojiInSourceTest。
  */
 
 /** 网关失败要不要自动重发一次的键名（进过真机就不许改，改了老设置读不到）。 */
@@ -44,11 +44,11 @@ val RealSubPages: Map<String, SubPage> = mapOf(
     ),
 )
 
-/** 追加到主页各组的真设置项，key 是演示表里的组 id。图标用转义写（循环箭头）。 */
+/** 追加到主页各组的真设置项，key 是演示表里的组 id。图标用转义写（循环箭头 U+1F501）。 */
 val RealSectionAdditions: Map<String, List<SettingsItem>> = mapOf(
     "s-net" to listOf(
         SettingsItem(
-            "\uD83D\uDD01",
+            "\\uD83D\\uDD01",
             "失败与重试",
             "网关把连接掐了怎么办；要不要自动重发",
             null,
