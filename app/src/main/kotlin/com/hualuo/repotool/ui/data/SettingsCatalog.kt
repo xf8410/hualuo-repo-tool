@@ -1,5 +1,6 @@
 package com.hualuo.repotool.ui.data
 
+import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.SettingsItem
 import com.hualuo.repotool.ui.model.SettingsSection
 import com.hualuo.repotool.ui.model.SubField
@@ -13,7 +14,7 @@ import com.hualuo.repotool.ui.model.SubPage
  *
  * 规矩一：能接真电的项一律用 PersistedSwitch，不许再用演示态 Switch ——
  * 后者状态只活在 remember 里，拿它冒充设置就是「绿勾勾撒谎」的同款病。
- * 规矩二：图标一律写 Kotlin 转义（源码保持纯 ASCII），家规禁裸表情，闸门是 NoEmojiInSourceTest。
+ * 规矩二：图标只写 IconKey 键名，字形住 res/values/icons.xml（家规，闸门 NoEmojiInSourceTest）。
  */
 
 /** 网关失败要不要自动重发一次的键名（进过真机就不许改，改了老设置读不到）。 */
@@ -44,11 +45,11 @@ val RealSubPages: Map<String, SubPage> = mapOf(
     ),
 )
 
-/** 追加到主页各组的真设置项，key 是演示表里的组 id。图标写转义（循环箭头 U+1F501）。 */
+/** 追加到主页各组的真设置项，key 是演示表里的组 id。图标只写键名。 */
 val RealSectionAdditions: Map<String, List<SettingsItem>> = mapOf(
     "s-net" to listOf(
         SettingsItem(
-            "\uD83D\uDD01",
+            IconKey.SettingsRetry,
             "失败与重试",
             "网关把连接掐了怎么办；要不要自动重发",
             null,
