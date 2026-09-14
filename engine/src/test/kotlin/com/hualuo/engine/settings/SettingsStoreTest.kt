@@ -51,10 +51,11 @@ class SettingsStoreTest {
         val reopened = storeOf(store.text())
 
         assertEquals("deepseek-r1", reopened.string("model.current"))
-        assertEquals(300, reopened.int("tool.idle_timeout_seconds"))
-        assertEquals(400L, reopened.long("data.max_total_mb"))
-        assertEquals(0.7, reopened.double("generate.temperature"), 0.0)
-        assertTrue(reopened.boolean("tools.web_search_enabled"))
+        assertTrue("键该在", reopened.has("tool.idle_timeout_seconds"))
+        assertEquals(300, reopened.int("tool.idle_timeout_seconds", MISSING))
+        assertEquals(400L, reopened.long("data.max_total_mb", MISSING_LONG))
+        assertEquals(0.7, reopened.double("generate.temperature", 0.0), 0.0)
+        assertTrue(reopened.boolean("tools.web_search_enabled", false))
         assertTrue("往返不该留坏消息：${reopened.issues().map { it.detail }}", reopened.issues().isEmpty())
     }
 
@@ -200,7 +201,7 @@ class SettingsStoreTest {
 
         store.setString("model.current", "abc")
         assertTrue(store.isDirty())
-        assertNotNullSave(store.saveIfDirty())
+        assertSaved(store.saveIfDirty())
         assertFalse(store.isDirty())
         assertNull(store.saveIfDirty())
 
@@ -212,7 +213,7 @@ class SettingsStoreTest {
         assertNull(store.raw("model.current"))
     }
 
-    private fun assertNotNullSave(result: SaveResult?) {
+    private fun assertSaved(result: SaveResult?) {
         assertTrue("本该落盘却没落", result != null && result.persisted)
     }
 
@@ -290,7 +291,7 @@ class SettingsStoreTest {
 
         val reopened = SettingsStore(FileSettingsStorage(file))
         assertEquals("qwen3.8-flash", reopened.string("model.current"))
-        assertEquals(300, reopened.int("tool.idle_timeout_seconds"))
+        assertEquals(300, reopened.int("tool.idle_timeout_seconds", MISSING))
         assertTrue("正常文件不该有坏消息：${reopened.issues().map { it.detail }}", reopened.issues().isEmpty())
     }
 
@@ -302,5 +303,11 @@ class SettingsStoreTest {
         assertTrue(store.save().persisted)
 
         SettingsStore(FileSettingsStorage(file, maxBytes = 64L))
+    }
+
+    companion object {
+        /** 取不到值时的哨兵：断言写死它，键丢了就会露出来而不是蒙对默认值。 */
+        private const val MISSING = -1
+        private const val MISSING_LONG = -1L
     }
 }
