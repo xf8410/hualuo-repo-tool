@@ -31,6 +31,16 @@ enum class IconKey(@param:StringRes val resId: Int) {
     Chevron(R.string.icon_chevron),
     Search(R.string.icon_search),
 
+    // 输入区与胶囊上的小图形
+    Plus(R.string.icon_plus),
+    DotsV(R.string.icon_dots_v),
+    Dot(R.string.icon_dot),
+    CaretDown(R.string.icon_caret_down),
+    CaretUp(R.string.icon_caret_up),
+    SendArrow(R.string.icon_send_arrow),
+    ExpandScreen(R.string.icon_expand_screen),
+    Cross(R.string.icon_cross),
+
     // 设置主页 27 项
     SettingsProvider(R.string.icon_settings_provider),
     SettingsModel(R.string.icon_settings_model),
