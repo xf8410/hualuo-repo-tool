@@ -154,7 +154,9 @@ fun SettingsOverlay(state: AppUiState) {
                 )
             }
         } else {
-            SubPageView(state, top)
+            // 跨函数边界拿不到 ColumnScope 的 weight——CI 实锤过一次（run 34804570780），
+            // 所以这里由父级把 Modifier.weight(1f) 传进去，子页自己不再凭空 weight。
+            SubPageView(state, top, Modifier.weight(1f))
         }
     }
 }
@@ -205,7 +207,7 @@ private fun SettingsItemRow(state: AppUiState, item: SettingsItem) {
 }
 
 @Composable
-private fun SubPageView(state: AppUiState, key: String) {
+private fun SubPageView(state: AppUiState, key: String, modifier: Modifier = Modifier) {
     val page = SubPages[key] ?: return
     val switches = remember(key) { mutableStateMapOf<String, Boolean>() }
     val segs = remember(key) { mutableStateMapOf<String, Int>() }
@@ -214,8 +216,8 @@ private fun SubPageView(state: AppUiState, key: String) {
     val inputs = remember(key) { mutableStateMapOf<String, String>() }
 
     Column(
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 14.dp)
             .padding(bottom = 26.dp),
@@ -237,13 +239,14 @@ private fun SubPageView(state: AppUiState, key: String) {
                         Text(f.value, fontSize = 12.5.sp, color = SubInk, fontFamily = FontFamily.Monospace)
                     }
                     if (f.gotoKey != null) {
+                        val goto = f.gotoKey
                         Text(
                             "\u203A",
                             color = ChevGray,
                             fontSize = 14.sp,
                             modifier = Modifier
                                 .padding(start = 6.dp)
-                                .clickable { state.subStack = state.subStack + f.gotoKey },
+                                .clickable { state.subStack = state.subStack + goto },
                         )
                     }
                 }
