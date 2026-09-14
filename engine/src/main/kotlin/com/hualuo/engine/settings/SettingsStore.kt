@@ -7,14 +7,15 @@ package com.hualuo.engine.settings
  *  1) **未知键原样保留**，保存时一并写回（连不合规的键名也留着）。反的是当年写路径
  *     `MessagePersistenceGuard.sanitize()` 贪心砍最大字段、还往正文里塞截断标记那种
  *     「存进去的和拿出来的不是同一份内容」的做法。
- *  2) **坏消息一条不吞**：坏行、坏值、重复键、越界全部进 [issues]，程序照常用默认值/
+ *  2) **坏消息一条不吞**：坏行、坏值、重复键、越界、孤立代理位全部进 [issues]，程序照常用默认值/
  *     夹到边界继续跑，但不装没事。反的是「步骤绿了、其实什么都没干」的静默失败。
  *  3) **[save] 带原因**：后端写失败时返回 `persisted=false` 加具体原因，绝不再造第二种
  *     「绿了但没落盘」的假成功。
  *
  * 格式：UTF-8 文本，`#` 开头是注释，其余 `key=value`。键名限 ASCII 点分小写
- * （如 `tool.idle_timeout_seconds`，最长 [MAX_KEY_LENGTH] 字符），值允许中文。
- * 值里的控制字符一律转义（`\n` `\r` `\t` `\\` `\uXXXX`），保证写进去和读出来逐字相同；
+ * （如 `tool.idle_timeout_seconds`，最长 [MAX_KEY_LENGTH] 字符），值允许中文与表情。
+ * 值里的控制字符一律转义（`\n` `\r` `\t` `\\` `\uXXXX`）；**半个表情（孤立代理位）也转义**，
+ * 因为 UTF-8 编不出它，写进文件就是烂字节 —— 读回来照样出声，但内容逐字不改。
  * 行尾空白会被去掉（值里的前导空格保留）。
  *
  * 线程模型：**非线程安全**。设置读写都收敛在单一线程（界面线程）；跨线程请外部串行化。
@@ -34,8 +35,14 @@ class SettingsStore(private val storage: SettingsStorage) {
     /** 从后端重读一份，丢掉尚未保存的改动。后端没内容等于空表，不算错误。 */
     fun reload(): LoadReport {
         val text = storage.read()
-        val loaded = if (text == null) LoadReport(false, 0, 0) else adoptText(text)
-        return loaded
+        return if (text == null) {
+            values.clear()
+            collected.clear()
+            dirty = false
+            LoadReport(hadContent = false, keyCount = 0, issueCount = 0)
+        } else {
+            adoptText(text)
+        }
     }
 
     /** 用内存里的一份文本载入（从备份恢复、或者测试直接喂样本时用）。不碰后端。 */
@@ -138,9 +145,16 @@ class SettingsStore(private val storage: SettingsStorage) {
 
     // ── 改值 ────────────────────────────────────────────────────────────────
 
-    /** 写一个值。键名不合法是调用方写错代码，直接抛，不做「悄悄换个名字存」。 */
+    /**
+     * 写一个值。键名不合法是调用方写错代码，直接抛，不做「悄悄换个名字存」。
+     * 值里有孤立代理位不抛（那是调用方从模型/文件里拿来的），但当场记一条坏消息。
+     */
     fun setString(key: String, value: String) {
         requireValidKey(key)
+        val lone = firstUnpairedSurrogate(value)
+        if (lone >= 0) {
+            collected += SettingsIssue.LoneSurrogate(key, value[lone].code)
+        }
         if (values[key] == value) return
         values[key] = value
         dirty = true
@@ -248,7 +262,12 @@ class SettingsStore(private val storage: SettingsStorage) {
         if (into.containsKey(key)) {
             found += SettingsIssue.DuplicateKey(lineNumber, key)
         }
-        into[key] = unescape(line.substring(eq + 1).trimEnd(), lineNumber, found)
+        val value = unescape(line.substring(eq + 1).trimEnd(), lineNumber, found)
+        val lone = firstUnpairedSurrogate(value)
+        if (lone >= 0) {
+            found += SettingsIssue.LoneSurrogate(key, value[lone].code)
+        }
+        into[key] = value
     }
 
     private fun unescape(
@@ -308,17 +327,53 @@ class SettingsStore(private val storage: SettingsStorage) {
 
     private fun escapeValue(value: String): String {
         val builder = StringBuilder(value.length + 8)
-        for (char in value) {
+        var index = 0
+        while (index < value.length) {
+            val char = value[index]
+            val code = char.code
             when {
-                char == '\\' -> builder.append("\\\\")
-                char == '\n' -> builder.append("\\n")
-                char == '\r' -> builder.append("\\r")
-                char == '\t' -> builder.append("\\t")
-                char.code < 0x20 -> builder.append("\\u").append(hex4(char.code))
-                else -> builder.append(char)
+                char == '\\' -> { builder.append("\\\\"); index += 1 }
+                char == '\n' -> { builder.append("\\n"); index += 1 }
+                char == '\r' -> { builder.append("\\r"); index += 1 }
+                char == '\t' -> { builder.append("\\t"); index += 1 }
+                code < 0x20 -> { builder.append("\\u").append(hex4(code)); index += 1 }
+                code in HIGH_SURROGATE_FIRST..HIGH_SURROGATE_LAST -> {
+                    val pair = if (index + 1 < value.length) value[index + 1].code else -1
+                    if (pair in LOW_SURROGATE_FIRST..LOW_SURROGATE_LAST) {
+                        builder.append(char).append(value[index + 1])
+                        index += 2
+                    } else {
+                        builder.append("\\u").append(hex4(code))
+                        index += 1
+                    }
+                }
+                code in LOW_SURROGATE_FIRST..LOW_SURROGATE_LAST -> {
+                    builder.append("\\u").append(hex4(code))
+                    index += 1
+                }
+                else -> { builder.append(char); index += 1 }
             }
         }
         return builder.toString()
+    }
+
+    /** 第一个「没配对」的代理位下标；干净就返回 -1。 */
+    private fun firstUnpairedSurrogate(text: String): Int {
+        var index = 0
+        while (index < text.length) {
+            val code = text[index].code
+            if (code in HIGH_SURROGATE_FIRST..HIGH_SURROGATE_LAST) {
+                val next = if (index + 1 < text.length) text[index + 1].code else -1
+                if (next in LOW_SURROGATE_FIRST..LOW_SURROGATE_LAST) {
+                    index += 2
+                    continue
+                }
+                return index
+            }
+            if (code in LOW_SURROGATE_FIRST..LOW_SURROGATE_LAST) return index
+            index += 1
+        }
+        return -1
     }
 
     private fun hex4(code: Int): String =
@@ -345,6 +400,10 @@ class SettingsStore(private val storage: SettingsStorage) {
 
         private const val FORMAT_PREFIX = "#format="
         private const val HEX_DIGITS = "0123456789abcdef"
+        private const val HIGH_SURROGATE_FIRST = 0xD800
+        private const val HIGH_SURROGATE_LAST = 0xDBFF
+        private const val LOW_SURROGATE_FIRST = 0xDC00
+        private const val LOW_SURROGATE_LAST = 0xDFFF
         private val KEY_PATTERN = Regex("[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*")
     }
 }
