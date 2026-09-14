@@ -3,10 +3,10 @@
   图形字符（图标字形）唯一的住处。
 
   家规：源码（.kt / .kts）里不许出现表情与符号字符，也不许出现它们的转义写法
-  —— 闸门是 engine 的 NoEmojiInSourceTest。代码里只留键名（R.string.icon_xxx），
+  —— 闸门是 engine 的 NoEmojiInSourceTest。代码里只留键名（IconKey.Xxx），
   真字符住在这个资源文件里。
 
-  写法：一律用 XML 数字字符引用（&#x1F4AC; 这种），所以这个文件本身也是纯 ASCII：
+  写法：一律用 XML 数字字符引用（形如 &amp;#x1F4AC;），所以这个文件本身也是纯 ASCII：
   - 复制粘贴、diff、编码转换都不会把图形字符搅成半截（孤立代理位）；
   - 想换图标只改这里（将来换成 vector drawable 也是改资源，不动调用点）；
   - 每个键名带一行注释说明它长什么样、用在哪，别留无主字符。
@@ -21,15 +21,13 @@
     <string name="icon_nav_repo">&#x1F4E6;</string>
     <string name="icon_nav_observe">&#x1F4E1;</string>
 
-    <!-- 顶栏：三横线（开抽屉）、左箭头（返回） -->
+    <!-- 顶栏与通用：三横线（开抽屉）、左箭头（返回）、右尖括号（行尾）、放大镜（搜索） -->
     <string name="icon_menu">&#x2630;</string>
     <string name="icon_back">&#x2190;</string>
-
-    <!-- 通用：单书名号状右尖括号（列表行尾）、放大镜（搜索框） -->
     <string name="icon_chevron">&#x203A;</string>
     <string name="icon_search">&#x1F50D;</string>
 
-    <!-- 设置主页 27 项（SettingsSections）：图标 + 一句大白话，图标含义见每项注释 -->
+    <!-- 设置主页 27 项（SettingsSections）：图标 + 一句大白话 -->
     <string name="icon_settings_provider">&#x2601;&#xFE0F;</string>      <!-- 云：AI 服务地址与密钥 -->
     <string name="icon_settings_model">&#x1F5A5;&#xFE0F;</string>        <!-- 台式机：模型清单 -->
     <string name="icon_settings_prompt">&#x1F9E0;</string>               <!-- 脑：系统指令 -->
@@ -58,7 +56,7 @@
     <string name="icon_settings_lang">&#x1F5FA;&#xFE0F;</string>         <!-- 世界图：语言 -->
     <string name="icon_settings_about">&#x2139;&#xFE0F;</string>         <!-- 信息：关于 -->
 
-    <!-- 赛马娘工作台二级页的动作卡图标：播放 / 环形箭头 / 火花 / 顺时针开环箭头 / 方块 / 圆中点 / 下载 -->
+    <!-- 赛马娘工作台动作卡：播放 / 环形箭头 / 火花 / 顺时针开环箭头 / 方块 / 圆中点 / 下载 -->
     <string name="icon_action_play">&#x25B6;</string>
     <string name="icon_action_cycle">&#x27F3;</string>
     <string name="icon_action_sparkle">&#x2728;</string>
@@ -66,4 +64,20 @@
     <string name="icon_action_stop">&#x25A0;</string>
     <string name="icon_action_observe">&#x25C9;</string>
     <string name="icon_action_download">&#x2B07;</string>
+
+    <!-- 消息卡与输入区（DemoData / Composer / ChatScreen） -->
+    <string name="icon_link">&#x1F517;</string>                          <!-- 链扣：工具回显行 -->
+    <string name="icon_page_up">&#x1F4C4;</string>                       <!-- 纸页向上：manifest 之类 -->
+    <string name="icon_picture">&#x1F5BC;</string>                       <!-- 画框：图片附件 -->
+    <string name="icon_book">&#x1F4D5;</string>                          <!-- 闭着的书：PDF -->
+    <string name="icon_clapper">&#x1F3AC;</string>                       <!-- 场记板：视频 -->
+    <string name="icon_question">&#x2753;</string>                       <!-- 红问号：未识别类型（占位不丢） -->
+    <string name="icon_warn">&#x26A0;</string>                           <!-- 警告三角 -->
+    <string name="icon_hourglass">&#x23F3;</string>                      <!-- 漏沙：排队中 -->
+    <string name="icon_expand">&#x25B8;</string>                         <!-- 小三角：折叠区展开前缀 -->
+    <string name="icon_loop">&#x1F501;</string>                          <!-- 循环箭头：会话循环横幅 -->
+    <string name="icon_phone">&#x1F4DE;</string>                         <!-- 话机：附件菜单第三项（照原型码位） -->
+    <string name="icon_clip">&#x1F4CE;</string>                          <!-- 回形针：附件按钮 -->
+    <string name="icon_mic">&#x1F3A4;</string>                           <!-- 话筒：语音输入 -->
+    <string name="icon_send">&#x1F4E4;</string>                          <!-- 托盘向上：发送 -->
 </resources>
