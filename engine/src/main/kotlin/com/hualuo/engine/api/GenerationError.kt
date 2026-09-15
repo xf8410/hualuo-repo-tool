@@ -39,7 +39,7 @@ sealed class GenerationError {
         val producedContent: Boolean,
     ) : GenerationError()
 
-    /** 撞到输出 token 上限被截断（思考模型上，推理与回答共用这个额度）。 */
+    /** 撞到输出 token 上限被截断（思考模型上，思考与回答共用这个额度）。 */
     data class OutputTruncated(val provider: String, val stopReason: String?) : GenerationError()
 
     /** 工具执行失败（记忆、联网、shell、RAG）。 */
@@ -75,18 +75,27 @@ sealed class GenerationError {
             404 -> "找不到这个地址或模型（404）：先核对「提供商」里的 base URL 末尾版本段与模型名：${brief(message)}"
             408, 429 -> "对方忙或限流（$statusCode）：等一会儿再发，或把并发降下来"
             413 -> "请求太大（413）：这条内容超了对方上限，删掉部分附件或缩短上下文再发"
-            in 500..599 -> "对方服务出错（$statusCode）：可能是它临时挂了，稍后重试；连着几次都这样就去查这家提供商"
+            // 5xx 也必须带原文片段：临时挂与配额尽看起来一样，线索都在对方那句话里。
+            // brief() 负责折行、打码、截断，整页 HTML 糊不进气泡。
+            in 500..599 -> "对方服务出错（$statusCode）：${brief(message)}。可能是它临时挂了，稍后重试；连着几次都这样就去查这家提供商"
             else -> "网络出错（$statusCode）：${brief(message)}"
         }
         is Api -> {
-            val head = buildString {
-                if (!code.isNullOrBlank()) append(code)
-                if (!type.isNullOrBlank()) {
-                    if (isNotEmpty()) append(" ")
-                    append(type)
+            val status = code?.trim()?.toIntOrNull()
+            if (status != null && status in 100..599) {
+                // 数字 code 就是 HTTP 状态码（providerHttpError 兜底填的正是它）：
+                // 同一个码走同一条出路，不许落到「code：message」的平话路径上。
+                Network(status, message).userMessage()
+            } else {
+                val head = buildString {
+                    if (!code.isNullOrBlank()) append(code)
+                    if (!type.isNullOrBlank()) {
+                        if (isNotEmpty()) append(" ")
+                        append(type)
+                    }
                 }
+                if (head.isEmpty()) brief(message) else "$head：${brief(message)}"
             }
-            if (head.isEmpty()) brief(message) else "$head：${brief(message)}"
         }
         // 修：不再只给一句"解析失败"，带上截断脱敏后的原文片段
         is SseParse -> "对方返回的内容读不懂（$cause）。看到的开头：「${brief(rawLine)}」——" +
@@ -135,14 +144,16 @@ sealed class GenerationError {
  * 全部先过这里。
  *
  * 规则保守：只动**长串**（20 位以上的字母数字/`-_` 组合）、`sk-` 开头的串，
- * 以及 `key=xxx` / `Authorization: xxx` 这类写法里的值。
+ * 以及 `key=xxx` / `Authorization: Bearer xxx` 这类写法里的值。
+ * 认证方案名（Bearer/Basic）会被原样留下 —— 它是协议词汇不是密钥，第一版没设防这点，
+ * 把 `Bearer` 当成值打成了星号，真正的密钥反而留在后面（CI 抓到才修的）。
  * 正常中文句子、URL 主机名、模型名（都短）不会被啃掉。
  */
 fun maskSecrets(text: String): String {
     if (text.isEmpty()) return text
     var out = text
     out = KEY_LABELED.replace(out) { match ->
-        match.groupValues[1] + match.groupValues[2] + maskValue(match.groupValues[3])
+        match.groupValues[1] + match.groupValues[2] + match.groupValues[3] + maskValue(match.groupValues[4])
     }
     out = SK_PREFixed.replace(out) { maskValue(it.value) }
     out = LONG_TOKEN.replace(out) { maskValue(it.value) }
@@ -155,6 +166,7 @@ private fun maskValue(value: String): String {
     return value.take(2) + "*".repeat(minOf(value.length - 4, 12)) + value.takeLast(2)
 }
 
-private val KEY_LABELED = Regex("(?i)(authorization|api[_-]?key|token|key)(\\s*[:=]\\s*)(\\S+)")
+/** 标签组 3 先吃掉 Bearer/Basic 这类方案名（不是密钥），组 4 才是真正的值。 */
+private val KEY_LABELED = Regex("(?i)(authorization|api[_-]?key|token|key)(\\s*[:=]\\s*)(bearer\\s+|basic\\s+)?(\\S+)")
 private val SK_PREFixed = Regex("(?i)\\bsk-[A-Za-z0-9_\\-]{6,}")
 private val LONG_TOKEN = Regex("[A-Za-z0-9_\\-]{20,}")
