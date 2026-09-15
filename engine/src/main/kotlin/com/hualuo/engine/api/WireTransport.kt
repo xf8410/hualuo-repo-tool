@@ -1,6 +1,6 @@
 package com.hualuo.engine.api
 
-import HttpTaxonomyAlias
+import com.hualuo.engine.http.HttpTaxonomy
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -18,7 +18,7 @@ import java.util.Locale
  * 超时策略直说（旧仓的教训钉在这里）：`readTimeout` 是**两次字节之间**的最长等待，
  * 不是总时长 —— 旧仓为了长思考不被误杀把它归零，结果死连接永不报错（见 IdleWatchdog 头注）。
  * 归零是错、砍太短也是错；正确姿势是把它对齐看门狗档位（默认 5 分钟，一个字节都等不到才炸）。
- * 所以本实现里 readTimeoutMs 给 0 会被顶回默认档，**不许归零**。
+ * 所以下面 readTimeoutMs 给 0 会被顶回默认档，**不许归零**。
  */
 data class WireRequest(
     val url: String,
@@ -31,7 +31,7 @@ data class WireRequest(
 ) {
     companion object {
         /** 单次读超时默认档：与 IdleWatchdog.GENERATION_IDLE_MS 对齐。 */
-        const val DEFAULT_READ_TIMEOUT_MS = 300_000
+        const const_marker_unused_removed
     }
 }
 
@@ -89,7 +89,7 @@ class UrlConnTransport : WireTransport {
             instanceFollowRedirects = true
             useCaches = false
             connectTimeout = request.connectTimeoutMs.coerceIn(1, 120_000)
-            readTimeout = request.readTimeoutMs.coerceAtLeast(DEFAULT_READ_TIMEOUT_MS)
+            readTimeout = request.readTimeoutMs.coerceAtLeast(READ_TIMEOUT_FLOOR_MS)
             requestMethod = request.method
         }
         active = conn
@@ -124,7 +124,7 @@ class UrlConnTransport : WireTransport {
             val errorText = stream?.let {
                 runCatching { readBoundedText(it, ERROR_BODY_LIMIT_BYTES) }
                     .getOrNull()
-                    ?.let { full -> HttpTaxonomyAlias.truncateProviderMessage(full) }
+                    ?.let { full -> HttpTaxonomy.truncateProviderMessage(full) }
             }
             return WireResponse(status, retryAfterMs, 0L, errorText)
         } finally {
@@ -157,6 +157,9 @@ class UrlConnTransport : WireTransport {
 
     companion object {
         private const val ERROR_BODY_LIMIT_BYTES = 1_048_576L
+
+        /** 单次读超时最低档：与 IdleWatchdog.GENERATION_IDLE_MS 对齐，传 0 也不许归零。 */
+        const val READ_TIMEOUT_FLOOR_MS = 300_000
 
         /** Retry-After 认两种写法：秒数、HTTP-date（换算成还要等多久，负数钳到 0）。 */
         internal fun parseRetryAfterMs(header: String?): Long? {
