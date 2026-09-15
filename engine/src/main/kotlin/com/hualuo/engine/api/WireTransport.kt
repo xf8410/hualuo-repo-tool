@@ -18,7 +18,7 @@ import java.util.Locale
  * 超时策略直说（旧仓的教训钉在这里）：`readTimeout` 是**两次字节之间**的最长等待，
  * 不是总时长 —— 旧仓为了长思考不被误杀把它归零，结果死连接永不报错（见 IdleWatchdog 头注）。
  * 归零是错、砍太短也是错；正确姿势是把它对齐看门狗档位（默认 5 分钟，一个字节都等不到才炸）。
- * 所以下面 readTimeoutMs 给 0 会被顶回默认档，**不许归零**。
+ * 所以走 [effectiveReadTimeoutMs]：**传 0 或负数会被顶回默认档，不许归零**（有测试钉着）。
  */
 data class WireRequest(
     val url: String,
@@ -26,12 +26,19 @@ data class WireRequest(
     val headers: List<Pair<String, String>> = emptyList(),
     /** 请求体全文（JSON 文本）；GET 之类的留 null。 */
     val body: String? = null,
-    val connectTimeoutMs: Int = 15_000,
-    val readTimeoutMs: Int = DEFAULT_READ_TIMEOUT_MS,
+    val connectTimeoutMs: Int = DEFAULT_CONNECT_TIMEOUT_MS,
+    val readTimeoutMs: Int = READ_TIMEOUT_FLOOR_MS,
 ) {
+    /** 真正生效的单次读超时：非正数一律顶回默认档（禁归零是行为，不是注释愿望）。 */
+    fun effectiveReadTimeoutMs(): Int =
+        if (readTimeoutMs <= 0) READ_TIMEOUT_FLOOR_MS else readTimeoutMs
+
     companion object {
-        /** 单次读超时默认档：与 IdleWatchdog.GENERATION_IDLE_MS 对齐。 */
-        const const_marker_unused_removed
+        /** 连接建立超时默认档。 */
+        const val DEFAULT_CONNECT_TIMEOUT_MS = 15_000
+
+        /** 单次读超时最低档：与 IdleWatchdog.GENERATION_IDLE_MS 对齐。 */
+        const val READ_TIMEOUT_FLOOR_MS = 300_000
     }
 }
 
@@ -89,7 +96,7 @@ class UrlConnTransport : WireTransport {
             instanceFollowRedirects = true
             useCaches = false
             connectTimeout = request.connectTimeoutMs.coerceIn(1, 120_000)
-            readTimeout = request.readTimeoutMs.coerceAtLeast(READ_TIMEOUT_FLOOR_MS)
+            readTimeout = request.effectiveReadTimeoutMs()
             requestMethod = request.method
         }
         active = conn
@@ -157,9 +164,6 @@ class UrlConnTransport : WireTransport {
 
     companion object {
         private const val ERROR_BODY_LIMIT_BYTES = 1_048_576L
-
-        /** 单次读超时最低档：与 IdleWatchdog.GENERATION_IDLE_MS 对齐，传 0 也不许归零。 */
-        const val READ_TIMEOUT_FLOOR_MS = 300_000
 
         /** Retry-After 认两种写法：秒数、HTTP-date（换算成还要等多久，负数钳到 0）。 */
         internal fun parseRetryAfterMs(header: String?): Long? {
