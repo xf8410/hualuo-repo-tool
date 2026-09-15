@@ -64,7 +64,7 @@ class SettingsStoreTest {
 
     @Test
     fun controlCharactersRoundTripExactly() {
-        val tricky = "两行\n第二行\r\n制表符\t结束\\\\反斜杠\u0000\u001F尾巴"
+        val tricky = "两行\n第二行\r\n制表符\t结束\\反斜杠\u0000\u001F尾巴"
         val store = storeOf()
         store.setString("system.prompt", tricky)
         store.save()
@@ -166,13 +166,17 @@ class SettingsStoreTest {
 
     @Test
     fun badEscapeStaysLiteralAndReports() {
-        val store = storeOf("model.current=尾巴\\\\q\n")
+        // 反斜杠按码位构造（Char(0x5C)），样本内容不依赖源码里的转义层数。
+        // 这个坑 CI 抓过：整文件重写时手写转义对多落了一层，落盘样本比断言多一根杠，
+        // 测试红了一轮才认账。码位构造让「一根杠」在源码里只有一种写法、没有歧义。
+        val bs = Char(0x5C).toString()
+        val store = storeOf("model.current=尾巴$bs" + "q\n")
 
-        assertEquals("尾巴\\\\q", store.string("model.current"))
+        assertEquals("尾巴$bs" + "q", store.string("model.current"))
         assertEquals(1, store.issues().count { it is SettingsIssue.BadEscape })
 
-        val trailing = storeOf("model.current=斜杠在尾\\\\\n")
-        assertEquals("斜杠在尾\\\\", trailing.string("model.current"))
+        val trailing = storeOf("model.current=斜杠在尾$bs\n")
+        assertEquals("斜杠在尾$bs", trailing.string("model.current"))
         assertEquals(1, trailing.issues().count { it is SettingsIssue.BadEscape })
     }
 
