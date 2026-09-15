@@ -86,8 +86,13 @@ class AppUiState(private val persist: UiPersistence = UiPersistence.None) {
     /**
      * 真说过的话与生成槽都住这里（契约见 ChatRuntime）。
      * 「网关失败自动重发」那个真开关当场从 flag 通道读——两边共用一份事实，不各记各的。
+     * 必须具名传：尾随 lambda 会绑到 ChatRuntime 的最后一个参数（clock，返回 Long），
+     * 拿开关去尾随就是拿 Boolean 冒充 Long——CI 编译段抓到过，别再犯。
      */
-    val chat = ChatRuntime(persist) { flag(RETRY_COSTLY_KEY, RETRY_COSTLY_DEFAULT) }
+    val chat = ChatRuntime(
+        persist,
+        autoRetryCostly = { flag(RETRY_COSTLY_KEY, RETRY_COSTLY_DEFAULT) },
+    )
 
     /** 输入区发送钮的忙灯：真在跑才亮，不再是个能手动点着玩的演示布尔。 */
     val busy: Boolean get() = chat.busy
