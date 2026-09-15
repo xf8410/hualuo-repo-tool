@@ -71,10 +71,13 @@ class BaseUrlResolverTest {
             "https://api.x.com/compatible-mode",
             BaseUrlResolver.withoutTrailingVersion("https://api.x.com/compatible-mode/v1"),
         )
-        assertEquals(
-            "https://api.x.com/v1",
+        // 这条第一版写错了被 CI 抓现行：JUnit 三参重载的 message 在**第一位**，我把说明写到了
+        // 第三位，于是"说明"成了 actual、实现返回值成了 expected，报出来的账自相矛盾。
+        // 语义钉死：只剥结尾。/v1/proxy 没有可剥的结尾版本段，给 null（= 调用方不动它），
+        // 老同步逻辑只会往末尾补，绝不会回头剥中间段。
+        assertNull(
+            "中间那段版本不许动：没有可剥的结尾版本段就给 null",
             BaseUrlResolver.withoutTrailingVersion("https://api.x.com/v1/proxy"),
-            "中间那段版本不许动：老同步逻辑只会往末尾补",
         )
         assertNull("没有版本段就返回 null，不许造一个空串出来", BaseUrlResolver.withoutTrailingVersion("https://api.x.com"))
         assertNull("只剩协议不算有效地址", BaseUrlResolver.withoutTrailingVersion("https://api.x.com/"))
