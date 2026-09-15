@@ -19,6 +19,8 @@ import org.junit.Test
  * 不代表接线正确 —— 这里钉的是**流程级事实**：重发了几次、每次等了多久、
  * 红线在哪个字节数拦下、停止为什么不算失败、槽在每种收场后是不是真空了。
  * 唯一的假象是 socket 本身（假 transport），其余全是被测的真代码。
+ *
+ * （Harness 必须 inner：非 inner 的嵌套类看不见外层实例属性，CI 编译段抓过。）
  */
 class ChatWireRunnerTest {
 
@@ -60,7 +62,7 @@ class ChatWireRunnerTest {
         override fun isCancelled(): Boolean = cancelled
     }
 
-    private class Harness(steps: List<Step>) {
+    private inner class Harness(steps: List<Step>) {
         val transport = FakeTransport(steps)
         val slot = GenerationSlot()
         val waits = mutableListOf<Long>()
@@ -133,7 +135,8 @@ class ChatWireRunnerTest {
 
         assertEquals(ChatRunResult.Ok, h.run())
 
-        assertEquals("429 之后照 Retry-After 等", listOf(2_000L), h.waits)
+        // 退避顶 50 毫秒：2000 的 Retry-After 被政策封顶，等的是封顶值不是照抄。
+        assertEquals("429 之后照 Retry-After 等（封顶 50）", listOf(50L), h.waits)
         assertEquals(2, h.transport.calls)
         h.assertSlotFreed()
     }
@@ -194,7 +197,7 @@ class ChatWireRunnerTest {
             listOf(Step.Break(listOf(dataLine("正说着")), bytesSoFar = 50L, error = SocketTimeoutException("停了"))),
         )
         // 预置取消旗：exchange 抛断流时 isCancelled 已为真（等价于 stop 发生在读流期间）
-        h.transport.cancelled = true
+        h.transport.cancel()
 
         val err = (h.run() as ChatRunResult.Failed).error
 
