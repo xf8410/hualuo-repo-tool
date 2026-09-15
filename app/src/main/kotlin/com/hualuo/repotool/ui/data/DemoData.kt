@@ -17,6 +17,7 @@ import com.hualuo.repotool.ui.model.ToolState
 //
 // 家规：图形字符不进源码。原先拼在文案里的图标一律拆成 IconKey，由渲染处取值摆出去，外观不变；
 // 纯当语气用的符号改成文字（下面逐条标了改哪几处）。
+// 注意：闸门连注释一起扫，所以这里描述旧写法时也不能贴那个字符本身，一律用「对勾」「箭头」等词。
 
 val DemoMessages: List<ChatMsg> = listOf(
     ChatMsg(
@@ -98,13 +99,13 @@ val DemoToolStates: List<ToolState> = listOf(
     ToolState("uma_read_endpoint", listOf(Tone.Ok, Tone.Ok, Tone.Err, Tone.Neutral)),
 )
 
-// 原样是「配平✓ 计数✓ 变异✓」：三个勾是图形，改成文字，读起来也更直白
+// 原样是三个对勾字符（配平、计数、变异各挂一个）：对勾改成文字，读起来也更直白
 val DemoRepoRows: List<InfoRow> = listOf(
     InfoRow("CI run 34691352476", "success · e7ef4682", Tone.Ok),
     InfoRow("三道闸门", "配平过 计数过 变异过", Tone.Ok),
 )
 
-// 原样是「18766 push→浮窗」：箭头改成「到」，端口与含义不变
+// 原样是「18766 push 箭头 浮窗」中间夹一个箭头字符：改成「到」，端口与含义不变
 val DemoObsRows: List<InfoRow> = listOf(
     InfoRow("127.0.0.1:18765", "在线 · 只读", Tone.Ok),
     InfoRow("18766 push 到浮窗", "未启用", Tone.Warn),
@@ -128,7 +129,7 @@ val DemoComposerThumbs = listOf("Picture", "Clip", "Question")
 /** 顶栏上下文账本（原型固定演示值；接线后换成真实 token 计数）。 */
 val DemoCtx = "ctx 21.4k/1M · 发 856"
 
-/** ＋ 附件菜单三项（v13 addmenu）：图形键名 + 文字。 */
+/** 附件菜单三项（v13 addmenu，原样开头是一个全角加号）：图形键名 + 文字。 */
 val DemoAttachMenu = listOf(
     IconKey.Picture to "照片",
     IconKey.Clapper to "视频（自动抽帧）",
