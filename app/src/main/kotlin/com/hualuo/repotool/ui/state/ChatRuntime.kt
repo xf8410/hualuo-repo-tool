@@ -35,10 +35,13 @@ import java.util.Locale
  *  - 每换一条消息新建 transport 与槽：停止键掐的是这一条自己的连接，
  *    不许牵连上一条已完成的。
  *  - [worker] 注入点让 JVM 测试能同步跑完一整条链（单测不 sleep 等线程）。
+ *
+ * 参数写法钉一条 Kotlin 规矩（CI 抓过）：尾随 lambda 永远绑**最后一个**参数——
+ * 本类最后一个是 clock，调用方传开关必须具名 `autoRetryCostly = {...}`，不许偷懒尾随。
  */
 class ChatRuntime(
     private val persist: UiPersistence,
-    autoRetryCostly: () -> Boolean = { RETRY_COSTLY_DEFAULT },
+    val autoRetryCostly: () -> Boolean = { RETRY_COSTLY_DEFAULT },
     private val transportFactory: () -> WireTransport = ::UrlConnTransport,
     private val worker: (Thread) -> Unit = { it.start() },
     private val clock: () -> Long = System::currentTimeMillis,
@@ -55,8 +58,6 @@ class ChatRuntime(
 
     /** 只在跑的时候有值：停止键按这个槽掐连接，收场后清空。 */
     @Volatile private var activeSlot: GenerationSlot? = null
-
-    private val retryToggle = autoRetryCostly
 
     /** 发一条：先把「用户气泡 + 生成中的空助手卡」摆上屏，再开线程真发。 */
     fun send(prompt: String, model: String) {
@@ -93,7 +94,7 @@ class ChatRuntime(
                 transport = transportFactory(),
                 slot = slot,
                 // 花钱请求要不要自动重发，读的是设置页那个真开关（唯一通道 retryPolicyFor 的语义）。
-                policy = RetryPolicy(retryOnCostlyRequests = retryToggle()),
+                policy = RetryPolicy(retryOnCostlyRequests = autoRetryCostly()),
                 watchdog = IdleWatchdog(IdleWatchdog.GENERATION_IDLE_MS),
             ).chat(profile, history) { chunk -> appendStreaming(chunk) }
         } finally {
@@ -102,22 +103,25 @@ class ChatRuntime(
         synchronized(lock) {
             val base = messages.dropLast(1)
             val last = messages.lastOrNull()
-            val finished = (last?.text ?: "")
-            messages = base + when {
-                error == null && finished.isNotEmpty() -> last.copy(
-                    who = listOf(Badge(profile.name, Tone.Neutral)),
-                )
-                error == null -> ChatMsg(
-                    who = listOf(Badge("系统", Tone.Err)),
-                    time = now(),
-                    text = "连接正常收场，但一个字都没收到：界面上这句是替它说的，别当模型答的",
-                    isError = true,
-                )
-                else -> ChatMsg(
+            val finished = last?.text ?: ""
+            messages = when {
+                // 有错：错误卡带出路；已有半截就原文留在卡上，标清「不完整」
+                error != null -> base + ChatMsg(
                     who = listOf(Badge("系统", Tone.Err)),
                     time = now(),
                     text = if (finished.isEmpty()) error.userMessage()
                     else error.userMessage() + "\n——已收到的半截（不完整，别当成品）——\n" + finished,
+                    isError = true,
+                )
+                // 没错且有字：成品卡（last 在此分支必非空：finished 非空就来自它）
+                last != null && finished.isNotEmpty() -> base + last.copy(
+                    who = listOf(Badge(profile.name, Tone.Neutral)),
+                )
+                // 没错但一个字没有：这是链路说谎，替模型认账是假、替它遮掩更糟
+                else -> base + ChatMsg(
+                    who = listOf(Badge("系统", Tone.Err)),
+                    time = now(),
+                    text = "连接正常收场，但一个字都没收到：这句是替链路说的，别当模型答的",
                     isError = true,
                 )
             }
