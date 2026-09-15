@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,6 +68,10 @@ import com.hualuo.repotool.ui.theme.SubInk
  * 关掉 App 再开还在。挂不上组的真设置项由 `orphanAdditions()` 在这一页顶部喊出来。
  *
  * %VERSION% 占位在渲染时替换为注入的版本串（单源链的最后一环）。
+ *
+ * 家规提醒：单选圆环的 Modifier.size 之前缺 layout.size 的 import，红在 app 编译段
+ * （run 34969369167 抓到）。engine 一直先红导致这颗雷压了十几轮没人看见 —— 谁改了布局
+ * 调用就当场把 import 带上，别赌"反正后面模块编译不到"。
  */
 @Composable
 fun SettingsOverlay(state: AppUiState) {
