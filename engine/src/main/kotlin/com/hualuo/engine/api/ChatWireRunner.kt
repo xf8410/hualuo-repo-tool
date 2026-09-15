@@ -98,13 +98,15 @@ class ChatWireRunner(
                 RetryDecision.Done -> {
                     if (!bundle.finished) {
                         return ChatRunResult.Failed(
-                            if (bundle.stopReason == "length") {
-                                GenerationError.OutputTruncated(providerLabel, bundle.stopReason)
-                            } else {
-                                GenerationError.IncompleteStream(
-                                    providerLabel, bundle.stopReason, false, bundle.sawText,
-                                )
-                            },
+                            GenerationError.IncompleteStream(
+                                providerLabel, bundle.stopReason, false, bundle.sawText,
+                            ),
+                        )
+                    }
+                    // 收尾标记齐全但 finish_reason=length：话说完了是假象，上限吃了后半截。
+                    if (bundle.stopReason == "length") {
+                        return ChatRunResult.Failed(
+                            GenerationError.OutputTruncated(providerLabel, bundle.stopReason),
                         )
                     }
                     return ChatRunResult.Ok
@@ -262,7 +264,7 @@ class OpenAiSseParser(private val onText: (String) -> Unit) {
         val root = runCatching { json.parseToJsonElement(payload) }.getOrNull() as? JsonObject ?: return
         (root["error"] as? JsonObject)?.let { err ->
             streamError = GenerationError.Api(
-                code = (err["code"] as? JsonPrimitive)?.contentOrNull?.toString(),
+                code = (err["code"] as? JsonPrimitive)?.contentOrNull,
                 type = (err["type"] as? JsonPrimitive)?.contentOrNull,
                 message = (err["message"] as? JsonPrimitive)?.contentOrNull ?: err.toString(),
             )
