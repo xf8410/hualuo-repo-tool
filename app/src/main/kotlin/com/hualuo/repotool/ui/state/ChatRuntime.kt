@@ -54,6 +54,19 @@ class ChatRuntime(
     var busy by mutableStateOf(false)
         private set
 
+    // ── 端点模型清单（客户端 listModels 的真出口，不是又一份演示表） ──────────
+
+    /** 端点上一次成功返回的模型名列表；没拉过就是空，界面据此决定摆不摆「端点」组。 */
+    var remoteModels by mutableStateOf(emptyList<String>())
+        private set
+
+    var modelsBusy by mutableStateOf(false)
+        private set
+
+    /** 上次拉取失败的人话（含出路）；成功一次就清空。空列表不等于错，这话界面分开说。 */
+    var modelsError by mutableStateOf<String?>(null)
+        private set
+
     private val lock = Any()
 
     /** 只在跑的时候有值：停止键按这个槽掐连接，收场后清空。 */
@@ -85,6 +98,39 @@ class ChatRuntime(
     /** 停止：掐进行中的那一条（幂等，没在跑就是空操作）。 */
     fun stop() {
         activeSlot?.stop()
+    }
+
+    /**
+     * 从端点拉模型清单（免费 GET，不占生成槽——列表不该把「正在生成」挡在外面）。
+     * 结果三态各归各的家：成功进 [remoteModels]、失败进 [modelsError]（带出路）、
+     * 空列表单独说明「对方回话正常但没认出模型名」——不拿空名单装「拉取成功」。
+     */
+    fun refreshModels() {
+        if (modelsBusy) return
+        val profile = profileFor("")
+        modelsBusy = true
+        modelsError = null
+        val body = Runnable {
+            val listing = runCatching {
+                OpenAiCompatClient(
+                    transport = transportFactory(),
+                    slot = GenerationSlot(),
+                    // 列表免费：按政策的免费档允许自动重来一次，与花钱请求的克制正好相反。
+                    policy = RetryPolicy(maxAutomaticRetries = 1),
+                    watchdog = IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS),
+                ).listModels(profile)
+            }.getOrNull()
+            modelsBusy = false
+            when {
+                listing == null -> modelsError = "拉取失败：内部异常（没碰模型清单）"
+                listing.error != null -> modelsError = listing.error.userMessage()
+                listing.models.isEmpty() -> modelsError = "端点回话正常，但没认出任何模型名：清单没更新"
+                else -> {
+                    remoteModels = listing.models
+                }
+            }
+        }
+        worker(Thread(body).apply { name = "hualuo-models" })
     }
 
     private fun runGeneration(profile: ProviderProfile, history: List<ChatTurn>) {
