@@ -3,16 +3,14 @@ package com.hualuo.engine.api
 import com.hualuo.engine.generation.GenerationSlot
 import com.hualuo.engine.generation.IdleWatchdog
 import com.hualuo.engine.http.RetryPolicy
-import java.io.IOException
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -22,6 +20,9 @@ import org.junit.Test
 /**
  * OpenAI 兼容客户端的契约测试：钉的是「请求长什么样、列表怎么认」这些
  * 与真网关对接时的形状约定；流程行为（重试红线、槽、卡死）由 ChatWireRunnerTest 负责，不重。
+ *
+ * SSE 剧本一律用 [ok] 的变长参数逐行喂：真协议就是一行一帧，
+ * 拼成一行会糊掉解析器（第一版就栽在 raw string 里两帧连排、又没有换行可分）。
  */
 class OpenAiCompatClientTest {
 
@@ -67,8 +68,10 @@ class OpenAiCompatClientTest {
         return client to transport
     }
 
-    private fun ok(lines: String) = { _: WireRequest ->
-        WireResponse(status = 200, retryAfterMs = null, bytesReceived = lines.length.toLong(), errorBody = lines)
+    /** 200 剧本：每个参数一行（真 SSE 一帧一行），行与行之间用真换行拼。 */
+    private fun ok(vararg lines: String) = { _: WireRequest ->
+        val payload = lines.joinToString("\n")
+        WireResponse(status = 200, retryAfterMs = null, bytesReceived = payload.length.toLong(), errorBody = payload)
     }
 
     private val doneLine = "data: [DONE]"
@@ -79,7 +82,7 @@ class OpenAiCompatClientTest {
     @Test
     fun chatRequestHasOpenAiShapeAndSendsStreamFlag() {
         val (client, transport) = clientOf(
-            ok("""${sseContent("好")}$doneLine"""),
+            ok(sseContent("好"), doneLine),
         )
 
         val err = client.chat(
@@ -103,10 +106,11 @@ class OpenAiCompatClientTest {
 
     @Test
     fun baseUrlWithVersionSegmentIsNotPaddedAgain() {
-        val (client, transport) = clientOf(ok("""${sseContent("行")}$doneLine"""))
+        val (client, transport) = clientOf(ok(sseContent("行"), doneLine))
 
-        client.chat(profile.copy(baseUrl = "https://gw.example.com/compatible-mode/v1"), listOf(ChatTurn("user", "问"))) { }
+        val err = client.chat(profile.copy(baseUrl = "https://gw.example.com/compatible-mode/v1"), listOf(ChatTurn("user", "问"))) { }
 
+        assertNull("这条也得真收场：$err", err)
         assertEquals(
             "已带版本段的 base 不许再补一层 v1",
             "https://gw.example.com/compatible-mode/v1/chat/completions",
@@ -116,7 +120,7 @@ class OpenAiCompatClientTest {
 
     @Test
     fun optionalParamsAppearOnlyWhenGiven() {
-        val (client, transport) = clientOf(ok("""${sseContent("行")}$doneLine"""))
+        val (client, transport) = clientOf(ok(sseContent("行"), doneLine))
 
         client.chat(profile, listOf(ChatTurn("user", "问")), temperature = 0.3, maxTokens = 128) { }
         val withBoth = Json.parseToJsonElement(transport.seen[0].body!!).jsonObject
@@ -131,13 +135,13 @@ class OpenAiCompatClientTest {
 
     @Test
     fun authHeaderCarriesBearerOnlyWhenKeyPresent() {
-        val (client, transport) = clientOf(ok("""${sseContent("行")}$doneLine"""))
+        val (client, transport) = clientOf(ok(sseContent("行"), doneLine))
 
         client.chat(profile, listOf(ChatTurn("user", "问"))) { }
         val auth = transport.seen[0].headers.first { it.first == "authorization" }.second
         assertEquals("Bearer sk-test-key-123", auth)
 
-        val (client2, transport2) = clientOf(ok("""${sseContent("行")}$doneLine"""))
+        val (client2, transport2) = clientOf(ok(sseContent("行"), doneLine))
         client2.chat(profile.copy(apiKey = ""), listOf(ChatTurn("user", "问"))) { }
         assertTrue(
             "本地端点没密钥就不该发空 Bearer",
@@ -147,13 +151,15 @@ class OpenAiCompatClientTest {
 
     @Test
     fun listModelsAcceptsDataArrayShape() {
-        val payload = """{"data":[{"id":"a-model"},{"id":"b-model"},{"name":"无 id 有 name 的不算 data 形状"}]}"""
+        // data 形状里只有 name 的条目按 name 兜底收下：解析器一直这么承诺
+        // （ollama 的 {"models":[{"name":...}]} 靠同一条兜底），第一版测试注释说反了。
+        val payload = """{"data":[{"id":"a-model"},{"id":"b-model"},{"name":"c-model"}]}"""
         val (client, _) = clientOf(ok(payload))
 
         val listing = client.listModels(profile)
 
         assertNull(listing.error)
-        assertEquals(listOf("a-model", "b-model"), listing.models)
+        assertEquals(listOf("a-model", "b-model", "c-model"), listing.models)
     }
 
     @Test
