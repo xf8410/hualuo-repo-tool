@@ -86,6 +86,8 @@ private val NavTabIcons = mapOf(
  *
  * 持久化从这里进：启动时读一份设置（读不懂会带原因退化，不炸界面），
  * 之后界面字段变了就攒着，停 AUTO_SAVE_DEBOUNCE_MS 落一次盘，离开时再兜一次。
+ * 看护清单里除了逐个字段，还有 chat.settingsRevision——真文本（提供商地址密钥那类）
+ * 每改一次推一格修订号，这里只看这一个数，文本键以后增减都不用动看护点。
  * 任何一次「没存上」或「设置里有读不懂的项」都必须走 toast，不许静默。
  *
  * @param versionLabel 版本串由入口从 BuildConfig 注入（单源=version.properties），界面不写死。
@@ -114,6 +116,7 @@ fun HualuoApp(versionLabel: String) {
         state.codeExecOn,
         state.relayOn,
         state.lockToConversation,
+        state.chat.settingsRevision,
     ) {
         delay(AUTO_SAVE_DEBOUNCE_MS)
         val failure = state.flushPersistence()
@@ -174,7 +177,7 @@ fun HualuoApp(versionLabel: String) {
                 SettingsOverlay(state)
             }
 
-            // 原位弹层（模型/工具/任务详情）+ 确认框 + toast
+            // 原位弹层（模型/工具/任务详情互斥）+ 确认框 + toast
             SheetsLayer(state)
             ConfirmDialog(state)
             ToastBubble(state)
