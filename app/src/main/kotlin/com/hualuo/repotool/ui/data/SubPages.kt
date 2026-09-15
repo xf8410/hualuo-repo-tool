@@ -7,10 +7,11 @@ import com.hualuo.repotool.ui.model.SubPage
 // 设置页二级字段表：照抄 ui/v13.html 的 SUB 表（原型逐行翻译，演示数据）。
 // 真设置项（写进设置文件的那种）在 SettingsCatalog.kt，别混到这里。
 //
-// 家规：图标只写 IconKey 键名，图形字符不进源码（闸门 NoEmojiInSourceTest）。
-// 因此原文案里三处**用符号当语气**的写法改成了文字：
-//   - 「工具✓ 视觉✓」改为「支持工具与视觉」；
-//   - 「裁剪时界面出声（⚠ 行）」改为「（警告行）」；
+// 家规：图标只写 IconKey 键名，图形字符不进源码（闸门 NoEmojiInSourceTest 连注释一起扫，
+// 所以下面提到旧写法时用「对勾」「警告三角」「箭头」这些词，不贴字符本身）。
+// 原文案里三处用符号当语气的写法改成了文字：
+//   - 「工具对勾 视觉对勾」改为「支持工具与视觉」；
+//   - 「裁剪时界面出声（警告三角 行）」改为「（警告行）」；
 //   - 接力与观测说明里的箭头改为顿号与逗号。
 // 意思不变，只是不再拿字符当图形用。
 
@@ -182,7 +183,7 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Note("记忆=AI 自己写的备忘，跨对话生效；这里能看能删"),
     )),
     "datactl" to SubPage("数据控制", listOf(
-        SubField.Row("立即导出", "全部对话+附件清单 → 一个文件 ›"),
+        SubField.Row("立即导出", "全部对话与附件清单打包成一个文件 ›"),
         SubField.Row("从备份导入", "合并模式，同 id 跳过不覆盖 ›"),
         SubField.Seg("自动备份", listOf("关", "每天", "每周"), 1),
         SubField.Input("备份目录", "Download/hualuo-backups/"),
