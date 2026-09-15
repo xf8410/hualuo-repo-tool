@@ -76,7 +76,6 @@ sealed class GenerationError {
             408, 429 -> "对方忙或限流（$statusCode）：等一会儿再发，或把并发降下来"
             413 -> "请求太大（413）：这条内容超了对方上限，删掉部分附件或缩短上下文再发"
             // 5xx 也必须带原文片段：临时挂与配额尽看起来一样，线索都在对方那句话里。
-            // brief() 负责折行、打码、截断，整页 HTML 糊不进气泡。
             in 500..599 -> "对方服务出错（$statusCode）：${brief(message)}。可能是它临时挂了，稍后重试；连着几次都这样就去查这家提供商"
             else -> "网络出错（$statusCode）：${brief(message)}"
         }
@@ -128,10 +127,19 @@ sealed class GenerationError {
         /** 给人看的片段封顶：对方可能回一整页 HTML 错误。 */
         private const val EXCERPT_LIMIT = 220
 
-        /** 折行 + 截断，别把一整页错误糊在气泡里。 */
+        /**
+         * 折行，按**原文**长度截断（超长必带"已截断"标记），最后一步才打码。
+         *
+         * 顺序不能反：先打码的话，一整段 900 字符的垃圾会被长串规则折叠成
+         * 十几字符，长度判断被折叠结果骗过去，"已截断"的承诺就凭空消失了 ——
+         * 这是 CI 用 longProviderMessagesGetFoldedAndTruncated 抓出来的真顺序错。
+         * 截断放前面还省工作量：打码只看得到 220 字符，不用扫一整页 HTML。
+         */
         private fun brief(text: String): String {
-            val flat = maskSecrets(text).replace('\n', ' ').replace('\r', ' ').trim()
-            return if (flat.length <= EXCERPT_LIMIT) flat else flat.take(EXCERPT_LIMIT) + "…（已截断）"
+            val flat = text.replace('\n', ' ').replace('\r', ' ').trim()
+            val clipped = if (flat.length <= EXCERPT_LIMIT) flat
+            else flat.take(EXCERPT_LIMIT) + "…（已截断）"
+            return maskSecrets(clipped)
         }
     }
 }
