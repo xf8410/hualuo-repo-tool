@@ -36,8 +36,11 @@ import java.util.Locale
  *    不许牵连上一条已完成的。
  *  - [worker] 注入点让 JVM 测试能同步跑完一整条链（单测不 sleep 等线程）。
  *
- * 参数写法钉一条 Kotlin 规矩（CI 抓过）：尾随 lambda 永远绑**最后一个**参数——
- * 本类最后一个是 clock，调用方传开关必须具名 `autoRetryCostly = {...}`，不许偷懒尾随。
+ * 参数写法钉两条 Kotlin 规矩（都是 CI 抓过的）：
+ *  - 尾随 lambda 永远绑**最后一个**参数——本类最后一个是 clock，
+ *    调用方传开关必须具名 `autoRetryCostly = {...}`，不许偷懒尾随；
+ *  - **跨模块的 public 属性判空后不智能转换**（:engine 的 ModelListing.error 在 :app
+ *    眼里随时可能被别的模块改值）——先接进局部变量再用。
  */
 class ChatRuntime(
     private val persist: UiPersistence,
@@ -121,13 +124,16 @@ class ChatRuntime(
                 ).listModels(profile)
             }.getOrNull()
             modelsBusy = false
+            if (listing == null) {
+                modelsError = "拉取失败：内部异常（没碰模型清单）"
+                return@Runnable
+            }
+            // 跨模块 public 属性不配智能转换（CI 编译段抓过）：判空先接局部。
+            val failure = listing.error
             when {
-                listing == null -> modelsError = "拉取失败：内部异常（没碰模型清单）"
-                listing.error != null -> modelsError = listing.error.userMessage()
+                failure != null -> modelsError = failure.userMessage()
                 listing.models.isEmpty() -> modelsError = "端点回话正常，但没认出任何模型名：清单没更新"
-                else -> {
-                    remoteModels = listing.models
-                }
+                else -> remoteModels = listing.models
             }
         }
         worker(Thread(body).apply { name = "hualuo-models" })
