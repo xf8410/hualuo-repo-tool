@@ -175,7 +175,7 @@ fun HualuoApp(versionLabel: String) {
             AnimatedVisibility(
                 visible = state.drawerOpen,
                 enter = slideInHorizontally(tween(200)) { -it },
-                exit = slideOutHorizontally(tween(220)) { -it },
+                exit = slideOutHorizontally(tween(200)) { -it },
             ) {
                 DrawerOverlay(state)
             }
