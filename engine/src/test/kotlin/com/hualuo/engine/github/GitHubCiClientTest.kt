@@ -8,7 +8,7 @@ import org.junit.Test
 
 /**
  * GitHub 只读客户端的账：解析只认真字段、坏条目数着报、失败绝不冒充成功、
- * 令牌只进请求头不进任何文本、仓库写法不对就根本不碰网络。
+ * 令牌只进请求头不进 URL 与错误、仓库写法不对就根本不碰网络。
  */
 class GitHubCiClientTest {
 
@@ -74,17 +74,16 @@ class GitHubCiClientTest {
     @Test
     fun githubLinksAreAcceptedAndTokenGoesOnlyIntoTheHeader() {
         val fetch = RecordingFetch(200, """{"workflow_runs":[]}""")
-        GitHubCiClient(fetch).latestRuns("https://github.com/xf8410/hualuo-repo-tool/", "sk-token-1234567890")
+        val snapshot = GitHubCiClient(fetch)
+            .latestRuns("https://github.com/xf8410/hualuo-repo-tool/", "sk-token-1234567890")
 
-        assertEquals("https://api.github.com/repos/xf8410/hualuo-repo-tool/actions/runs?per_page=3", fetch.lastUrl)
-        assertEquals("令牌走头", "sk-token-1234567890", fetch.lastToken)
-        assertTrue("错误路径里没有令牌可泄露（本次是成功，但守规矩要钉住）", snapshotNoLeak(fetch.lastToken))
-    }
-
-    private fun snapshotNoLeak(token: String?): Boolean {
-        // 令牌打码逻辑在 GenerationError 那边兜底；这里钉的是客户端自己不把令牌拼进 URL/错误。
-        val url = "https://api.github.com/repos/a/b/actions/runs"
-        return !url.contains(token ?: "")
+        assertNull(snapshot.error)
+        assertEquals("整条链接粘进来也能用", "https://api.github.com/repos/xf8410/hualuo-repo-tool/actions/runs?per_page=3", fetch.lastUrl)
+        assertEquals("令牌走请求头", "sk-token-1234567890", fetch.lastToken)
+        assertTrue(
+            "令牌不许混进 URL（它只住在头里）：${fetch.lastUrl}",
+            fetch.lastUrl!!.contains("sk-token").not(),
+        )
     }
 
     @Test
