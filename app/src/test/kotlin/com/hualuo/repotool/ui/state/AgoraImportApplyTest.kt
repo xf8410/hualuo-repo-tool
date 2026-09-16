@@ -5,13 +5,16 @@ import com.hualuo.engine.backup.AgoraSessionPlan
 import com.hualuo.engine.store.SessionHead
 import com.hualuo.engine.store.StoredMsg
 import com.hualuo.repotool.backup.BackupGateway
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * 旧 Agora 兑换单应用进活通道的契约（纯 JVM，UiPersistence.None 时 save 是空操作，
  * 这里钉的是「报出来的账」与「键进没进」——persist 是 None，计数逻辑照样走）。
+ *
+ * 依赖只用 JUnit4：app 模块测试类路径同样没有 kotlin-test（run 35107231649 抓过，
+ * 和 engine 那次 run 35105123539 是同一个手病的第二次发作），别再引。
  */
 class AgoraImportApplyTest {
 
@@ -66,14 +69,16 @@ class AgoraImportApplyTest {
     @Test
     fun unrecognizedPlanImportsNothingAndSaysWhy() {
         val state = AppUiState()
-        val message = state.applyAgoraImport(outcome(recognized = false, appliedPlan = null, error = "不是旧 Agora 的备份包"))
+        val message = state.applyAgoraImport(
+            outcome(recognized = false, appliedPlan = null, error = "不是旧 Agora 的备份包"),
+        )
         assertEquals("不是旧 Agora 的备份包", message)
     }
 
     @Test
     fun emptyFieldsAreCountedAsNotAppliedRatherThanOverwriting() {
         val state = AppUiState()
-        // 没兑出密钥/base URL：不写空串盖旧值（旧值是用户手填的，兑换不许清它）
+        // 没兑出密钥/base URL/系统指令：不写空串盖旧值（旧值是用户手填的，兑换不许清它）
         val message = state.applyAgoraImport(
             outcome(appliedPlan = plan(baseUrl = null, apiKey = null, systemPrompt = null, notes = emptyList())),
         )
