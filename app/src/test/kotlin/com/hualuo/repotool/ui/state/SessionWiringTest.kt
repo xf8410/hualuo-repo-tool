@@ -81,8 +81,9 @@ class SessionWiringTest {
 
         rt.send("第一条", "m")
 
-        val id = rt.sessionId
-        assertTrue("发过话就该有会话在盘上：$id", id != null && store.exists(id!!))
+        // 户头必须在：用 error() 解包可空（比起到处 !!，失败时还带人话）
+        val id = rt.sessionId ?: error("发过话就该有会话在盘上，session id 不该还是 null")
+        assertTrue("会话文件真在盘上", store.exists(id))
 
         // 模拟杀进程重开：全新 runtime 接同一份库，同步回读
         val rt2 = runtimeOf(MemPersist(configured), FakeWire(mutableListOf()), store)
@@ -122,7 +123,8 @@ class SessionWiringTest {
             "错误卡不进历史（盘上也不许，家规一路贯到底）：$body",
             body.contains("500"),
         )
-        val loaded = store.load(rt.sessionId!!)!!
+        val sid = rt.sessionId ?: error("发过话就该有会话在盘上")
+        val loaded = store.load(sid)!!
         assertEquals("user+error+user+assistant 四行", 4, loaded.messages.size)
         assertEquals("失败那轮落的是 error 角色", StoredMsg.ROLE_ERROR, loaded.messages[1].role)
         assertEquals("成功那轮落 assistant", StoredMsg.ROLE_ASSISTANT, loaded.messages[3].role)
@@ -143,7 +145,8 @@ class SessionWiringTest {
 
         rt.send("问", "m")
 
-        val last = store.load(rt.sessionId!!)!!.messages.last()
+        val sid = rt.sessionId ?: error("发过话就该有会话在盘上")
+        val last = store.load(sid)!!.messages.last()
         assertEquals("半截归 error 角色（喂模型时永远剔掉）", StoredMsg.ROLE_ERROR, last.role)
         assertTrue("半截必须带标记，重开不冒充成品", last.incomplete)
         assertTrue("半截原文要留在卡上：${last.text}", last.text.contains("半截"))
