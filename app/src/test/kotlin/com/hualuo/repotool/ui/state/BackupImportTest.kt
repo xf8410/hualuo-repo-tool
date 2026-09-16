@@ -67,12 +67,13 @@ class BackupImportTest {
 
     @Test
     fun unreadableSettingsDoNotBlockSessions() {
+        // 属性解析真会炸的写法：坏的 \\u 转义（IllegalArgumentException），不是普通乱文
         val persist = MemPersist()
         val s = state(persist)
         val msg = s.applyImportedBackup(
             BackupGateway.ImportedBackup(
                 formatOk = true,
-                settingsText = "\u0000\u0000 不是属性文件",
+                settingsText = "key=\\uZZZZ",
                 sessionsImported = 2,
                 sessionsSkipped = 0,
                 warnings = emptyList(),
