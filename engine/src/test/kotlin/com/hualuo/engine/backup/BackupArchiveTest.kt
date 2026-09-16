@@ -14,17 +14,22 @@ import org.junit.Test
  */
 class BackupArchiveTest {
 
+    /**
+     * 返回「读包回执 + 回调收到的会话内容」两个账本。
+     * （首版把 seen 关在 helper 里、测试体却引用它——CI 编译段抓过，run 35097676942。）
+     */
     private fun roundTrip(
         settingsText: String,
         sessions: List<BackupSessionSource>,
         appVersion: String = "0.4.0 (4)",
-    ): BackupReadResult {
+    ): Pair<BackupReadResult, Map<String, String>> {
         val bytes = ByteArrayOutputStream()
         writeBackup(bytes, settingsText, sessions, appVersion)
         val seen = LinkedHashMap<String, String>()
-        return readBackup(ByteArrayInputStream(bytes.toByteArray())) { id, stream ->
+        val result = readBackup(ByteArrayInputStream(bytes.toByteArray())) { id, stream ->
             seen[id] = stream.readBytes().toString(Charsets.UTF_8)
         }
+        return result to seen
     }
 
     /** 造一个陌生 zip：没 manifest、条目名字五花八门，甚至带路径意外的会话名。 */
@@ -43,7 +48,7 @@ class BackupArchiveTest {
 
     @Test
     fun roundTripKeepsEverythingVerbatim() {
-        val result = roundTrip(
+        val (result, seen) = roundTrip(
             settingsText = "# ui\nprovider.name=测试端\nprovider.base_url=https://gw.example.com",
             sessions = listOf(
                 BackupSessionSource("s-1") { "user: 你好\nassistant: 好".byteInputStream() },
@@ -64,10 +69,11 @@ class BackupArchiveTest {
 
     @Test
     fun emptyBackupStillCarriesIdentity() {
-        val result = roundTrip(settingsText = "", sessions = emptyList())
+        val (result, seen) = roundTrip(settingsText = "", sessions = emptyList())
         assertEquals(BACKUP_FORMAT, result.manifest?.format)
         assertEquals("", result.settingsText)
         assertEquals(0, result.sessionsHandled)
+        assertTrue(seen.isEmpty())
     }
 
     @Test
