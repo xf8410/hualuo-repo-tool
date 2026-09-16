@@ -10,7 +10,7 @@ import org.junit.Test
 
 /**
  * 备份包的账：写读往返一字不差、身份对不上就拒收、认不出的条目列名照报、
- * 危险 id 写不进包也进不了本地。
+ * 危险 id 写不进包也进不了本地、回调只读一半引擎自己排干。
  */
 class BackupArchiveTest {
 
@@ -25,6 +25,20 @@ class BackupArchiveTest {
         return readBackup(ByteArrayInputStream(bytes.toByteArray())) { id, stream ->
             seen[id] = stream.readBytes().toString(Charsets.UTF_8)
         }
+    }
+
+    /** 造一个陌生 zip：没 manifest、条目名字五花八门，甚至带路径意外的会话名。 */
+    private fun foreignZip(): ByteArray {
+        val out = ByteArrayOutputStream()
+        java.util.zip.ZipOutputStream(out).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry("something-else.txt"))
+            zip.write("hello".toByteArray(Charsets.UTF_8))
+            zip.closeEntry()
+            zip.putNextEntry(java.util.zip.ZipEntry("sessions/..%2Fevil.jsonl"))
+            zip.write("nope".toByteArray(Charsets.UTF_8))
+            zip.closeEntry()
+        }
+        return out.toByteArray()
     }
 
     @Test
@@ -57,29 +71,14 @@ class BackupArchiveTest {
     }
 
     @Test
-    fun foreignEntriesAreListedNotSwallowed() {
-        val bytes = ByteArrayOutputStream()
-        writeBackup(bytes, "a=b", listOf(BackupSessionSource("s-1") { "x".byteInputStream() }), "v")
-        // 手工塞进一个陌生 zip：没 manifest、条目名字五花八门
-        val foreign = java.util.zip.ZipOutputStream(ByteArrayOutputStream().also { it }.let { java.io.ByteArrayOutputStream() })
-        // 上面的写法绕，直接独立造：
-        val out = java.io.ByteArrayOutputStream()
-        java.util.zip.ZipOutputStream(out).use { zip ->
-            zip.putNextEntry(java.util.zip.ZipEntry("something-else.txt"))
-            zip.write("hello".toByteArray(Charsets.UTF_8))
-            zip.closeEntry()
-            zip.putNextEntry(java.util.zip.ZipEntry("sessions/..%2Fevil.jsonl"))
-            zip.write("nope".toByteArray(Charsets.UTF_8))
-            zip.closeEntry()
-        }
-        val seen = LinkedHashMap<String, String>()
-        val result = readBackup(java.io.ByteArrayInputStream(out.toByteArray())) { id, stream ->
-            seen[id] = stream.readBytes().toString(Charsets.UTF_8)
+    fun foreignZipIsNotOursAndGetsListed() {
+        val result = readBackup(ByteArrayInputStream(foreignZip())) { _, _ ->
+            fail("陌生包不该把任何条目当会话回调进来")
         }
         assertNull("没有 manifest 就不是本家的包", result.manifest)
+        assertNull("settings 也没有", result.settingsText)
         assertEquals(0, result.sessionsHandled)
         assertTrue("认不出的条目要列出名字", result.skippedEntries.contains("something-else.txt"))
-        assertEquals("settings 也没有", null, result.settingsText)
     }
 
     @Test
@@ -99,9 +98,9 @@ class BackupArchiveTest {
     }
 
     @Test
-    fun unsafeSessionEntryOnDiskIsSkippedOnRead() {
-        // 邻居的会话 id 形状不对（带斜杠）——读包时不许落成文件
-        val out = java.io.ByteArrayOutputStream()
+    fun unsafeSessionEntryIsSkippedOnRead() {
+        // 会话条目名带斜杠（a/b.jsonl）——读包时不许落成文件
+        val out = ByteArrayOutputStream()
         java.util.zip.ZipOutputStream(out).use { zip ->
             zip.putNextEntry(java.util.zip.ZipEntry(MANIFEST_ENTRY))
             zip.write(
@@ -113,7 +112,7 @@ class BackupArchiveTest {
             zip.write("nope".toByteArray(Charsets.UTF_8))
             zip.closeEntry()
         }
-        val result = readBackup(java.io.ByteArrayInputStream(out.toByteArray())) { _, _ ->
+        val result = readBackup(ByteArrayInputStream(out.toByteArray())) { _, _ ->
             fail("不安全的 id 不该回调进来")
         }
         assertEquals(BACKUP_FORMAT, result.manifest?.format)
@@ -122,8 +121,8 @@ class BackupArchiveTest {
     }
 
     @Test
-    fun truncatedEntryStillAdvances() {
-        // 回调故意只读一半：引擎要自己排干剩余字节，包里后面的条目照样读得到
+    fun truncatedCallbackStillAdvances() {
+        // 回调故意只读 16 字节：引擎要自己排干剩余字节，后面的条目照样读得到
         val bytes = ByteArrayOutputStream()
         val big = "x".repeat(200_000)
         writeBackup(
@@ -134,11 +133,10 @@ class BackupArchiveTest {
         )
         val seen = LinkedHashMap<String, Int>()
         val result = readBackup(ByteArrayInputStream(bytes.toByteArray())) { id, stream ->
-            val head = stream.readNBytes(16).toString(Charsets.UTF_8)
-            seen[id] = head.length
+            seen[id] = stream.readNBytes(16).toString(Charsets.UTF_8).length
         }
         assertEquals(1, result.sessionsHandled)
-        assertEquals("回调只拿了 16 字节，引擎排干剩下的", 16, seen["big"])
-        assertEquals("k=v", result.settingsText)
+        assertEquals(16, seen["big"])
+        assertEquals("排干之后 settings 照样完整读到", "k=v", result.settingsText)
     }
 }
