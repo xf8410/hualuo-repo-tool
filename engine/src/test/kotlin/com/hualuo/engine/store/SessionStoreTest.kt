@@ -2,7 +2,6 @@ package com.hualuo.engine.store
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -15,8 +14,9 @@ import org.junit.rules.TemporaryFolder
  * 钉的是「盘上不许撒谎」这一族规矩：写出去的字原样读回来（含换行引号）、
  * 错误卡照存但永远不回喂、裁剪和坏行都要数着报、追加撞坏文件不许吞前文。
  *
- * 小教训（CI 编译段第五课）：pathOf 返回的就是 File，别再拿 File(...) 包一层——
- * java.io.File 没有「File 构造 File」这个重载。
+ * 教训两课（CI 编译/测试段抓的）：①pathOf 返回的就是 File，别再套 File(...)；
+ * ②create 的参数是模型名，会话 id 一律仓里自生成——想验净化规矩，
+ * 得把花样 id 递进 append/load/delete 这些真的收 id 的口。
  */
 class SessionStoreTest {
 
@@ -159,12 +159,16 @@ class SessionStoreTest {
     @Test
     fun weirdIdsCannotEscapeDirectory() {
         val s = store()
-        // id 里的路径穿越字符全被换掉：写盘落在 dir 内，不拿删除别人文件当特性
-        val id = "../../etc/evil"
-        s.create(id)
-        assertNotNull(s.load(id))
-        val landed = tmp.root.listFiles { f -> f.isFile }!!.map { it.name }
-        assertEquals("穿越后的文件仍须躺在本目录：$landed", listOf(".._.._etc_evil.jsonl"), landed)
+        val sneaky = "../../evil"
+        // 花样 id 走真的收 id 的口：净化后文件落在仓目录内，且这些操作都该如实扑空
+        assertFalse("不存在的花样会话也不许被追加", s.append(sneaky, msg(StoredMsg.ROLE_USER, "想黑谁")))
+        assertNull(s.load(sneaky))
+        assertFalse("删不着就如实说删不着", s.delete(sneaky))
+        assertTrue("花样 id 不许在仓目录外（或内）留下任何文件", tmp.root.listFiles { f -> f.isFile }!!.isEmpty())
+
+        val real = s.create("m")
+        assertEquals("正经会话只能落在仓目录里", listOf("$real.jsonl"),
+            tmp.root.listFiles { f -> f.isFile }!!.map { it.name })
     }
 
     @Test
