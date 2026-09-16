@@ -58,6 +58,8 @@ import java.util.Locale
  *    出来的是 Result<Boolean?>，成功且 x 为 null 时 getOrDefault(false) 递回来的还是 null，
  *    后面 `!ok` 就是对 Boolean? 调 not()——CI 编译段抓过（第五课）。
  *    可空调用先解包成非空再进 runCatching，别把可空性藏在 Result 里。
+ *  - **var 属性没有智能转换**：`if (sessionId == null) { sessionId = created }` 之后
+ *    sessionId 在编译器眼里仍是可空——解包进局部变量再传参，别赌自动转换（第六课补）。
  */
 class ChatRuntime(
     private val persist: UiPersistence,
@@ -275,16 +277,18 @@ class ChatRuntime(
     /** 没接库就不动盘；接了库就把当前户头补上（首次发话时创建 + 补标题 + 落用户行）。 */
     private fun ensureSessionLocked(model: String, firstUserText: String) {
         val s = store ?: return
-        if (sessionId == null) {
-            val created = runCatching { s.create(model) }.getOrElse {
+        // var 属性没有智能转换（第六课补）：解包进局部变量，后面才好当非空传参
+        var sid = sessionId
+        if (sid == null) {
+            sid = runCatching { s.create(model) }.getOrElse {
                 storeIssue = "新会话没建成（${it.message ?: "写盘出错"}）：这轮对话只在屏上，重开会丢"
                 return
             }
-            sessionId = created
+            sessionId = sid
             // 首条话截字当标题（截几个字是调用方的权，家规）；补不了标题不影响聊天
-            runCatching { s.rename(created, firstUserText.take(16)) }
+            runCatching { s.rename(sid, firstUserText.take(16)) }
         }
-        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()), s)
+        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()), sid, s)
     }
 
     /**
@@ -307,7 +311,7 @@ class ChatRuntime(
     }
 
     /** 落一行；失败必须出声（storeIssue），不许静默丢字。 */
-    private fun appendLineLocked(msg: StoredMsg, s: SessionStore, sid: String) {
+    private fun appendLineLocked(msg: StoredMsg, sid: String, s: SessionStore) {
         // 可空调用先解包再进 runCatching（第五课）：别让 null 藏在 Result 里骗过 getOrDefault。
         val ok = runCatching { s.append(sid, msg) }.getOrDefault(false)
         if (!ok) storeIssue = "这条没存上（会话文件写不进）：正文还在屏上，但重开就丢"
