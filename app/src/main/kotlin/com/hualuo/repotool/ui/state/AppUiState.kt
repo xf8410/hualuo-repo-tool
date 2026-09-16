@@ -244,7 +244,7 @@ class AppUiState(
     // ── 备份（数据控制；动作桥接与文件选择器在 RootScreen） ─────────────────
 
     /**
-     * 数据控制页按钮点下的动作（export/import）。设置子页的按钮只发请求，
+     * 数据控制页按钮点下的动作（export/import/import_agora）。设置子页的按钮只发请求，
      * 系统文件选择器（SAF）归 RootScreen 开——纯 JVM 状态层不认识安卓的 ActivityResult。
      */
     var pendingDataAction by mutableStateOf<String?>(null)
@@ -285,7 +285,7 @@ class AppUiState(
             }
         }
         settingsRevision += 1
-        val issues = drainMessages()
+        val issues = persistenceMessages()
         val flushFailure = flushPersistence()
         return buildString {
             append("导入完成：设置 $applied 项、会话 ${backup.sessionsImported} 份")
