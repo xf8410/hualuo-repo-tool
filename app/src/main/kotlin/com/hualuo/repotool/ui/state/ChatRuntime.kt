@@ -44,15 +44,16 @@ import java.util.Locale
  *    不许牵连上一条已完成的。
  *  - [worker] 注入点让 JVM 测试能同步跑完一整条链（单测不 sleep 等线程）。
  *
- * 参数写法钉两条 Kotlin 规矩（都是 CI 抓过的）：
+ * Kotlin 规矩记牢（都是 CI 抓过的）：
  *  - 尾随 lambda 永远绑**最后一个**参数——本类最后一个是 clock，
  *    调用方传开关必须具名 `autoRetryCostly = {...}`，不许偷懒尾随；
  *  - **跨模块的 public 属性判空后不智能转换**（:engine 的 ModelListing.error 在 :app
- *    眼里随时可能被别的模块改值）——先接进局部变量再用。
+ *    眼里随时可能被别的模块改值）——先接进局部变量再用；
  *  - **Result.getOrDefault 只管「失败了」，不管「里面装着 null」**：`runCatching { x?.y() }`
- *    出来的是 Result<Boolean?>，成功且 x 为 null 时 getOrDefault(false) 递回来的还是 null，
- *    后面 `!ok` 就是对 Boolean? 调 not()——CI 编译段抓过（第五课）。
- *    可空调用先解包成非空再进 runCatching，别把可空性藏在 Result 里。
+ *    出来的是 Result<Boolean?>，x 为 null 且没抛异常时 getOrDefault(false) 递回来的
+ *    还是 null——可空调用先解包成非空再进 runCatching（第五课）；
+ *  - **改函数签名要全量过一遍调用点**：appendLineLocked 从带默认参数改成全显式时，
+ *    两处调用点一处漏传、一处参数序颠倒——CI 编译段连抓三次才齐（第六课）。
  */
 class ChatRuntime(
     private val persist: UiPersistence,
@@ -270,7 +271,9 @@ class ChatRuntime(
             // 首条话截字当标题（截几个字是调用方的权，家规）；补不了标题不影响聊天
             runCatching { s.rename(created, firstUserText.take(16)) }
         }
-        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()), s)
+        // 走到这 sessionId 必非空（要么本来就有，要么刚建好；建失败早 return 了）
+        val sid = sessionId ?: return
+        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()), sid, s)
     }
 
     /**
@@ -292,8 +295,8 @@ class ChatRuntime(
         appendLineLocked(stored, sid, s)
     }
 
-    /** 落一行；失败必须出声（storeIssue），不许静默丢字。 */
-    private fun appendLineLocked(msg: StoredMsg, s: SessionStore, sid: String) {
+    /** 落一行；失败必须出声（storeIssue），不许静默丢字。可空性在调用点已解干净。 */
+    private fun appendLineLocked(msg: StoredMsg, sid: String, s: SessionStore) {
         // 可空调用先解包再进 runCatching（第五课）：别让 null 藏在 Result 里骗过 getOrDefault。
         val ok = runCatching { s.append(sid, msg) }.getOrDefault(false)
         if (!ok) storeIssue = "这条没存上（会话文件写不进）：正文还在屏上，但重开就丢"
