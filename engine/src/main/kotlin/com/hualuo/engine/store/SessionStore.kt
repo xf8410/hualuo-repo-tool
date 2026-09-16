@@ -12,6 +12,9 @@ data class SessionHead(
     val createdAtMs: Long,
 )
 
+/** 会话列表的整仓回执：能报头的按新在前排好；读不出头的文件单独数出来，不许装作不存在。 */
+data class SessionListing(val heads: List<Pair<String, SessionHead>>, val unreadable: Int)
+
 /**
  * 落盘的一条消息。role 只认三个真值：
  *  - user / assistant：真说过话的气泡；
@@ -38,7 +41,7 @@ data class StoredMsg(
     }
 }
 
-/** 一次读取的完整回执：坏了几行、剔了几条，全要数着报，不许悄悄丢。 */
+/** 一次读取的完整回执：坏了几行，数着报，不许悄悄丢。 */
 data class LoadedSession(
     val id: String,
     val head: SessionHead?,
@@ -56,7 +59,7 @@ data class FeedResult(
 /**
  * 会话仓（M2 第一刀）：一个会话一个 JSONL 文件，杀进程重开还聊得下去。
  *
- * 格式定死成行式（每行一个对象），append 只加一行、不重写整文件——
+ * 格式定死成行式（首行会话头，之后每行一条消息），append 只加一行、不重写整文件——
  * 打字打到一半崩了，最坏丢那半行，读回来按坏行数着报，前头的字都还在。
  *
  * 为什么不用 SQLite：现在只有「整段读回、末尾追加」两个动作，JSONL 全中且零依赖；
@@ -75,10 +78,10 @@ class SessionStore(private val dir: File) {
 
     /** 新会话：拿毫秒 + 进程内序号当 id，同毫秒撞不上。 */
     fun create(model: String): String {
-        var id = "s" + System.currentTimeMillis() + "-" + seq.incrementAndGet()
+        var id = "s" + System.currentTimeMillis() + "-" + SEQ.incrementAndGet()
         var guard = 0
         while (file(id).exists()) {
-            id = "s" + System.currentTimeMillis() + "-" + seq.incrementAndGet()
+            id = "s" + System.currentTimeMillis() + "-" + SEQ.incrementAndGet()
             if (++guard > 64) error("新建会话撞名撞了 64 次，目录八成被人动过：$dir")
         }
         file(id).writeText(headJson(SessionHead("", model, System.currentTimeMillis())) + "\n")
@@ -86,6 +89,9 @@ class SessionStore(private val dir: File) {
     }
 
     fun exists(id: String): Boolean = file(id).exists()
+
+    /** 会话落盘的完整路径（界面诊断、测试都要用；id 走同一套净化，出不了本目录）。 */
+    fun pathOf(id: String): File = file(id)
 
     /** 追加一条：单行 JSONL，换行引号统一转义（jsonEscape 是唯一的写法出口）。 */
     fun append(id: String, msg: StoredMsg): Boolean {
@@ -95,7 +101,7 @@ class SessionStore(private val dir: File) {
         return true
     }
 
-    /** 给会话补标题（首条用户话截 12 字由调用方决定，这里只负责改写头行）。 */
+    /** 给会话补标题（首条用户话截几个字由调用方决定，这里只负责改写头行）。 */
     fun rename(id: String, title: String): Boolean {
         val loaded = load(id) ?: return false
         val head = (loaded.head ?: SessionHead("", "", System.currentTimeMillis())).copy(title = title)
@@ -104,37 +110,44 @@ class SessionStore(private val dir: File) {
             append("\n")
         }
         // 先写旁再改名：中途崩了顶多留个 .tmp，不拿原会话陪葬
-        val tmp = File(dir, "$id.jsonl.tmp")
+        val tmp = File(dir, file(id).name + ".tmp")
         tmp.writeText(rewritten.toString())
-        val f = file(id)
-        if (!tmp.renameTo(f)) {
+        if (!tmp.renameTo(file(id))) {
             tmp.delete()
             return false
         }
         return true
     }
 
-    /** 整读一个会话：坏行数着报；头行读不懂就 null（消息照给，界面自己决定怎么出声）。 */
+    /**
+     * 整读一个会话：坏行数着报；头行读不懂就 head=null（消息照给，界面自己决定怎么出声）。
+     *
+     * 头的资格只属于第一行非空行：那一行先按头解，解不动**再按消息解一次**——
+     * 整文件没头的会话（老文件头行被删）消息一条都不该丢；两头文件里
+     * 第二个头当坏行数出来，不拿后面的创建时间覆盖第一次。
+     */
     fun load(id: String): LoadedSession? {
         val f = file(id)
         if (!f.exists()) return null
         var head: SessionHead? = null
+        var headTried = false
         val msgs = ArrayList<StoredMsg>()
         var bad = 0
         f.forEachLine { raw ->
             val line = raw.trim()
             if (line.isEmpty()) return@forEachLine
-            if (head == null) {
-                head = parseHead(line) ?: run { bad++; null }
-                return@forEachLine
+            if (!headTried) {
+                headTried = true
+                parseHead(line)?.let { head = it; return@forEachLine }
+                // 首行不是头：不判死刑，落到消息解析再试一把
             }
             parseMsg(line)?.let { msgs += it } ?: run { bad++ }
         }
         return LoadedSession(id, head, msgs, bad)
     }
 
-    /** 会话列表（按创建时间新在前）；头都读不出来的文件算坏文件报个数，不装作不存在。 */
-    fun list(): Listing {
+    /** 会话列表（新在前）；读不出头的文件算坏文件报个数，不装作不存在。 */
+    fun list(): SessionListing {
         val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".jsonl") } ?: emptyArray()
         val heads = ArrayList<Pair<String, SessionHead>>(files.size)
         var unreadable = 0
@@ -144,7 +157,7 @@ class SessionStore(private val dir: File) {
             if (head == null) unreadable++ else heads += f.nameWithoutExtension to head
         }
         heads.sortByDescending { it.second.createdAtMs }
-        return Listing(heads, unreadable)
+        return SessionListing(heads, unreadable)
     }
 
     /** 删会话：整文件删。返回是否真删掉了一个。 */
@@ -160,19 +173,16 @@ class SessionStore(private val dir: File) {
         val feedable = loaded.messages.filter { it.role != StoredMsg.ROLE_ERROR && it.text.isNotBlank() }
         val dropped = loaded.messages.size - feedable.size
         val keep = feedable.takeLast(maxTurns.coerceAtLeast(0))
-        val trimmed = feedable.size - keep.size
-        return FeedResult(keep.map { it.role to it.text }, trimmed, dropped)
+        return FeedResult(keep.map { it.role to it.text }, feedable.size - keep.size, dropped)
     }
 
-    /** 只留文件名安全字符（字母数字点横杠下划线），防止路径穿越写盘。 */
+    /** 只留文件名安全字符（字母数字点横杠下划线），其余换下划线：防路径穿越写盘。 */
     private fun file(id: String): File {
         val safe = id.map { if (it.isLetterOrDigit() || it == '.' || it == '-' || it == '_') it else '_' }
             .joinToString("").take(80)
         require(safe.isNotEmpty()) { "会话 id 不能是空的" }
         return File(dir, "$safe.jsonl")
     }
-
-    private data class Listing(val heads: List<Pair<String, SessionHead>>, val unreadable: Int)
 
     // ── 手写 JSONL 编解码 ──────────────────────────────────────────────────
     // 为什么手写不引序列化库：只有五个字段的对象，转义规则一句话说清；
@@ -239,21 +249,22 @@ class SessionStore(private val dir: File) {
     private fun simpleJson(line: String): Map<String, String>? {
         if (!line.startsWith("{") || !line.endsWith("}")) return null
         val body = line.substring(1, line.length - 1)
+        if (body.isEmpty()) return emptyMap()
         val out = HashMap<String, String>()
         var i = 0
         while (i < body.length) {
             // 读键（必为字符串）
             if (body[i] != '"') return null
-            val keyEnd = body.indexOf(ENDING_QUOTE, i + 1) { body[it] != '\\' }
+            val keyEnd = body.indexOf('"', i + 1) { it != '\\' }
             if (keyEnd < 0) return null
             val key = unescape(body.substring(i + 1, keyEnd))
             i = keyEnd + 1
             if (i >= body.length || body[i] != ':') return null
             i++
-            // 读值：字符串 / 数字 / true
+            // 读值：字符串 / true / 数字（其余按到逗号截断）
             when {
                 body[i] == '"' -> {
-                    val valEnd = body.indexOf(ENDING_QUOTE, i + 1) { body[it] != '\\' }
+                    val valEnd = body.indexOf('"', i + 1) { it != '\\' }
                     if (valEnd < 0) return null
                     out[key] = unescape(body.substring(i + 1, valEnd))
                     i = valEnd + 1
@@ -303,7 +314,6 @@ class SessionStore(private val dir: File) {
     }
 
     private companion object {
-        const val ENDING_QUOTE = '"'
-        val seq = java.util.concurrent.atomic.AtomicInteger()
+        val SEQ = java.util.concurrent.atomic.AtomicInteger()
     }
 }
