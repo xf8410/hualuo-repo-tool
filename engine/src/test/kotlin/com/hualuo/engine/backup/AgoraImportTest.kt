@@ -1,19 +1,22 @@
 package com.hualuo.engine.backup
 
 import com.hualuo.engine.store.StoredMsg
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
  * 旧 Agora 备份兑换器的契约测试：包按旧仓 DataExporter 的真实形状造，
  * 断言「兑出什么、略过什么、账怎么报」。样本 JSON 就是旧仓导出的逐字段仿写。
+ *
+ * 依赖只用 JUnit4：engine 模块测试类路径上没有 kotlin-test（run 35105123539
+ * 抓过 Unresolved reference 'test'），新测试跟着老测试用 org.junit，别引新依赖。
  */
 class AgoraImportTest {
 
