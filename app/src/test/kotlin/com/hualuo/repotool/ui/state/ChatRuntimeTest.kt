@@ -200,10 +200,12 @@ class ChatRuntimeTest {
 
         runtime.refreshModels()
 
-        assertTrue("失败不许留旧名单冒充成功".let {
-            runtime.remoteModels.isEmpty() && runtime.modelsError?.contains("401") == true
-        })
-        assertFalse(runtime.modelsBusy)
+        assertTrue("失败不许留旧名单冒充成功", runtime.remoteModels.isEmpty())
+        assertTrue(
+            "错话要带 401 与出路：${runtime.modelsError}",
+            runtime.modelsError?.contains("401") == true,
+        )
+        assertFalse("失败收场忙灯也要归位", runtime.modelsBusy)
     }
 
     @Test
@@ -213,7 +215,7 @@ class ChatRuntimeTest {
 
         runtime.refreshModels()
 
-        assertTrue(runtime.remoteModels.isEmpty())
+        assertTrue("空名单不许装成清单", runtime.remoteModels.isEmpty())
         assertTrue(
             "空名单要单说一句，不许和「拉取成功」混在一起：${runtime.modelsError}",
             runtime.modelsError?.contains("没认出") == true,
