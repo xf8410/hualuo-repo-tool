@@ -225,11 +225,11 @@ fun HualuoApp(versionLabel: String) {
                 DrawerOverlay(state)
             }
 
-            // 设置层（右滑入，盖满整壳）
+            // 设置层（右滑入，盖满整壳；滑出方向与滑入对称，都是从右缘走）
             AnimatedVisibility(
                 visible = state.settingsOpen,
                 enter = slideInHorizontally(tween(220)) { it },
-                exit = slideOutHorizontally(tween(220)) { -it },
+                exit = slideOutHorizontally(tween(220)) { it },
             ) {
                 SettingsOverlay(state)
             }
