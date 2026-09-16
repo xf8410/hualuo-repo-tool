@@ -112,12 +112,17 @@ fun writeBackup(
  * 调用方吃没吃完都不影响走到下一条。
  *
  * [onProgress]（0.6.0）：每收进一份会话回调一次（已收份数）。导入大包时界面
- * 靠它报「已读 N 份」，不再干瞪。默认空实现，老调用方零改动。
+ * 靠它报「已读 N 份」，不再干瞪。默认空实现。
+ *
+ * **参数顺序是钉死的**：[onProgress] 必须排在 [onSession] **前面**——老调用方全部
+ * 用尾随 lambda 传 onSession，尾随 lambda 永远绑最后一个参数；onProgress 若排最后，
+ * 老调用整个读包编不过（run 35115150047 抓的正是这个，"No value passed for
+ * parameter 'onSession'"）。谁想换顺序，先把所有调用点改成具名参数再说。
  */
 fun readBackup(
     input: InputStream,
-    onSession: (id: String, stream: InputStream) -> Unit,
     onProgress: (handledSessions: Int) -> Unit = {},
+    onSession: (id: String, stream: InputStream) -> Unit,
 ): BackupReadResult {
     var manifest: BackupManifest? = null
     var settingsText: String? = null
