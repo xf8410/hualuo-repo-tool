@@ -49,6 +49,10 @@ import java.util.Locale
  *    调用方传开关必须具名 `autoRetryCostly = {...}`，不许偷懒尾随；
  *  - **跨模块的 public 属性判空后不智能转换**（:engine 的 ModelListing.error 在 :app
  *    眼里随时可能被别的模块改值）——先接进局部变量再用。
+ *  - **Result.getOrDefault 只管「失败了」，不管「里面装着 null」**：`runCatching { x?.y() }`
+ *    出来的是 Result<Boolean?>，成功且 x 为 null 时 getOrDefault(false) 递回来的还是 null，
+ *    后面 `!ok` 就是对 Boolean? 调 not()——CI 编译段抓过（第五课）。
+ *    可空调用先解包成非空再进 runCatching，别把可空性藏在 Result 里。
  */
 class ChatRuntime(
     private val persist: UiPersistence,
@@ -240,7 +244,7 @@ class ChatRuntime(
             busy = false
             // 收场即落一行：存的是屏上那张卡的原文（半截也照存 + incomplete 标记），
             // 重开摆回来的就是用户当时看见的东西，一字不差。
-            persistSettleLocked(finished, error != null || messages.lastOrNull()?.isError == true)
+            persistSettleLocked(finished, isErrorCard = error != null)
         }
     }
 
@@ -266,14 +270,18 @@ class ChatRuntime(
             // 首条话截字当标题（截几个字是调用方的权，家规）；补不了标题不影响聊天
             runCatching { s.rename(created, firstUserText.take(16)) }
         }
-        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()))
+        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()), s)
     }
 
-    /** 收场那行：错误/半截存 error 角色（喂模型时永远剔掉），成品存 assistant。 */
+    /**
+     * 收场那行：错误/半截存 error 角色（喂模型时永远剔掉），成品存 assistant。
+     * isErrorCard 传「error != null」即可：error 卡落 error 角色；error 为 null 时
+     * 最后那张卡必是成品（空收场在上面已兜底成错误卡，但那条走的是 error != null 路径）。
+     */
     private fun persistSettleLocked(finished: String, isErrorCard: Boolean) {
+        if (!isErrorCard && finished.isEmpty()) return // 双保险：不落空行
         val sid = sessionId ?: return
         val s = store ?: return
-        if (!isErrorCard && finished.isEmpty()) return // 不该发生（上面已兜底成错误卡），双保险不落空行
         val card = messages.lastOrNull() ?: return
         val stored = StoredMsg(
             role = if (isErrorCard) StoredMsg.ROLE_ERROR else StoredMsg.ROLE_ASSISTANT,
@@ -284,9 +292,10 @@ class ChatRuntime(
         appendLineLocked(stored, sid, s)
     }
 
-    private fun appendLineLocked(msg: StoredMsg, sid: String? = sessionId, s: SessionStore? = store) {
-        val id = sid ?: return
-        val ok = runCatching { s?.append(id, msg) }.getOrDefault(false)
+    /** 落一行；失败必须出声（storeIssue），不许静默丢字。 */
+    private fun appendLineLocked(msg: StoredMsg, s: SessionStore, sid: String) {
+        // 可空调用先解包再进 runCatching（第五课）：别让 null 藏在 Result 里骗过 getOrDefault。
+        val ok = runCatching { s.append(sid, msg) }.getOrDefault(false)
         if (!ok) storeIssue = "这条没存上（会话文件写不进）：正文还在屏上，但重开就丢"
     }
 
