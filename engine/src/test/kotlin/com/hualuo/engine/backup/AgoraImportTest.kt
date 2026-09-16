@@ -15,12 +15,13 @@ import java.util.zip.ZipOutputStream
  * 旧 Agora 备份兑换器的契约测试：包按旧仓 DataExporter 的真实形状造，
  * 断言「兑出什么、略过什么、账怎么报」。样本 JSON 就是旧仓导出的逐字段仿写。
  *
- * 依赖只用 JUnit4：engine 模块测试类路径上没有 kotlin-test（run 35105123539
- * 抓过 Unresolved reference 'test'），新测试跟着老测试用 org.junit，别引新依赖。
+ * 两条已经吃过的亏，钉在这里防再犯：
+ *  - engine 测试类路径没有 kotlin-test，用 org.junit（run 35105123539）；
+ *  - 源码里不许有箭头等符号字符，连注释和转义写法都不行（红线闸门，run 35105700713）。
  */
 class AgoraImportTest {
 
-    private fun agoraZip(vararg extra: Pair<String, String> = emptyArray()): ByteArray {
+    private fun agoraZip(vararg extra: Pair<String, String>): ByteArray {
         val bytes = ByteArrayOutputStream()
         ZipOutputStream(bytes).use { zip ->
             fun put(name: String, content: String) {
@@ -69,7 +70,7 @@ class AgoraImportTest {
                  "tasks":[{"id":"t1","name":"日报","prompt":"p","cronExpr":"0 8 * * *","nextRunAt":0,"createdAt":0}],
                  "loops":[]}
             """.trimIndent())
-            put("images/m1/0", "PNG-_BYTES")
+            put("images/m1/0", "PNG_BYTES")
             put("memories/active_memory.md", "记住：矿在北坡")
             extra.forEach { (n, c) -> put(n, c) }
         }
@@ -79,10 +80,10 @@ class AgoraImportTest {
     @Test
     fun fullPlanMapsProviderFlagsPromptAndSessionsWithHonestNotes() {
         val plan = readAgoraBackup(ByteArrayInputStream(agoraZip()))
-        assertTrue(plan.recognized)
+        assertTrue("合法旧包必须认出来", plan.recognized)
         assertEquals(3, plan.formatVersion)
 
-        // 激活的那把钥匙对号：deepseek/k1 → sk-live-9，不是备用的 k2
+        // 激活的那把钥匙对号：deepseek 的 k1，兑出 sk-live-9，不是备用的 k2
         assertEquals("deepseek", plan.providerName)
         assertEquals("https://api.deepseek.com/v1", plan.baseUrl)
         assertEquals("sk-live-9", plan.apiKey)
@@ -98,7 +99,7 @@ class AgoraImportTest {
         assertEquals("你是账房先生。", plan.systemPrompt)
         assertTrue(plan.notes.any { it.contains("模板变量") })
 
-        // 会话：1 份；消息 USER→user、MODEL→assistant、ERROR→error、TOOL/纯图剔掉并记账
+        // 会话：1 份；USER 变 user、MODEL 变 assistant、ERROR 变 error；TOOL 与纯图消息剔掉并记账
         assertEquals(1, plan.sessions.size)
         val s = plan.sessions[0]
         assertEquals("agora-11111111-1111-1111-1111-111111111111", s.id)
@@ -137,9 +138,8 @@ class AgoraImportTest {
 
     @Test
     fun duplicateConversationIdsGetSuffixesInsteadOfOverwriting() {
-        val bytes = agoraZip()
-        val plan = readAgoraBackup(ByteArrayInputStream(bytes))
-        assertTrue(plan.recognized)
+        val plan = readAgoraBackup(ByteArrayInputStream(agoraZip()))
+        assertTrue("合法旧包必须认出来", plan.recognized)
         // 同一个包跑两次兑进同一目录是网关的事；这里只钉计划内 id 唯一
         val ids = plan.sessions.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
