@@ -2,8 +2,11 @@ package com.hualuo.engine.backup
 
 import com.hualuo.engine.store.SessionHead
 import com.hualuo.engine.store.StoredMsg
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
@@ -13,9 +16,14 @@ import java.util.zip.ZipInputStream
 // 按 xf8410/Agora-Workbench 源码钉死（DataExporter.kt / SettingsManager.kt，备份格式版本 1..3）：
 // zip 包内五个有用条目，其余（images/、videos/、memories/、custom_font/）当场略过并计数。
 // 字段名 = 旧仓 @Serializable 属性名，原样照抄；读不懂的一律按缺省处理，不炸。
+//
+// **家规（run 35105700713 用两轮红换来的）**：engine 模块刻意不引 kotlin 序列化**编译器插件**
+// （engine/build.gradle.kts 里写着缘由）——所以这里严禁 @Serializable + decodeFromString：
+// 编译照过、运行时却没有生成的 serializer，runCatching 会把每次 parse 的异常吞成 null，
+// 全部字段静默变缺省，测试抓到的只是「recognized=false」这种无头案。
+// 本模块解析一律走 Json.parseToJsonElement 动态读，和引擎其他文件同一条路。
 
 /** manifest.json：认包的唯一凭证——没有它或版本不在 1..3，整个包拒收。 */
-@Serializable
 data class AgoraManifest(
     val agora_export_version: Int = 0,
     val app_version: String = "",
@@ -24,7 +32,6 @@ data class AgoraManifest(
     val has_api_keys: Boolean = false,
 )
 
-@Serializable
 data class AgoraApiKey(
     val id: String = "",
     val name: String = "",
@@ -32,8 +39,7 @@ data class AgoraApiKey(
     val provider: String = "",
 )
 
-/** api_keys.json：apiKeys 配 activeApiKeyIds（provider→keyId）才能对出「当前用的那把钥匙」。 */
-@Serializable
+/** api_keys.json：apiKeys 配 activeApiKeyIds（provider 对到 keyId）才能对出「当前用的那把钥匙」。 */
 data class AgoraKeys(
     val apiKeys: List<AgoraApiKey> = emptyList(),
     val activeApiKeyIds: Map<String, String> = emptyMap(),
@@ -41,11 +47,9 @@ data class AgoraKeys(
     val shellApiKeys: Map<String, String> = emptyMap(),
 )
 
-@Serializable
 data class AgoraCustomProvider(val name: String = "")
 
-/** settings.json 只摘新版能接的字段，其余靠 ignoreUnknownKeys 路过——贪多必错。 */
-@Serializable
+/** settings.json 只摘新版能接的字段，其余字段路过不读——贪多必错。 */
 data class AgoraSettings(
     val selectedModel: String = "",
     val providerBaseUrls: Map<String, String> = emptyMap(),
@@ -58,14 +62,12 @@ data class AgoraSettings(
     val activeSystemPromptId: String? = null,
 )
 
-@Serializable
 data class AgoraPromptItem(
     val id: String = "",
     val type: String = "CUSTOM",
     val value: String = "",
 )
 
-@Serializable
 data class AgoraPromptEntry(
     val id: String = "",
     val title: String = "",
@@ -73,7 +75,6 @@ data class AgoraPromptEntry(
     val systemItems: List<AgoraPromptItem> = emptyList(),
 )
 
-@Serializable
 data class AgoraConversation(
     val id: String = "",
     val title: String = "",
@@ -82,7 +83,6 @@ data class AgoraConversation(
 )
 
 /** images/attachmentMeta 用来数「媒体带不过来」的账，不搬运内容。 */
-@Serializable
 data class AgoraMessage(
     val id: String = "",
     val conversationId: String = "",
@@ -94,12 +94,11 @@ data class AgoraMessage(
     val attachmentMeta: String? = null,
 )
 
-@Serializable
 data class AgoraConversationsBlock(
     val conversations: List<AgoraConversation> = emptyList(),
     val messages: List<AgoraMessage> = emptyList(),
-    val tasks: List<kotlinx.serialization.json.JsonObject> = emptyList(),
-    val loops: List<kotlinx.serialization.json.JsonObject> = emptyList(),
+    val tasks: List<JsonObject> = emptyList(),
+    val loops: List<JsonObject> = emptyList(),
 )
 
 /** 转出来的一个会话：id 已加 agora- 前缀并净化，head/messages 与新版会话库同行同款。 */
@@ -130,12 +129,10 @@ data class AgoraImportPlan(
     val notes: List<String> = emptyList(),
 )
 
-private val AGORA_JSON = Json { ignoreUnknownKeys = true }
-
 /** conversations.json 的字符上限：旧格式是一个大 JSON，超过就明说读不完，不拿内存赌命。 */
-const val MAX_AGORA_CONVERSATION_CHARS = 48 shl 20
+const val MAX_AGORA_CONVERSATION_CHARS = 48 * 1024 * 1024
 
-private const val MAX_SMALL_ENTRY_CHARS = 2 shl 20
+private const val MAX_SMALL_ENTRY_CHARS = 2 * 1024 * 1024
 
 /**
  * 读旧 Agora 备份：单趟 zip 流（不整包进内存），五个条目各有界收进，
@@ -164,7 +161,7 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
         }
     }
 
-    val manifest = collected["manifest.json"]?.let { parseOrNull<AgoraManifest>(it) }
+    val manifest = collected["manifest.json"]?.let { parseManifest(it) }
     if (manifest == null || manifest.agora_export_version !in 1..3) {
         return AgoraImportPlan(recognized = false)
     }
@@ -174,14 +171,14 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
     }
 
     // ── 提供商三件套：activeApiKeyIds 指到哪把钥匙，就兑哪套 ────────────────
-    val keys = collected["api_keys.json"]?.let { parseOrNull<AgoraKeys>(it) } ?: AgoraKeys()
+    val keys = collected["api_keys.json"]?.let { parseKeys(it) } ?: AgoraKeys()
     val active = keys.activeApiKeyIds.entries.firstOrNull { it.key.isNotBlank() && it.value.isNotBlank() }
     val keyEntry = active?.let { a -> keys.apiKeys.firstOrNull { it.id == a.value } }
     val providerName = keyEntry?.provider?.takeIf { it.isNotBlank() }
         ?: active?.key?.takeIf { it.isNotBlank() }
         ?: keys.apiKeys.firstOrNull()?.provider?.takeIf { it.isNotBlank() }
-        ?: collected["settings.json"]?.let { parseOrNull<AgoraSettings>(it) }?.customProviders?.firstOrNull()?.name
-    val settings = collected["settings.json"]?.let { parseOrNull<AgoraSettings>(it) } ?: AgoraSettings()
+        ?: collected["settings.json"]?.let { parseSettings(it) }?.customProviders?.firstOrNull()?.name
+    val settings = collected["settings.json"]?.let { parseSettings(it) } ?: AgoraSettings()
     val baseUrl = providerName?.let { p -> settings.providerBaseUrls[p]?.takeIf { it.isNotBlank() } }
     val apiKey = keyEntry?.key?.takeIf { it.isNotBlank() }
     if (keys.apiKeys.isNotEmpty() && apiKey == null) {
@@ -198,7 +195,7 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
     }
 
     // ── 系统指令：激活的那条；模板变量没法在新版编译，只兑字面部分 ───────────
-    val prompts = collected["system_prompts.json"]?.let { parseOrNull<List<AgoraPromptEntry>>(it) } ?: emptyList()
+    val prompts = collected["system_prompts.json"]?.let { parsePrompts(it) } ?: emptyList()
     var systemPrompt: String? = null
     if (settings.activeSystemPromptId != null) {
         val entry = prompts.firstOrNull { it.id == settings.activeSystemPromptId }
@@ -225,7 +222,7 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
         if (raw.length >= MAX_AGORA_CONVERSATION_CHARS) {
             conversationBlockTruncated = true
         }
-        parseOrNull<AgoraConversationsBlock>(raw)?.let { block ->
+        parseConversations(raw)?.let { block ->
             conversations = block.conversations
             messages = block.messages
             tasksCount = block.tasks.size
@@ -233,7 +230,7 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
         }
     }
     if (conversationBlockTruncated) {
-        notes.add("会话块超过 ${MAX_AGORA_CONVERSATION_CHARS / (1 shl 20)}MB 没读完：这次只兑设置，会话请分批导或先清旧图再导一次")
+        notes.add("会话块超过 ${MAX_AGORA_CONVERSATION_CHARS / (1024 * 1024)}MB 没读完：这次只兑设置，会话请分批导或先清旧图再导一次")
     }
 
     val byConv = LinkedHashMap<String, MutableList<AgoraMessage>>()
@@ -254,7 +251,6 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
 
     val usedIds = HashSet<String>()
     val sessions = ArrayList<AgoraSessionPlan>(conversations.size)
-    var oddStatusTotal = 0
     for (c in conversations) {
         val convMsgs = byConv[c.id] ?: continue
         val mapped = ArrayList<StoredMsg>(convMsgs.size)
@@ -282,11 +278,10 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
         }
         sessions.add(AgoraSessionPlan(id, SessionHead(c.title, c.modelId ?: "", c.lastUpdated), mapped))
     }
-    oddStatusTotal = oddStatus
 
     if (blankOrMedia > 0) notes.add("纯附件/空文本消息 ${blankOrMedia} 条没兑（图片视频不在备份里，新版本也不存气泡媒体）")
     if (unknownParticipant > 0) notes.add("身份不明的消息 ${unknownParticipant} 条没兑（旧版工具/系统气泡）")
-    if (oddStatusTotal > 0) notes.add("状态异常（非成功也非错误）的消息 ${oddStatusTotal} 条没兑")
+    if (oddStatus > 0) notes.add("状态异常（非成功也非错误）的消息 ${oddStatus} 条没兑")
     if (tasksCount > 0 || loopsCount > 0) {
         notes.add("定时任务 ${tasksCount} 条、循环 ${loopsCount} 条：新版还没有这功能，没导（已在路线图）")
     }
@@ -330,5 +325,126 @@ private fun readBoundedText(input: InputStream, cap: Int): String {
     return out.toString()
 }
 
-private inline fun <reified T> parseOrNull(json: String): T? =
-    runCatching { AGORA_JSON.decodeFromString<T>(json) }.getOrNull()
+// ── 动态解析（家规路线：parseToJsonElement，坏包一律 null，不许抛出本文件） ────
+
+private fun rootObject(text: String): JsonObject? =
+    runCatching { Json.parseToJsonElement(text) }.getOrNull() as? JsonObject
+
+private fun strOf(e: JsonElement?): String? = (e as? JsonPrimitive)?.content
+
+private fun longOf(e: JsonElement?): Long? = strOf(e)?.toLongOrNull()
+
+private fun boolOf(e: JsonElement?): Boolean? =
+    strOf(e)?.let { it.equals("true", ignoreCase = true) || it == "1" }
+
+private fun strList(e: JsonElement?): List<String> =
+    (e as? JsonArray)?.mapNotNull { strOf(it) } ?: emptyList()
+
+/** JsonObject 键值对全按字符串收（旧格式里这些值就是字符串；读不出就丢这对）。 */
+private fun stringMap(e: JsonElement?): Map<String, String> =
+    (e as? JsonObject)?.entries?.mapNotNull { (k, v) -> strOf(v)?.let { k to it } }?.toMap() ?: emptyMap()
+
+private fun parseManifest(text: String): AgoraManifest? {
+    val o = rootObject(text) ?: return null
+    return AgoraManifest(
+        agora_export_version = longOf(o["agora_export_version"])?.toInt() ?: 0,
+        app_version = strOf(o["app_version"]) ?: "",
+        exported_at = strOf(o["exported_at"]) ?: "",
+        categories = strList(o["categories"]),
+        has_api_keys = boolOf(o["has_api_keys"]) ?: false,
+    )
+}
+
+private fun parseKeys(text: String): AgoraKeys? {
+    val o = rootObject(text) ?: return null
+    val apiKeys = (o["apiKeys"] as? JsonArray)?.mapNotNull { e ->
+        (e as? JsonObject)?.let {
+            AgoraApiKey(
+                id = strOf(it["id"]) ?: "",
+                name = strOf(it["name"]) ?: "",
+                key = strOf(it["key"]) ?: "",
+                provider = strOf(it["provider"]) ?: "",
+            )
+        }
+    } ?: emptyList()
+    return AgoraKeys(
+        apiKeys = apiKeys,
+        activeApiKeyIds = stringMap(o["activeApiKeyIds"]),
+        webSearchApiKeys = stringMap(o["webSearchApiKeys"]),
+        shellApiKeys = stringMap(o["shellApiKeys"]),
+    )
+}
+
+private fun parseSettings(text: String): AgoraSettings? {
+    val o = rootObject(text) ?: return null
+    val customProviders = (o["customProviders"] as? JsonArray)?.mapNotNull { e ->
+        (e as? JsonObject)?.let { AgoraCustomProvider(name = strOf(it["name"]) ?: "") }
+    } ?: emptyList()
+    return AgoraSettings(
+        selectedModel = strOf(o["selectedModel"]) ?: "",
+        providerBaseUrls = stringMap(o["providerBaseUrls"]),
+        customProviders = customProviders,
+        thinkingEnabled = boolOf(o["thinkingEnabled"]),
+        thinkingLevel = strOf(o["thinkingLevel"]),
+        codeExecutionEnabled = boolOf(o["codeExecutionEnabled"]),
+        webSearchEnabled = boolOf(o["webSearchEnabled"]),
+        shellEnabled = boolOf(o["shellEnabled"]),
+        activeSystemPromptId = strOf(o["activeSystemPromptId"]),
+    )
+}
+
+private fun parsePrompts(text: String): List<AgoraPromptEntry> {
+    val arr = runCatching { Json.parseToJsonElement(text) }.getOrNull() as? JsonArray ?: return emptyList()
+    return arr.mapNotNull { e ->
+        val o = e as? JsonObject ?: return@mapNotNull null
+        val items = (o["systemItems"] as? JsonArray)?.mapNotNull { i ->
+            (i as? JsonObject)?.let {
+                AgoraPromptItem(
+                    id = strOf(it["id"]) ?: "",
+                    type = strOf(it["type"]) ?: "CUSTOM",
+                    value = strOf(it["value"]) ?: "",
+                )
+            }
+        } ?: emptyList()
+        AgoraPromptEntry(
+            id = strOf(o["id"]) ?: "",
+            title = strOf(o["title"]) ?: "",
+            content = strOf(o["content"]) ?: "",
+            systemItems = items,
+        )
+    }
+}
+
+private fun parseConversations(text: String): AgoraConversationsBlock? {
+    val o = rootObject(text) ?: return null
+    val conversations = (o["conversations"] as? JsonArray)?.mapNotNull { e ->
+        (e as? JsonObject)?.let {
+            AgoraConversation(
+                id = strOf(it["id"]) ?: "",
+                title = strOf(it["title"]) ?: "",
+                lastUpdated = longOf(it["lastUpdated"]) ?: 0,
+                modelId = strOf(it["modelId"]),
+            )
+        }
+    } ?: emptyList()
+    val messages = (o["messages"] as? JsonArray)?.mapNotNull { e ->
+        (e as? JsonObject)?.let {
+            AgoraMessage(
+                id = strOf(it["id"]) ?: "",
+                conversationId = strOf(it["conversationId"]) ?: "",
+                text = strOf(it["text"]) ?: "",
+                participant = strOf(it["participant"]) ?: "MODEL",
+                status = strOf(it["status"]) ?: "SUCCESS",
+                timestamp = longOf(it["timestamp"]) ?: 0,
+                images = strList(it["images"]),
+                attachmentMeta = strOf(it["attachmentMeta"]),
+            )
+        }
+    } ?: emptyList()
+    return AgoraConversationsBlock(
+        conversations = conversations,
+        messages = messages,
+        tasks = (o["tasks"] as? JsonArray)?.filterIsInstance<JsonObject>() ?: emptyList(),
+        loops = (o["loops"] as? JsonArray)?.filterIsInstance<JsonObject>() ?: emptyList(),
+    )
+}
