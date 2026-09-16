@@ -27,9 +27,12 @@ class BackupProgressTest {
         val out = ByteArrayOutputStream()
         writeBackup(out, "k=v", sources(listOf("a", "b")), "0.6.0-test")
         val handled = ArrayList<Int>()
-        readBackup(ByteArrayInputStream(out.toByteArray()), onSession = { _, _ -> Unit }) {
-            handled.add(it)
-        }
+        // 具名参数调用：onProgress 排在 onSession 前是钉死的顺序（保老调用尾随 lambda 兼容）
+        readBackup(
+            ByteArrayInputStream(out.toByteArray()),
+            onProgress = { handled.add(it) },
+            onSession = { _, _ -> Unit },
+        )
         assertEquals(listOf(1, 2), handled)
     }
 }
