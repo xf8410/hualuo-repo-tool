@@ -262,6 +262,9 @@ class AppUiState(
      * 把导入的备份应用进**活通道**：设置逐键 save（活通道是唯一事实，绕过它直接写文件
      * 会被下一次 flush 用旧值盖掉）；会话已由网关落盘，这里只把账报出来。
      * 返回一句话给 toast；修订号推一格 + 立即落盘，界面与盘上同时吃到新值。
+     *
+     * 属性解析必须喂 StringReader：Properties.load(InputStream) 按 ISO-8859-1 解码，
+     * 中文值全会变乱码——CI 测试段抓过（run 35099409305），别改回字节流。
      */
     fun applyImportedBackup(backup: BackupGateway.ImportedBackup): String {
         if (!backup.formatOk) {
@@ -274,10 +277,13 @@ class AppUiState(
         val settingsText = backup.settingsText ?: ""
         if (settingsText.isNotEmpty()) {
             val props = java.util.Properties()
-            val loadFailure = runCatching { props.load(settingsText.byteInputStream(Charsets.UTF_8)) }
+            val loadFailure = runCatching { props.load(java.io.StringReader(settingsText)) }
                 .exceptionOrNull()
             if (loadFailure != null) {
-                return "备份里的设置读不懂（${loadFailure.message ?: "格式不对"}）：会话已导入，设置没动"
+                // 设置坏了不挡会话：会话账必须照样报全
+                return "备份里的设置读不懂（${loadFailure.message ?: "格式不对"}）：" +
+                    "设置没动、会话 ${backup.sessionsImported} 份已入库" +
+                    backup.warnings.joinToString("；", prefix = "；")
             }
             for (name in props.stringPropertyNames()) {
                 persist.save(name, props.getProperty(name))
