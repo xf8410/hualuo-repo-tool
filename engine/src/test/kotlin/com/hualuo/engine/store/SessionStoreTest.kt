@@ -1,6 +1,5 @@
 package com.hualuo.engine.store
 
-import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -15,6 +14,9 @@ import org.junit.rules.TemporaryFolder
  *
  * 钉的是「盘上不许撒谎」这一族规矩：写出去的字原样读回来（含换行引号）、
  * 错误卡照存但永远不回喂、裁剪和坏行都要数着报、追加撞坏文件不许吞前文。
+ *
+ * 小教训（CI 编译段第五课）：pathOf 返回的就是 File，别再拿 File(...) 包一层——
+ * java.io.File 没有「File 构造 File」这个重载。
  */
 class SessionStoreTest {
 
@@ -89,9 +91,9 @@ class SessionStoreTest {
         val id = s.create("m")
         s.append(id, msg(StoredMsg.ROLE_USER, "好行一"))
         // 手动塞两种坏行：缺右花括号的残行、角色不认识的行
-        File(s.pathOf(id)).appendText("{k:m,role:user\n")
+        s.pathOf(id).appendText("{k:m,role:user\n")
         s.append(id, msg(StoredMsg.ROLE_ASSISTANT, "好行二"))
-        File(s.pathOf(id)).appendText("{\"k\":\"m\",\"role\":\"unknown-role\",\"text\":\"\",\"at\":1}\n")
+        s.pathOf(id).appendText("{\"k\":\"m\",\"role\":\"unknown-role\",\"text\":\"\",\"at\":1}\n")
 
         val loaded = s.load(id)!!
         assertEquals("两条好行原样在", listOf("好行一", "好行二"), loaded.messages.map { it.text })
@@ -103,7 +105,7 @@ class SessionStoreTest {
         val s = store()
         val id = s.create("m")
         s.append(id, msg(StoredMsg.ROLE_USER, "没头也行"))
-        val f = File(s.pathOf(id))
+        val f = s.pathOf(id)
         // 把头行删掉：整段内容不许因为头烂了就全不见——首行按消息再解一次
         f.writeText(f.readLines().drop(1).joinToString("\n", postfix = "\n"))
 
@@ -140,7 +142,7 @@ class SessionStoreTest {
         val old = s.create("m")
         Thread.sleep(2) // createdAtMs 毫秒级，连开两条得拉开一瞬才分得出先后
         val fresh = s.create("m")
-        File(s.pathOf("corrupt")).writeText("这不是 jsonl\n")
+        s.pathOf("corrupt").writeText("这不是 jsonl\n")
 
         val listing = s.list()
         assertEquals(listOf(fresh, old), listing.heads.map { it.first })
@@ -150,8 +152,8 @@ class SessionStoreTest {
     @Test
     fun appendToUnknownSessionFailsLoudlyNotSilently() {
         val s = store()
-        assertFalse("给不存在的会话追加必须返回 false，让调用方出声", s.append("s不存在", msg(StoredMsg.ROLE_USER, "hi")))
-        assertNull(s.load("s不存在"))
+        assertFalse("给不存在的会话追加必须返回 false，让调用方出声", s.append("s未知", msg(StoredMsg.ROLE_USER, "hi")))
+        assertNull(s.load("s未知"))
     }
 
     @Test
