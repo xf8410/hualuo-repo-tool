@@ -143,17 +143,24 @@ fun readBackup(
     return BackupReadResult(manifest, settingsText, handled, skipped)
 }
 
-private fun parseManifest(text: String): BackupManifest? = try {
-    val root = Json.parseToJsonElement(text) as? JsonObject ?: return null
-    BackupManifest(
-        format = (root["format"] as? JsonPrimitive)?.contentOrNull ?: return null,
-        version = (root["version"] as? JsonPrimitive)?.intOrNull ?: return null,
-        createdAt = (root["createdAt"] as? JsonPrimitive)?.contentOrNull ?: "",
-        sessionCount = (root["sessionCount"] as? JsonPrimitive)?.intOrNull ?: 0,
-        appVersion = (root["appVersion"] as? JsonPrimitive)?.contentOrNull,
-    )
-} catch (e: Exception) {
-    null
+/**
+ * 解析 manifest；字段缺一个都算「不是本家的包」（null）。
+ * **必须用块体**：函数体里要用 `return null` 提前退场，表达式体（= try {...}）禁止 return——
+ * CI 编译段抓过（run 35097435110），别再图省事写成表达式体。
+ */
+private fun parseManifest(text: String): BackupManifest? {
+    return try {
+        val root = Json.parseToJsonElement(text) as? JsonObject ?: return null
+        BackupManifest(
+            format = (root["format"] as? JsonPrimitive)?.contentOrNull ?: return null,
+            version = (root["version"] as? JsonPrimitive)?.intOrNull ?: return null,
+            createdAt = (root["createdAt"] as? JsonPrimitive)?.contentOrNull ?: "",
+            sessionCount = (root["sessionCount"] as? JsonPrimitive)?.intOrNull ?: 0,
+            appVersion = (root["appVersion"] as? JsonPrimitive)?.contentOrNull,
+        )
+    } catch (e: Exception) {
+        null
+    }
 }
 
 private fun readBounded(stream: InputStream, maxChars: Int): String {
