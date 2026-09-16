@@ -55,14 +55,19 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # 浅克隆的坑记牢（首铸首跑真踩过）：checkout 出来的是 PR 合并引用，
+      # 直接在它上面提交再回推会被判 non-fast-forward——合并提交的父链在浅历史里够不到分支尖。
+      # 所以铸钥提交必须**落在远端分支尖上**（fetch --depth=1 origin 分支 → 在尖上提交 → FF 回推），
+      # 提交完回到原检出点，再把刚铸的钥匙带回来给本次构建用。
       - name: 签名密钥（首铸一次终身同一把——覆盖安装的命根子）
         env:
           KEY_PASS: hualuo-override-install-2026
         run: |
           set -euo pipefail
           BRANCH="${GITHUB_HEAD_REF:-main}"
+          ORIG="$(git rev-parse HEAD)"
+          git fetch --depth=1 origin "$BRANCH"
           # 先看远端有没有人已经铸过（并发/重跑的防呆），有就用仓库里那把，永不重铸
-          git fetch origin "$BRANCH"
           if git cat-file -e "origin/$BRANCH:signing/release.keystore" 2>/dev/null; then
             git checkout "origin/$BRANCH" -- signing/
             echo "钥匙已在仓里，取来用（永不重新铸——换了钥匙覆盖安装就废了）"
@@ -75,12 +80,15 @@ jobs:
             -alias hualuo -keyalg RSA -keysize 2048 -validity 10950 \
             -storepass "$KEY_PASS" -keypass "$KEY_PASS" \
             -dname "CN=Hualuo RepoTool, OU=Personal, O=hualuo, C=CN"
-          git config user.name "hualuo-key-mint"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          TIP="$(git rev-parse "origin/$BRANCH")"
+          git checkout -B mint-key "$TIP"
           git add signing
-          git commit -m "密钥首铸（终身一次：覆盖安装认钥匙不认版本，此后谁也不许换）"
+          git -c user.name="hualuo-key-mint" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "密钥首铸（终身一次：覆盖安装认钥匙不认版本，此后谁也不许换）"
+          NEW_TIP="$(git rev-parse HEAD)"
           # 密钥首铸：全仓唯一允许的回推——只落 signing/ 两个文件，不碰源码
           git push origin "HEAD:refs/heads/$BRANCH" # 密钥首铸
+          git checkout --force "$ORIG"
+          git checkout "$NEW_TIP" -- signing/
           echo "钥匙已铸好并入库；本次构建用的就是它"
 
       - name: 装 Gradle（本仓不提交包装器二进制，版本在这里写死一次）
