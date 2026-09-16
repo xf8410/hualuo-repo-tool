@@ -29,15 +29,15 @@ class SessionStoreTest {
     fun roundTripKeepsEveryCharacter() {
         val s = store()
         val id = s.create("qwen3.8-flash")
-        s.append(id, StoredMsg(StoredMsg.ROLE_USER, "多行\n带\"引号\"、反斜杠\\、制表\t、中文、emoji面文本(文字不是图形)", 1L))
+        s.append(id, StoredMsg(StoredMsg.ROLE_USER, "多行\n带\"引号\"、反斜杠\\、制表\t、中文、尖括号<>与&符号", 1L))
         s.append(id, StoredMsg(StoredMsg.ROLE_ASSISTANT, "行尾空格   ", 2L))
 
         val loaded = s.load(id)!!
-        assertEquals("", loaded.head!!.title)
+        assertEquals("新会话没标题就是空，不许编一个装样子", "", loaded.head!!.title)
         assertEquals("qwen3.8-flash", loaded.head!!.model)
         assertEquals(0, loaded.badLines)
         assertEquals(2, loaded.messages.size)
-        assertEquals("多行\n带\"引号\"、反斜杠\\、制表\t、中文、emoji面文本(文字不是图形)", loaded.messages[0].text)
+        assertEquals("多行\n带\"引号\"、反斜杠\\、制表\t、中文、尖括号<>与&符号", loaded.messages[0].text)
         assertEquals("行尾空格   ", loaded.messages[1].text)
         assertEquals(StoredMsg.ROLE_USER, loaded.messages[0].role)
     }
@@ -77,7 +77,8 @@ class SessionStoreTest {
         for (i in 1..5) s.append(id, msg(StoredMsg.ROLE_USER, "话$i"))
 
         val feed = s.feedFor(id, maxTurns = 3)
-        assertEquals("掐头留尾", listOf("话3", "话2", "话1").map { "user" to it }.reversed(), feed.feed)
+        assertEquals("掐头留尾：留下的必须是最贴近现在的三条、顺序不变",
+            listOf("user" to "话3", "user" to "话4", "user" to "话5"), feed.feed)
         assertEquals(2, feed.trimmedCount)
         assertEquals("护栏收成 0 也不许越界", 0, s.feedFor(id, maxTurns = 0).feed.size)
     }
@@ -87,10 +88,10 @@ class SessionStoreTest {
         val s = store()
         val id = s.create("m")
         s.append(id, msg(StoredMsg.ROLE_USER, "好行一"))
-        // 手动塞两种坏行：缺引号的残行、被半写崩的行
-        File(s.dirOf(id)).appendText("{k:m,role:user\n")
+        // 手动塞两种坏行：缺右花括号的残行、角色不认识的行
+        File(s.pathOf(id)).appendText("{k:m,role:user\n")
         s.append(id, msg(StoredMsg.ROLE_ASSISTANT, "好行二"))
-        File(s.dirOf(id)).appendText("{\"k\":\"m\",\"role\":\"不认识的职务\",\"text\":\"\",\"at\":1}\n")
+        File(s.pathOf(id)).appendText("{\"k\":\"m\",\"role\":\"unknown-role\",\"text\":\"\",\"at\":1}\n")
 
         val loaded = s.load(id)!!
         assertEquals("两条好行原样在", listOf("好行一", "好行二"), loaded.messages.map { it.text })
@@ -102,14 +103,14 @@ class SessionStoreTest {
         val s = store()
         val id = s.create("m")
         s.append(id, msg(StoredMsg.ROLE_USER, "没头也行"))
-        val f = File(s.dirOf(id))
-        // 把头行改写成坏行：整段内容不许因为头烂了就全不见
+        val f = File(s.pathOf(id))
+        // 把头行删掉：整段内容不许因为头烂了就全不见——首行按消息再解一次
         f.writeText(f.readLines().drop(1).joinToString("\n", postfix = "\n"))
 
         val loaded = s.load(id)!!
         assertNull("头读不懂就明说读不懂", loaded.head)
-        assertEquals(1, loaded.badLines)
-        assertEquals(1, loaded.messages.size)
+        assertEquals("首行落按消息解：这条不许被冤枉成坏行", 0, loaded.badLines)
+        assertEquals("消息原样在", listOf("没头也行"), loaded.messages.map { it.text })
     }
 
     @Test
@@ -126,10 +127,11 @@ class SessionStoreTest {
         s.append(id, msg(StoredMsg.ROLE_USER, "聊聊重构"))
         assertTrue(s.rename(id, "聊聊重构"))
 
-        val head = s.load(id)!!.head!!
-        assertEquals("聊聊重构", head.title)
-        assertEquals("m", head.model)
-        assertEquals(1, s.load(id)!!.messages.size)
+        val loaded = s.load(id)!!
+        assertEquals("聊聊重构", loaded.head!!.title)
+        assertEquals("m", loaded.head!!.model)
+        assertEquals("改头不许伤正文", listOf("聊聊重构"), loaded.messages.map { it.text })
+        assertEquals("临时文件不许留在盘上", 0, tmp.root.listFiles { f -> f.name.endsWith(".tmp") }!!.size)
     }
 
     @Test
@@ -138,7 +140,7 @@ class SessionStoreTest {
         val old = s.create("m")
         Thread.sleep(2) // createdAtMs 毫秒级，连开两条得拉开一瞬才分得出先后
         val fresh = s.create("m")
-        File(s.dirOf("corrupt")).writeText("这不是 jsonl\n")
+        File(s.pathOf("corrupt")).writeText("这不是 jsonl\n")
 
         val listing = s.list()
         assertEquals(listOf(fresh, old), listing.heads.map { it.first })
@@ -159,7 +161,8 @@ class SessionStoreTest {
         val id = "../../etc/evil"
         s.create(id)
         assertNotNull(s.load(id))
-        assertTrue(File(tmp.root, "______etc_evil.jsonl").exists() || s.list().heads.isNotEmpty())
+        val landed = tmp.root.listFiles { f -> f.isFile }!!.map { it.name }
+        assertEquals("穿越后的文件仍须躺在本目录：$landed", listOf(".._.._etc_evil.jsonl"), landed)
     }
 
     @Test
