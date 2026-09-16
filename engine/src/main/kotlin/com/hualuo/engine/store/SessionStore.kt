@@ -69,6 +69,10 @@ data class FeedResult(
  *  - 本类纯 JVM，不碰 Android API——路径由调用方给，单测直接 java.io 跑；
  *  - 读不懂的行一律跳过并计数（load 的 badLines 是它的自证）；
  *  - 删会话是整文件删——不留「已删除」墓碑，那是搜索索引时代的烦恼。
+ *
+ * Kotlin 规矩记牢（CI 编译段抓过第四课）：String.indexOf 的谓词版
+ * 是 `indexOf(predicate, startIndex)`——lambda 放第一位；
+ * `indexOf(char, start) { ... }` 那第三参数是 ignoreCase: Boolean，不是谓词。
  */
 class SessionStore(private val dir: File) {
 
@@ -255,7 +259,7 @@ class SessionStore(private val dir: File) {
         while (i < body.length) {
             // 读键（必为字符串）
             if (body[i] != '"') return null
-            val keyEnd = body.indexOf('"', i + 1) { it != '\\' }
+            val keyEnd = indexOfQuote(body, i + 1)
             if (keyEnd < 0) return null
             val key = unescape(body.substring(i + 1, keyEnd))
             i = keyEnd + 1
@@ -264,7 +268,7 @@ class SessionStore(private val dir: File) {
             // 读值：字符串 / true / 数字（其余按到逗号截断）
             when {
                 body[i] == '"' -> {
-                    val valEnd = body.indexOf('"', i + 1) { it != '\\' }
+                    val valEnd = indexOfQuote(body, i + 1)
                     if (valEnd < 0) return null
                     out[key] = unescape(body.substring(i + 1, valEnd))
                     i = valEnd + 1
@@ -283,6 +287,19 @@ class SessionStore(private val dir: File) {
             }
         }
         return out
+    }
+
+    /** 找下一个「成对的」收尾引号：反斜杠连后一字一起跳过（\\ 不吃引号、\" 不算收尾）。 */
+    private fun indexOfQuote(s: String, from: Int): Int {
+        var j = from
+        while (j < s.length) {
+            when (s[j]) {
+                '\\' -> j += 2
+                '"' -> return j
+                else -> j++
+            }
+        }
+        return -1
     }
 
     private fun unescape(s: String): String {
