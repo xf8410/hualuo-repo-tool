@@ -308,32 +308,6 @@ class AppUiState(
         }
     }
 
-    // ── 会话库接线（启动，全同步；放类尾防「先用后声明」的初始化顺序坑） ────
-
-    init {
-        val s = store ?: return@init
-        val listing = runCatching { s.list() }.getOrNull()
-        if (listing == null) {
-            toast("会话目录读不了：列表这次空着，历史文件一个没动")
-            return@init
-        }
-        convs = listing.heads.map { (id, head) ->
-            Conv(id, head.title.ifBlank { "（未命名）" }, fmtConvMeta(head.createdAtMs))
-        }
-        if (listing.unreadable > 0) {
-            toast("有 ${listing.unreadable} 个会话文件读不出头，没摆进列表（文件原样保留）")
-        }
-        val latest = listing.heads.firstOrNull() ?: return@init
-        val note = chat.restoreFromStore(latest.first)
-        when {
-            // 接成功了不出声（信任靠「字还在」建立，不靠开场白）；失败必须出声
-            note == null -> toast("上次的会话文件读不到了：列表还在，正文没接上")
-            note.badLines > 0 -> toast("已接上次会话（${note.count} 条）；另有 ${note.badLines} 行读不出，已跳过")
-            note.headMissing -> toast("已接上次会话（${note.count} 条）；这份会话头损坏，标题时间失真")
-            else -> Unit
-        }
-    }
-
     // ── 持久化小件 ──────────────────────────────────────────────────────────
 
     /**
@@ -377,6 +351,39 @@ class AppUiState(
 
     private fun fmtConvMeta(ms: Long): String =
         SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
+
+    /**
+     * 会话库接线（启动，全同步）。刻意写成嵌套 if 而不是 init 里 return：
+     * init 块里的 return 语义各版本 Kotlin 有分歧，不值得赌；嵌套清楚照样读得懂。
+     * 放在类尾：convs 等属性的委托都已初始化，「先用后声明」的初始化顺序坑不存在。
+     * 接成功了不出声（信任靠「字还在」建立，不靠开场白）；失败必须出声。
+     */
+    init {
+        val s = store
+        if (s != null) {
+            val listing = runCatching { s.list() }.getOrNull()
+            if (listing == null) {
+                toast("会话目录读不了：列表这次空着，历史文件一个没动")
+            } else {
+                convs = listing.heads.map { (id, head) ->
+                    Conv(id, head.title.ifBlank { "（未命名）" }, fmtConvMeta(head.createdAtMs))
+                }
+                if (listing.unreadable > 0) {
+                    toast("有 ${listing.unreadable} 个会话文件读不出头，没摆进列表（文件原样保留）")
+                }
+                val latest = listing.heads.firstOrNull()
+                if (latest != null) {
+                    val note = chat.restoreFromStore(latest.first)
+                    when {
+                        note == null -> toast("上次的会话文件读不到了：列表还在，正文没接上")
+                        note.badLines > 0 -> toast("已接上次会话（${note.count} 条）；另有 ${note.badLines} 行读不出，已跳过")
+                        note.headMissing -> toast("已接上次会话（${note.count} 条）；这份会话头损坏，标题时间失真")
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
 
     companion object {
         /** 没设置过时的默认模型（真接线后由模型清单决定，这里只是不空着）。 */
