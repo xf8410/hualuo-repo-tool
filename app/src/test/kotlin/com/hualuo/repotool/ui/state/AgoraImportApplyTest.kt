@@ -13,8 +13,11 @@ import org.junit.Test
  * 旧 Agora 兑换单应用进活通道的契约（纯 JVM，UiPersistence.None 时 save 是空操作，
  * 这里钉的是「报出来的账」与「键进没进」——persist 是 None，计数逻辑照样走）。
  *
- * 依赖只用 JUnit4：app 模块测试类路径同样没有 kotlin-test（run 35107231649 抓过，
- * 和 engine 那次 run 35105123539 是同一个手病的第二次发作），别再引。
+ * 三条已经吃过的亏，钉在这里防再犯：
+ *  - app/engine 测试类路径都没有 kotlin-test，用 org.junit（run 35105123539、35107231649）；
+ *  - JUnit4 的 assertTrue 是「消息在前、条件在后」，和 kotlin.test 相反——写反了编译器
+ *    当成 (Boolean, String) 对不上直接红（run 35108951731）；
+ *  - 源码里不许有箭头等符号字符（红线闸门）。
  */
 class AgoraImportApplyTest {
 
@@ -60,10 +63,10 @@ class AgoraImportApplyTest {
     fun recognizedPlanReportsCountsAndNotes() {
         val state = AppUiState()
         val message = state.applyAgoraImport(outcome())
-        assertTrue(message.contains("旧 Agora 备份导入完成"), message)
-        assertTrue(message.contains("会话 2 份"), message)
-        assertTrue(message.contains("重名会话跳过 1 份"), message)
-        assertTrue(message.contains("定时任务 1 条"), message)
+        assertTrue(message, message.contains("旧 Agora 备份导入完成"))
+        assertTrue(message, message.contains("会话 2 份"))
+        assertTrue(message, message.contains("重名会话跳过 1 份"))
+        assertTrue(message, message.contains("定时任务 1 条"))
     }
 
     @Test
@@ -82,7 +85,7 @@ class AgoraImportApplyTest {
         val message = state.applyAgoraImport(
             outcome(appliedPlan = plan(baseUrl = null, apiKey = null, systemPrompt = null, notes = emptyList())),
         )
-        assertTrue(message.contains("设置 7 项"), message)
-        assertTrue(!message.contains("；；"), message)
+        assertTrue(message, message.contains("设置 7 项"))
+        assertTrue(message, !message.contains("；；"))
     }
 }
