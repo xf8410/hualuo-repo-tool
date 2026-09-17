@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import com.hualuo.repotool.ui.components.HCard
 import com.hualuo.repotool.ui.components.LRow
 import com.hualuo.repotool.ui.model.Tone
 import com.hualuo.repotool.ui.state.AppUiState
+import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
@@ -38,8 +40,8 @@ import com.hualuo.repotool.ui.theme.WarnAmber
 
 /**
  * 仓库CI页（v13 #p-repo）：**真数据**——GitHub Actions 最近几条 run + 检查更新，
- * 0.7.x 起再加仓库工作台（只读浏览）：自己的仓清单（要令牌）、别人的公开仓、
- * contents 逐级浏览、文件原文预览。改码提交在 B 段另接，这里先不画饼。
+ * 外加仓库工作台：自己的仓清单（要令牌）、别人的公开仓、contents 逐级浏览、
+ * 分支切换、提交历史（维护记录）、文件原文预览、**改码提交**（sha 对账、冲突出声不硬盖）。
  *
  * 数据通道：进页拉一次（已有数据不重复拉），「刷新」行手动重拉；
  * 失败（403 提示去填令牌 / 404 提示核仓库名 / 连不上）与坏条目都摆在明面上，
@@ -176,7 +178,7 @@ fun RepoScreen(state: AppUiState) {
             }
         }
 
-        // 浏览卡：进了仓库才出现；目录在前，「返回上一级」走回退栈
+        // 浏览卡：进了仓库才出现；分支切换 + 目录树 + 提交历史（维护记录）
         if (state.browseRepo.isNotEmpty()) {
             HCard {
                 CardTitle("浏览 " + state.browseRepo + (if (state.browseRef != null) " @" + state.browseRef else ""))
@@ -187,6 +189,34 @@ fun RepoScreen(state: AppUiState) {
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
+                // 分支切换（官方 App 最欠的一格）：切了路径回根重新走
+                LRow("切换分支", state.browseRef ?: "默认分支", chevron = true) { state.toggleBranchPicker() }
+                if (state.branchPickerOpen) {
+                    when {
+                        state.branchListBusy -> Text(
+                            "正在拉分支…",
+                            fontSize = 12.5.sp,
+                            color = SubInk,
+                            modifier = Modifier.padding(vertical = 6.dp),
+                        )
+                        state.branchList.isEmpty() && state.branchListNote != null -> Text(
+                            state.branchListNote ?: "",
+                            fontSize = 12.sp,
+                            color = WarnAmber,
+                            modifier = Modifier.padding(vertical = 6.dp),
+                        )
+                        else -> state.branchList.forEach { branch ->
+                            LRow(branch.name, branch.commitSha.take(7), chevron = true) {
+                                state.switchBranch(branch.name)
+                            }
+                        }
+                    }
+                    state.branchListNote?.let { note ->
+                        if (state.branchList.isNotEmpty()) {
+                            Text(note, fontSize = 11.sp, color = WarnAmber, modifier = Modifier.padding(vertical = 2.dp))
+                        }
+                    }
+                }
                 when {
                     state.browseBusy -> Text(
                         "正在拉目录…",
@@ -224,11 +254,46 @@ fun RepoScreen(state: AppUiState) {
                 if (state.browseTrail.isNotEmpty()) {
                     LRow("返回上一级", chevron = true) { state.browseUp() }
                 }
+                // 提交历史（维护记录）：当前分支最近干了什么，新在前
+                LRow(
+                    "提交历史",
+                    if (state.commitsOpen) "收起" else if (state.commits.isNotEmpty()) "${state.commits.size} 条" else null,
+                    chevron = true,
+                ) { state.toggleCommits() }
+                if (state.commitsOpen) {
+                    when {
+                        state.commitsBusy -> Text(
+                            "正在拉提交历史…",
+                            fontSize = 12.5.sp,
+                            color = SubInk,
+                            modifier = Modifier.padding(vertical = 6.dp),
+                        )
+                        state.commits.isEmpty() -> Text(
+                            state.commitsNote ?: "还没有提交记录",
+                            fontSize = 12.sp,
+                            color = if (state.commitsNote != null) WarnAmber else SubInk,
+                            modifier = Modifier.padding(vertical = 6.dp),
+                        )
+                        else -> state.commits.forEach { commit ->
+                            LRow(
+                                commit.sha.take(7),
+                                (commit.messageFirstLine.take(28) + " · " + commit.author).trim(),
+                                chevron = false,
+                            )
+                        }
+                    }
+                    state.commitsNote?.let { note ->
+                        if (state.commits.isNotEmpty()) {
+                            Text(note, fontSize = 11.sp, color = WarnAmber, modifier = Modifier.padding(vertical = 2.dp))
+                        }
+                    }
+                    LRow("刷新历史", chevron = true) { state.refreshCommits() }
+                }
                 LRow("退出浏览", chevron = true) { state.exitBrowse() }
             }
         }
 
-        // 文件预览卡：原文，二进制/截断/超限都明说
+        // 文件预览 + 改码卡：原文，二进制/截断/超限都明说；编辑提交走 sha 对账
         if (state.fileViewPath.isNotEmpty()) {
             HCard {
                 CardTitle("文件：" + state.fileViewPath)
@@ -249,15 +314,102 @@ fun RepoScreen(state: AppUiState) {
                         state.fileViewNote?.let { note ->
                             Text(note, fontSize = 11.5.sp, color = SubInk, modifier = Modifier.padding(bottom = 4.dp))
                         }
-                        Text(
-                            state.fileViewText ?: "",
-                            fontSize = 11.sp,
-                            color = Ink,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                        )
+                        if (!state.editingOpen) {
+                            Text(
+                                state.fileViewText ?: "",
+                                fontSize = 11.sp,
+                                color = Ink,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            )
+                            val editable = state.fileViewSha != null &&
+                                !state.fileViewTooBig &&
+                                !state.fileViewTruncated
+                            if (editable) {
+                                LRow("编辑这个文件", chevron = true) { state.startEditing() }
+                            } else {
+                                Text(
+                                    "这份不给在 App 里改（超限/截断/无 sha 账）：去电脑上改",
+                                    fontSize = 11.5.sp,
+                                    color = SubInk,
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                )
+                            }
+                        } else {
+                            Text(
+                                "编辑中（提交后不可撤回，想清楚再发）",
+                                fontSize = 11.5.sp,
+                                color = WarnAmber,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(170.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Bg)
+                                    .padding(10.dp),
+                            ) {
+                                BasicTextField(
+                                    value = state.editingText,
+                                    onValueChange = { state.editingText = it },
+                                    textStyle = TextStyle(fontSize = 11.sp, color = Ink, fontFamily = FontFamily.Monospace),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Bg)
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                            ) {
+                                if (state.editingMessage.isEmpty()) {
+                                    Text("commit message：改了什么（必填）", fontSize = 13.sp, color = SubInk)
+                                }
+                                BasicTextField(
+                                    value = state.editingMessage,
+                                    onValueChange = { state.editingMessage = it },
+                                    textStyle = TextStyle(fontSize = 13.sp, color = Ink),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            state.editNote?.let { note ->
+                                Spacer(Modifier.height(6.dp))
+                                Text(note, fontSize = 12.sp, color = WarnAmber)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (state.editBusy) SubInk else Accent)
+                                        .clickable(enabled = !state.editBusy) { state.commitEdit() }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                ) {
+                                    Text(
+                                        if (state.editBusy) "提交中…" else "提交改动",
+                                        fontSize = 13.sp,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Bg)
+                                        .clickable(enabled = !state.editBusy) { state.cancelEditing() }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                ) {
+                                    Text("放弃", fontSize = 13.sp, color = Ink)
+                                }
+                            }
+                        }
                     }
                 }
                 LRow("收起", chevron = true) { state.closeFileView() }
