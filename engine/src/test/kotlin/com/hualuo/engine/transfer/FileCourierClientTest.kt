@@ -16,6 +16,7 @@ import org.junit.Test
  */
 class FileCourierClientTest {
 
+    /** 假上传器：按需在头 N 次调用或指定路径上失败，其余照收。 */
     private class FakeUploader(
         private var failFirstN: Int = 0,
         private val failPaths: Set<String> = emptySet(),
@@ -24,12 +25,12 @@ class FileCourierClientTest {
         val waits = ArrayList<Long>()
 
         override fun upload(path: String, bytes: ByteArray, message: String) {
-            if (failPaths.contains(path) || failFirstN > 0) {
-                if (failPaths.contains(path) || failFirstN > 0) {
-                    if (failFirstN > 0) failFirstN -= 1
-                    if (failPaths.contains(path)) throw IOException("HTTP 502 蹦了")
-                    throw IOException("HTTP 500 假装网络抖")
-                }
+            if (failPaths.contains(path)) {
+                throw IOException("HTTP 502 蹦了")
+            }
+            if (failFirstN > 0) {
+                failFirstN -= 1
+                throw IOException("HTTP 500 假装网络抖")
             }
             calls.add(path to bytes)
         }
@@ -135,7 +136,7 @@ class FileCourierClientTest {
         val reason = (outcome as CourierOutcome.Failed).reason
         assertTrue(reason.contains("part_001.zip"))
         assertTrue(reason.contains("连试 2 次"))
-        assertEquals(0, uploader.waits.size)
+        assertEquals(listOf(1000L), uploader.waits)
     }
 
     @Test
