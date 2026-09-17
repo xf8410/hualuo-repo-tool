@@ -1,8 +1,10 @@
 package com.hualuo.repotool.ui.tools
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -25,7 +28,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import com.hualuo.repotool.ui.components.CardTitle
 import com.hualuo.repotool.ui.components.Dot
 import com.hualuo.repotool.ui.components.HCard
@@ -60,10 +62,10 @@ fun ToolsScreen(state: AppUiState) {
         HCard {
             CardTitle("网页搜索（免费档 DuckDuckGo）")
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box2(
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Bg)
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
@@ -78,9 +80,9 @@ fun ToolsScreen(state: AppUiState) {
                     )
                 }
                 Spacer(Modifier.width(8.dp))
-                Box2(
+                Box(
                     modifier = Modifier
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(if (state.searchBusy) SubInk else Accent)
                         .clickable(enabled = !state.searchBusy) { state.runWebSearch() }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
@@ -104,7 +106,7 @@ fun ToolsScreen(state: AppUiState) {
                         .fillMaxWidth()
                         .clickable {
                             runCatching {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, result.url.toUri()))
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.url)))
                             }.onFailure {
                                 state.toast("打不开这个链接（设备上没有能接的浏览器？）")
                             }
@@ -140,10 +142,4 @@ fun ToolsScreen(state: AppUiState) {
             }
         }
     }
-}
-
-/** 本页私有的轻量盒：与 Common.kt 的组件解耦，避免为一个搜索框往公共件里加形状参数。 */
-@Composable
-private fun Box2(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    androidx.compose.foundation.layout.Box(modifier = modifier) { content() }
 }
