@@ -14,7 +14,7 @@ import org.junit.Test
 
 /**
  * 投递引擎件的契约（上传走假缝隙，不碰真网，卷是落盘临时文件不进内存）：
- * 配卷按文件边界、大件独占不劈开、卷重试耗尽出声、卷数封顶、manifest 全账（卷表+每文件 SHA-256）。
+ * 配卷按文件边界、大件独占不劈开、卷重试耗尽出声、**成功即停**、卷数封顶、manifest 全账。
  */
 class FileCourierClientTest {
 
@@ -124,11 +124,12 @@ class FileCourierClientTest {
     }
 
     @Test
-    fun volumeUploadRetriesThenSucceeds() {
+    fun volumeUploadRetriesThenStopsOnSuccess() {
         val uploader = FakeUploader(failFirstN = 1)
         val outcome = client(uploader, maxRetries = 2).deliver(listOf(file("a.bin", 512)), "courier/t5/")
         assertTrue(outcome is CourierOutcome.Ok)
-        assertEquals(listOf(1000L, 2000L), uploader.waits)
+        // 第一次失败后退避一次，第二次成功就该收工：不许把传成功的卷再传两遍
+        assertEquals(listOf(1000L), uploader.waits)
         assertEquals(2, uploader.calls.size)
     }
 
