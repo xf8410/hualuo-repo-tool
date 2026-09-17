@@ -4,7 +4,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.hualuo.engine.github.GitHubBranch
 import com.hualuo.engine.github.GitHubCiClient
+import com.hualuo.engine.github.GitHubCommitSummary
 import com.hualuo.engine.github.GitHubEntry
 import com.hualuo.engine.github.GitHubRepoClient
 import com.hualuo.engine.github.GitHubRepoSummary
@@ -51,8 +53,9 @@ data class CourierPick(
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
  *  - **仓库CI（GitHub 只读）**：runs 与最新发布版现场拉，失败/坏条目出声不冒充；
  *    仓库与令牌在设置「GitHub 工作台」里配，令牌只进请求头。
- *  - **仓库工作台（浏览，只读）**：自己的仓（要令牌）与别人的公开仓清单 + contents 逐级浏览 +
- *    文件原文预览（sha 与超限账一起回来，给 B 段改码备好账本）；改码提交在 B 段另接。
+ *  - **仓库工作台（浏览 + 改码）**：自己的仓与别人的公开仓清单、contents 逐级浏览、
+ *    文件原文预览（内容 + sha + 超限账）、分支切换、提交历史（维护记录）、
+ *    改码提交（PUT contents，旧 sha 对账，409 冲突出声让人重开重改，绝不硬盖）。
  *  - **工具页真电（网页搜索）**：免费档 DuckDuckGo（引擎件 WebSearchClient，fetch 缝隙
  *    让引擎测试不碰真网，这里给的就是真网）；结果真数据、失败出声不冒充。
  *  - **长任务页真电（文件投递）**：选文件/选目录只发动作请求（[pendingDataAction] 桥上走），
@@ -311,7 +314,7 @@ class AppUiState(
         }, "hualuo-update").start()
     }
 
-    // ── 仓库工作台（浏览，只读）：清单 + contents 逐级浏览 + 文件预览 ───────
+    // ── 仓库工作台：清单 + 浏览 + 分支 + 提交历史 + 文件预览与改码 ──────────
 
     private val repoClient = GitHubRepoClient()
 
@@ -385,7 +388,7 @@ class AppUiState(
     var browseNote by mutableStateOf<String?>(null)
         private set
 
-    /** 进一个仓库，从根开始浏览。 */
+    /** 进一个仓库，从根开始浏览（分支账本一并清干净：换仓不沾上一个仓的账）。 */
     fun browseInto(repo: String) {
         if (browseBusy) return
         val target = normalizeGitHubRepo(repo) ?: run {
@@ -394,8 +397,16 @@ class AppUiState(
         }
         closeFileView()
         browseRepo = target
+        browseRef = null
         browsePath = ""
         browseTrail = emptyList()
+        browseEntries = emptyList()
+        branchPickerOpen = false
+        branchList = emptyList()
+        branchListNote = null
+        commitsOpen = false
+        commits = emptyList()
+        commitsNote = null
         loadBrowse()
     }
 
@@ -421,10 +432,13 @@ class AppUiState(
         if (browseBusy) return
         closeFileView()
         browseRepo = ""
+        browseRef = null
         browsePath = ""
         browseTrail = emptyList()
         browseEntries = emptyList()
         browseNote = null
+        branchPickerOpen = false
+        commitsOpen = false
     }
 
     /** 看别人的仓：输入框里的 owner/name（粘整条链接也认），过了写法闸就进浏览。 */
@@ -458,6 +472,129 @@ class AppUiState(
         }, "hualuo-browse").start()
     }
 
+    // ── 分支切换（浏览必配：切分支 = 换一棵树，路径回根重新走） ─────────────
+
+    /** 分支清单弹开没有。 */
+    var branchPickerOpen by mutableStateOf(false)
+        private set
+
+    /** 分支清单是否在拉。 */
+    var branchListBusy by mutableStateOf(false)
+        private set
+
+    /** 分支清单（真数据，按名排序）。 */
+    var branchList by mutableStateOf(emptyList<GitHubBranch>())
+        private set
+
+    /** 分支清单的一句话收场。 */
+    var branchListNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 开/合分支清单；开的时候清单是空的就顺手拉一次。 */
+    fun toggleBranchPicker() {
+        if (branchPickerOpen) {
+            branchPickerOpen = false
+            return
+        }
+        branchPickerOpen = true
+        if (branchList.isEmpty() && !branchListBusy) loadBranches()
+    }
+
+    private fun loadBranches() {
+        val repo = browseRepo
+        if (repo.isEmpty()) {
+            branchListNote = "没在浏览仓库，分支清单没得拉"
+            return
+        }
+        branchListBusy = true
+        val token = githubToken()
+        Thread({
+            val result = runCatching { repoClient.listBranches(repo, token) }.getOrElse {
+                branchListBusy = false
+                branchListNote = "拉不动 GitHub（${it.message ?: "出错了"}）"
+                return@Thread
+            }
+            branchListBusy = false
+            branchList = result.branches
+            branchListNote = when {
+                result.error != null -> result.error
+                result.badEntries > 0 -> "有 ${result.badEntries} 条读不懂已跳过"
+                else -> null
+            }
+        }, "hualuo-branches").start()
+    }
+
+    /** 切分支：换 ref、路径回根（不同分支的路径没有可比性，别装聪明）、目录与历史重拉。 */
+    fun switchBranch(name: String) {
+        if (browseBusy || browseRepo.isEmpty()) return
+        branchPickerOpen = false
+        closeFileView()
+        if (browseRef == name) return
+        browseRef = name
+        browsePath = ""
+        browseTrail = emptyList()
+        browseEntries = emptyList()
+        loadBrowse()
+        if (commitsOpen) loadCommits()
+    }
+
+    // ── 提交历史（维护记录：这个仓当前分支最近干了什么） ────────────────────
+
+    /** 历史卡开没有。 */
+    var commitsOpen by mutableStateOf(false)
+        private set
+
+    /** 历史是否在拉。 */
+    var commitsBusy by mutableStateOf(false)
+        private set
+
+    /** 提交历史（真数据，新在前）。 */
+    var commits by mutableStateOf(emptyList<GitHubCommitSummary>())
+        private set
+
+    /** 历史的一句话收场。 */
+    var commitsNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 开/合提交历史；开的时候是空的就顺手拉一次。 */
+    fun toggleCommits() {
+        if (commitsOpen) {
+            commitsOpen = false
+            return
+        }
+        commitsOpen = true
+        if (commits.isEmpty() && !commitsBusy) loadCommits()
+    }
+
+    private fun loadCommits() {
+        val repo = browseRepo
+        if (repo.isEmpty()) return
+        commitsBusy = true
+        val ref = browseRef
+        val token = githubToken()
+        Thread({
+            val result = runCatching { repoClient.listCommits(repo, ref, null, token) }.getOrElse {
+                commitsBusy = false
+                commitsNote = "拉不动 GitHub（${it.message ?: "出错了"}）"
+                return@Thread
+            }
+            commitsBusy = false
+            commits = result.commits
+            commitsNote = when {
+                result.error != null -> result.error
+                result.badEntries > 0 -> "有 ${result.badEntries} 条读不懂已跳过"
+                else -> null
+            }
+        }, "hualuo-commits").start()
+    }
+
+    /** 手动刷新提交历史（提交完改动后也会自动刷一次）。 */
+    fun refreshCommits() {
+        if (!commitsBusy && browseRepo.isNotEmpty()) loadCommits()
+    }
+
+    // ── 文件预览（内容 + sha 账） ───────────────────────────────────────────
+
     /** 预览中的文件路径；空 = 没开预览。 */
     var fileViewPath by mutableStateOf("")
         private set
@@ -474,12 +611,16 @@ class AppUiState(
     var fileViewBusy by mutableStateOf(false)
         private set
 
-    /** 预览文件的当前 blob sha（B 段改码提交的对账凭据）；null = 这份内容不许改。 */
+    /** 预览文件的当前 blob sha（改码提交的对账凭据）；null = 这份内容不许改。 */
     var fileViewSha by mutableStateOf<String?>(null)
         private set
 
     /** 预览文件是否超限（超限只给前一段预览，改码在界面拦）。 */
     var fileViewTooBig by mutableStateOf(false)
+        private set
+
+    /** 预览内容是否被有界读截断（截断的编辑会丢尾巴，改码在界面拦）。 */
+    var fileViewTruncated by mutableStateOf(false)
         private set
 
     /** 点文件条目：拉内容预览（内容 + sha + 超限账一起回；二进制与截断都明说）。 */
@@ -493,6 +634,7 @@ class AppUiState(
         fileViewNote = null
         fileViewSha = null
         fileViewTooBig = false
+        fileViewTruncated = false
         val ref = browseRef
         val token = githubToken()
         Thread({
@@ -505,6 +647,7 @@ class AppUiState(
             fileViewText = result.text
             fileViewSha = result.sha
             fileViewTooBig = result.tooBig
+            fileViewTruncated = result.truncated
             fileViewNote = when {
                 result.error != null -> result.error
                 result.tooBig && result.truncated -> "超限文件：只读了前 ${result.charCount} 字符（不给在 App 里改）"
@@ -514,14 +657,126 @@ class AppUiState(
         }, "hualuo-fileview").start()
     }
 
-    /** 收起文件预览。 */
+    /** 收起文件预览（编辑中的草稿一并作废：预览都没了编辑无处落脚）。 */
     fun closeFileView() {
         fileViewPath = ""
         fileViewText = null
         fileViewNote = null
         fileViewSha = null
         fileViewTooBig = false
+        fileViewTruncated = false
         fileViewBusy = false
+        editingOpen = false
+        editingText = ""
+        editingMessage = ""
+        editNote = null
+    }
+
+    // ── 改码提交（PUT contents；旧 sha 对账，409 冲突出声让人重开重改） ─────
+
+    /** 编辑器开没有。 */
+    var editingOpen by mutableStateOf(false)
+        private set
+
+    /** 编辑中的内容（从预览灌进来，改的是这份草稿）。 */
+    var editingText by mutableStateOf("")
+
+    /** commit message（必填：提交不许没有一句人话说明）。 */
+    var editingMessage by mutableStateOf("")
+
+    /** 提交忙灯。 */
+    var editBusy by mutableStateOf(false)
+        private set
+
+    /** 提交的一句话收场（成功在 toast，失败留在这行给编辑器上方摆着）。 */
+    var editNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 进编辑器：闸门三道（有内容、没截断/超限、有 sha 账），缺哪道指名道姓出声。 */
+    fun startEditing() {
+        if (editBusy) return
+        val text = fileViewText
+        if (text == null) {
+            toast("没有可编辑的内容：先把文件打开")
+            return
+        }
+        if (fileViewTooBig || fileViewTruncated) {
+            toast("这份只读了前一段（超限或截断），编辑会丢尾巴：不让在 App 里改")
+            return
+        }
+        if (fileViewSha == null) {
+            toast("这份内容没有 sha 账（二进制或异常）：不让在 App 里改")
+            return
+        }
+        editingText = text
+        editingMessage = ""
+        editNote = null
+        editingOpen = true
+    }
+
+    /** 放弃编辑（草稿直接扔，不留尸）。 */
+    fun cancelEditing() {
+        if (editBusy) return
+        editingOpen = false
+        editingText = ""
+        editingMessage = ""
+        editNote = null
+    }
+
+    /**
+     * 提交改动：闸门（编辑器开着、挂在打开的文件上、message 非空、令牌在手）全过才发；
+     * 成功后自动刷新文件预览与提交历史；409 冲突的原话留在编辑器上方，草稿不丢。
+     */
+    fun commitEdit() {
+        if (editBusy || !editingOpen) return
+        val repo = browseRepo
+        val path = fileViewPath
+        val sha = fileViewSha
+        val branch = browseRef
+        val content = editingText
+        val message = editingMessage.trim()
+        if (repo.isEmpty() || path.isEmpty()) {
+            toast("编辑没挂在一个打开的文件上：重新打开再试")
+            return
+        }
+        if (message.isEmpty()) {
+            toast("commit message 不能空：写一句人话说明改了什么")
+            return
+        }
+        val token = githubToken()
+        if (token.isNullOrEmpty()) {
+            toast("改码要令牌：去设置「GitHub 工作台」填")
+            return
+        }
+        editBusy = true
+        editNote = null
+        Thread({
+            val written = runCatching { repoClient.updateFile(repo, path, branch, content, message, sha, token) }.getOrElse {
+                editBusy = false
+                editNote = "提交没发出去（${it.message ?: "出错"}）"
+                return@Thread
+            }
+            editBusy = false
+            if (written.error != null) {
+                // 冲突/失败的账留给编辑器上方，草稿不丢——人改完还能再提交
+                editNote = written.error
+                return@Thread
+            }
+            editingOpen = false
+            editingText = ""
+            editingMessage = ""
+            editNote = null
+            toast("已提交（${written.commitSha?.take(7) ?: "?"}）：文件预览与提交历史正在刷新")
+            refreshFileViewAfterCommit()
+            refreshCommits()
+        }, "hualuo-edit").start()
+    }
+
+    /** 提交成功后重拉当前文件预览（sha 也换成新的：连续改同一份文件不打架）。 */
+    private fun refreshFileViewAfterCommit() {
+        val path = fileViewPath
+        if (path.isEmpty()) return
+        openBrowseFile(GitHubEntry(path.substringAfterLast('/'), path, false, 0L))
     }
 
     // ── 长任务页真电：文件投递（courier；SAF 与投递执行在 RootScreen/CourierDelivery） ──
