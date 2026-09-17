@@ -1,8 +1,10 @@
 package com.hualuo.engine.transfer
 
 import com.hualuo.engine.io.streamingCopy
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.FilterOutputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -20,9 +22,12 @@ import kotlinx.serialization.json.put
 /** 一份待投递文件：名字与现场开流（不提前读进内存），sizeBytes 用于配卷（未知给 0，按独占卷处理）。 */
 data class CourierFile(val name: String, val sizeBytes: Long, val open: () -> InputStream)
 
-/** 上传一个卷的缝隙：路径已含前缀，内容为整卷字节。抛异常 = 这卷没传上，由 client 统一重试。 */
+/**
+ * 上传一个卷的缝隙：路径已含前缀，内容在 [File] 里（落过盘的卷，不要求整卷进内存）。
+ * 抛异常 = 这卷没传上，由 client 统一重试；实现方负责用完不删（临时文件归 client 清）。
+ */
 fun interface VolumeUploader {
-    fun upload(path: String, bytes: ByteArray, message: String)
+    fun upload(path: String, file: File, message: String)
 }
 
 /** 投递收场：成功带账（卷数/文件数/原始字节），失败给一句能行动的话。绝不静默丢卷。 */
@@ -44,9 +49,11 @@ sealed class CourierOutcome {
  * 对齐旧仓验证过的形状：默认卷配额 32MB，单文件**不劈开**（超配额独占一卷，zip 后
  * 可能略超 32MB，是压缩率带来的偏差，诚实记录在 manifest 里，不假装精确）。
  *
- * 设计要点：
+ * 内存纪律（SourceHygiene 闸门盯着的这条）：**任何时刻都不把整卷读进内存**。
+ * 卷用临时文件流式落地（zip 直写文件、64KiB 缓冲），上传收 File，真网实现里
+ * base64 也是流式直写 HTTP 输出——内存曲线是平的，与卷大小无关。
+ *
  *  - 上传动作经 [VolumeUploader] 缝隙注入：纯 JVM 测试喂假 uploader，绝不碰真网；
- *    真网实现见 [defaultUploader]（GitHub contents API，base64，一次一卷）；
  *  - 每卷失败自动重试 [maxRetries] 次（退避由 [sleeper] 注入），耗尽即整体失败并报清
  *    卡在哪一卷——不静默丢卷，也不假报成功；
  *  - 进度回调 [onProgress]（已完成卷数, 总卷数），接线层拿它画进度行（0.6.0 同款）；
@@ -77,27 +84,31 @@ class FileCourierClient(
         plans.forEachIndexed { index, plan ->
             val volumeName = "part_" + "%03d".format(index + 1) + ".zip"
             val volumePath = targetPrefix + volumeName
-            val packed = packVolume(plan, volumeName)
+            val packed = packVolume(plan)
             val attempts = maxRetries + 1
             var lastError: String? = null
             var sent = false
-            repeat(attempts) { attempt ->
-                if (attempt > 0) sleeper(1_000L * attempt)
-                try {
-                    uploader.upload(volumePath, packed, "courier: $volumeName（${plan.files.size} 个文件，投递卷）")
-                    sent = true
-                    lastError = null
-                } catch (e: Exception) {
-                    lastError = "${e.javaClass.simpleName}: ${e.message ?: "（无消息）"}"
+            try {
+                repeat(attempts) { attempt ->
+                    if (attempt > 0) sleeper(1_000L * attempt)
+                    try {
+                        uploader.upload(volumePath, packed, "courier: $volumeName（${plan.files.size} 个文件，投递卷）")
+                        sent = true
+                        lastError = null
+                    } catch (e: Exception) {
+                        lastError = "${e.javaClass.simpleName}: ${e.message ?: "（无消息）"}"
+                    }
+                    if (sent) return@repeat
                 }
-                if (sent) return@repeat
+            } finally {
+                packed.delete()
             }
             if (!sent) {
                 return CourierOutcome.Failed("卷 $volumeName 连试 $attempts 次都没传上（$lastError）：网络或令牌出问题了，之前已传的卷都在仓里，稍后整批重投即可")
             }
             volumeEntries += buildJsonObject {
                 put("name", volumeName)
-                put("bytes", packed.size)
+                put("bytes", packedSize)
                 put("fileCount", plan.files.size)
                 put("files", buildJsonArray { plan.files.forEach { add(kotlinx.serialization.json.JsonPrimitive(it.file.name)) } })
             }
@@ -120,12 +131,18 @@ class FileCourierClient(
             })
         }.toString()
         val manifestPath = targetPrefix + "manifest.json"
+        val manifestFile = File.createTempFile("courier-manifest-", ".json")
         try {
-            uploader.upload(manifestPath, manifest.toByteArray(StandardCharsets.UTF_8), "courier: manifest.json（${files.size} 个文件的还原账）")
-        } catch (e: Exception) {
-            return CourierOutcome.Failed(
-                "数据卷 ${plans.size} 个全部传完，只有 manifest 没传上（${e.message ?: "出错"}）：把同一批重投一遍即可，卷会原样覆盖",
-            )
+            manifestFile.writeText(manifest, StandardCharsets.UTF_8)
+            try {
+                uploader.upload(manifestPath, manifestFile, "courier: manifest.json（${files.size} 个文件的还原账）")
+            } catch (e: Exception) {
+                return CourierOutcome.Failed(
+                    "数据卷 ${plans.size} 个全部传完，只有 manifest 没传上（${e.message ?: "出错"}）：把同一批重投一遍即可，卷会原样覆盖",
+                )
+            }
+        } finally {
+            manifestFile.delete()
         }
         return CourierOutcome.Ok(manifestPath, plans.size, files.size, totalRaw)
     }
@@ -152,10 +169,10 @@ class FileCourierClient(
         return plans
     }
 
-    /** 打一个 zip 卷：条目名用原文件名（重名加序号），内容流式拷贝。 */
-    private fun packVolume(plan: VolumePlan, volumeName: String): ByteArray {
-        val buffer = ByteArrayOutputStream(if (plan.rawBytes in 1..MAX_PREALLOC_BYTES) plan.rawBytes.toInt() else 64 * 1024)
-        ZipOutputStream(buffer).use { zip ->
+    /** 打一个 zip 卷：条目名用原文件名（重名加序号），内容 64KiB 流式拷贝直写临时文件。 */
+    private fun packVolume(plan: VolumePlan): File {
+        val target = File.createTempFile("courier-volume-", ".zip")
+        ZipOutputStream(FileOutputStream(target).buffered()).use { zip ->
             val seen = HashSet<String>()
             plan.files.forEachIndexed { index, planned ->
                 var entryName = planned.file.name
@@ -168,7 +185,7 @@ class FileCourierClient(
                 zip.closeEntry()
             }
         }
-        return buffer.toByteArray()
+        return target
     }
 
     private fun sha256Of(file: CourierFile): String {
@@ -198,48 +215,61 @@ class FileCourierClient(
         /** 卷数上限：20 卷 × 32MB = 640MB 一批，够用也兜得住。 */
         const val DEFAULT_MAX_VOLUMES = 20
 
-        /** 预分配上限：卷配额之内才按大小预分配缓冲，大件独占卷走默认 64KB 增量。 */
-        private const val MAX_PREALLOC_BYTES = 128 * 1024 * 1024
-
         /**
-         * 真网投递：GitHub contents API（PUT /repos/{owner}/{repo}/contents/{path}），
-         * base64 一次一卷，落 [branch] 分支。令牌只进请求头，不进 URL 不进日志。
+         * 真网投递：GitHub contents API（PUT /repos/{owner}/{repo}/contents/{path}）。
+         * base64 **流式**直写 HTTP 输出（Base64.encoder().wrap 包住输出流，文件 64KiB
+         * 过路），整卷从头到尾不进内存。令牌只进请求头，不进 URL 不进日志。
          * 卷与 manifest 都会覆盖同名旧文件（重投 = 原地修复，家规：不留墓碑也不怕重投）。
          */
         fun defaultUploader(owner: String, repo: String, branch: String, token: String): VolumeUploader =
-            VolumeUploader { path, bytes, message ->
+            VolumeUploader { path, file, message ->
+                // message 会被拼进 JSON：引号与反斜杠一律换掉，免得手拼 JSON 被拆
+                val safeMessage = message.replace("\"", "'").replace("\\", "/")
+                val head = "{\"message\":\"$safeMessage\",\"branch\":\"$branch\",\"content\":\""
+                val tail = "\"}"
+                val headBytes = head.toByteArray(StandardCharsets.UTF_8)
+                val tailBytes = tail.toByteArray(StandardCharsets.UTF_8)
+                // base64 长度公式：每 3 字节变 4 字符，余数补齐
+                val base64Chars = ((file.length() + 2L) / 3L) * 4L
+                val total = headBytes.size + base64Chars + tailBytes.size
                 val url = "https://api.github.com/repos/$owner/$repo/contents/$path"
-                val payload = buildJsonObject {
-                    put("message", message)
-                    put("branch", branch)
-                    put("content", Base64.getEncoder().encodeToString(bytes))
-                }.toString()
                 val conn = URL(url).openConnection() as HttpURLConnection
                 conn.requestMethod = "PUT"
                 conn.connectTimeout = 15_000
                 conn.readTimeout = 120_000
                 conn.doOutput = true
-                conn.setFixedLengthStreamingMode(payload.toByteArray(StandardCharsets.UTF_8).size)
+                conn.setFixedLengthStreamingMode(total)
                 conn.setRequestProperty("Authorization", "Bearer $token")
                 conn.setRequestProperty("Accept", "application/vnd.github+json")
                 conn.setRequestProperty("Content-Type", "application/json")
                 try {
-                    conn.outputStream.use { it.write(payload.toByteArray(StandardCharsets.UTF_8)) }
+                    val raw = conn.outputStream
+                    raw.write(headBytes)
+                    // 包一层「不关底层」的壳：Base64.wrap 关壳只会刷净填充，HTTP 流留给 tail
+                    val shield = object : FilterOutputStream(raw) {
+                        override fun close() {
+                            flush()
+                        }
+                    }
+                    Base64.getEncoder().wrap(shield).use { encoder ->
+                        FileInputStream(file).use { streamingCopy(it, encoder) }
+                    }
+                    raw.write(tailBytes)
+                    raw.flush()
                     val code = conn.responseCode
                     if (code !in 200..299) {
-                        val body = conn.errorStream?.readBytes()?.toString(StandardCharsets.UTF_8)?.take(200) ?: ""
-                        throw IOException2("HTTP $code $body")
+                        val body = conn.errorStream?.readBytes()?.take(200)?.toString(StandardCharsets.UTF_8) ?: ""
+                        throw RuntimeException("HTTP $code $body")
                     }
                 } finally {
                     conn.disconnect()
                 }
             }
 
-        /** 私有小名：避免与调用方的 java.io.IOException import 混读。 */
-        private class IOException2(message: String) : RuntimeException(message)
-
         /** 给接线层的小工具：单文件直投（bytes 在手的小件），包成 CourierFile。 */
-        fun singleFile(name: String, bytes: ByteArray): CourierFile =
-            CourierFile(name, bytes.size.toLong()) { ByteArrayInputStream(bytes) }
+        fun singleFile(name: String, bytes: ByteArray): CourierFile {
+            val copy = bytes.copyOf()
+            return CourierFile(name, copy.size.toLong()) { copy.inputStream() }
+        }
     }
 }
