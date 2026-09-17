@@ -24,7 +24,7 @@ data class CourierFile(val name: String, val sizeBytes: Long, val open: () -> In
 
 /**
  * 上传一个卷的缝隙：路径已含前缀，内容在 [File] 里（落过盘的卷，不要求整卷进内存）。
- * 抛异常 = 这卷没传上，由 client 统一重试；实现方负责用完不删（临时文件归 client 清）。
+ * 抛异常 = 这卷没传上，由 client 统一重试；临时文件归 client 清，实现方用完不删。
  */
 fun interface VolumeUploader {
     fun upload(path: String, file: File, message: String)
@@ -108,7 +108,7 @@ class FileCourierClient(
             }
             volumeEntries += buildJsonObject {
                 put("name", volumeName)
-                put("bytes", packedSize)
+                put("bytes", packed.length())
                 put("fileCount", plan.files.size)
                 put("files", buildJsonArray { plan.files.forEach { add(kotlinx.serialization.json.JsonPrimitive(it.file.name)) } })
             }
@@ -258,7 +258,14 @@ class FileCourierClient(
                     raw.flush()
                     val code = conn.responseCode
                     if (code !in 200..299) {
-                        val body = conn.errorStream?.readBytes()?.take(200)?.toString(StandardCharsets.UTF_8) ?: ""
+                        // 有界读错误体：只留前 256 字节当线索（有界读取是全仓纪律）
+                        val err = conn.errorStream
+                        var body = ""
+                        if (err != null) {
+                            val buf = ByteArray(256)
+                            val n = err.read(buf)
+                            if (n > 0) body = String(buf, 0, n, StandardCharsets.UTF_8)
+                        }
                         throw RuntimeException("HTTP $code $body")
                     }
                 } finally {
@@ -266,7 +273,7 @@ class FileCourierClient(
                 }
             }
 
-        /** 给接线层的小工具：单文件直投（bytes 在手的小件），包成 CourierFile。 */
+        /** 给接线层的小工具：单文件直投（bytes 在手的小件），包成 CourierFile（拷贝防外泄改写）。 */
         fun singleFile(name: String, bytes: ByteArray): CourierFile {
             val copy = bytes.copyOf()
             return CourierFile(name, copy.size.toLong()) { copy.inputStream() }
