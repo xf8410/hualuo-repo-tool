@@ -599,14 +599,17 @@ class RepoWorkbenchState(
         if (!ciRunsBusy && browseRepo.isNotEmpty()) loadBrowseCi()
     }
 
-    /** 展开一个 run 看 jobs。 */
+    /**
+     * 展开一个 run 看 jobs。闸门在改账之前：没挂在浏览仓上就什么都不动——
+     * 先展开后撞闸会留一截悬空的展开层（run 35282696138 的测试抓的就是这个次序）。
+     */
     fun openRunJobs(runId: Long) {
         if (ciJobsBusy || ciLogBusy) return
+        val repo = browseRepo
+        if (repo.isEmpty()) return
         ciJobsRunId = runId
         ciJobsList = emptyList()
         ciJobsNote = null
-        val repo = browseRepo
-        if (repo.isEmpty()) return
         ciJobsBusy = true
         val token = githubToken()
         Thread({
@@ -636,14 +639,14 @@ class RepoWorkbenchState(
         ciLogNote = null
     }
 
-    /** 展开一个 job 看日志（有界读：超长日志给前一段并明说，全量去 CI 产物拿）。 */
+    /** 展开一个 job 看日志（闸门在改账之前，同 openRunJobs；有界读：超长给前一段并明说）。 */
     fun openJobLog(jobId: Long) {
         if (ciLogBusy) return
+        val repo = browseRepo
+        if (repo.isEmpty()) return
         ciLogJobId = jobId
         ciLogText = null
         ciLogNote = null
-        val repo = browseRepo
-        if (repo.isEmpty()) return
         ciLogBusy = true
         val token = githubToken()
         Thread({
