@@ -378,6 +378,18 @@ class AppUiState(
         pendingDataAction = ACTION_COURIER_DELIVER
     }
 
+    /** 投递发车（接线层在后台线程里叫）：忙灯亮、旧收场话清掉——旧账不许挂着顶数。 */
+    fun beginCourier() {
+        courierBusy = true
+        courierNote = null
+    }
+
+    /** 投递收场（接线层叫）：忙灯灭、结论入账。成功失败都走这里，不许静默。 */
+    fun finishCourier(note: String) {
+        courierBusy = false
+        courierNote = note
+    }
+
     // ── 备份（数据控制；动作桥接与文件选择器在 RootScreen） ─────────────────
 
     /**
