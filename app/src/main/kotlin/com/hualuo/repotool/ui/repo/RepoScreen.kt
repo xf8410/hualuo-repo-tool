@@ -1,6 +1,7 @@
 package com.hualuo.repotool.ui.repo
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.components.CardTitle
@@ -164,11 +166,11 @@ fun RepoScreen(state: AppUiState) {
                     "打开",
                     fontSize = 13.sp,
                     color = Ink,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(Bg)
-                        .clickableRow { state.browseOtherRepo() }
+                        .clickable { state.browseOtherRepo() }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 )
             }
@@ -177,7 +179,7 @@ fun RepoScreen(state: AppUiState) {
         // 浏览卡：进了仓库才出现；目录在前，「返回上一级」走回退栈
         if (state.browseRepo.isNotEmpty()) {
             HCard {
-                CardTitle("浏览 " + state.browseRepo + (if (state.browseRef != null) " @${state.browseRef}" else ""))
+                CardTitle("浏览 " + state.browseRepo + (if (state.browseRef != null) " @" + state.browseRef else ""))
                 Text(
                     "/" + state.browsePath,
                     fontSize = 11.5.sp,
@@ -276,14 +278,10 @@ fun RepoScreen(state: AppUiState) {
     }
 }
 
-/** 体积给人话：KB 以下按字节，往上到 MB（清单接口给的本来就是 KB 账）。 */
+/** 体积给人话：KB 以下按字节，往上到 MB（清单接口给的本来就是字节账）。 */
 private fun formatBytes(bytes: Long): String = when {
-    bytes < 0 -> "未知大小"
-    bytes < 1024 -> "${bytes}B"
-    bytes < 1024 * 1024 -> "${bytes / 1024}KB"
+    bytes < 0L -> "未知大小"
+    bytes < 1024L -> "${bytes}B"
+    bytes < 1024L * 1024L -> "${bytes / 1024L}KB"
     else -> String.format("%.1fMB", bytes / (1024.0 * 1024.0))
 }
-
-/** 「打开」钮的按压区：clip + clickable 的收拢写法（避免再引一个组件件）。 */
-private fun Modifier.clickableRow(onClick: () -> Unit): Modifier =
-    this.then(androidx.compose.foundation.clickable(onClick = onClick, enabled = true, onClickLabel = null, role = null, interactionSource = null, indication = null) as Modifier)
