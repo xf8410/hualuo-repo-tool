@@ -45,7 +45,7 @@ class FileCourierClientTest {
     }
 
     private fun file(name: String, size: Int): CourierFile {
-        val content = ByteArray(size) { 'x' }
+        val content = ByteArray(size) { 'x'.code.toByte() }
         return CourierFile(name, size.toLong()) { ByteArrayInputStream2(content) }
     }
 
