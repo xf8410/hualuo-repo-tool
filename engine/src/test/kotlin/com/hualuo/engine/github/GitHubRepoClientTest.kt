@@ -1,6 +1,7 @@
 package com.hualuo.engine.github
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -34,11 +35,9 @@ class GitHubRepoClientTest {
         val list = client(fetch).listMyRepos(null)
 
         assertTrue(list.repos.isEmpty())
-        assertNull(list.error)
-        assertTrue(list.error == null)
-        org.junit.Assert.assertEquals(0, fetch.urls.size)
-        // error 位置放了指引，这里直说：没有令牌就一句话指路，请求一个不发
-        assertNotNull(list.repos)
+        assertNotNull(list.error)
+        assertTrue(list.error!!.contains("令牌"))
+        assertEquals(0, fetch.urls.size)
     }
 
     @Test
@@ -127,7 +126,7 @@ class GitHubRepoClientTest {
 
         val url = fetch.urls.first()
         assertTrue(url.contains("/contents/src%20main/com/demo"))
-        assertTrue(!url.contains("+"))
+        assertFalse(url.contains("+"))
     }
 
     @Test
@@ -157,7 +156,7 @@ class GitHubRepoClientTest {
         assertNull(file.error)
         assertEquals("hello repo", file.text)
         assertEquals(10, file.charCount)
-        assertTrue(!file.truncated)
+        assertFalse(file.truncated)
         assertEquals(GITHUB_ACCEPT_RAW, fetch.accepts.first())
         assertTrue(fetch.urls.first().endsWith("/contents/README.md"))
     }
@@ -200,9 +199,5 @@ class GitHubRepoClientTest {
 
         assertNull(file.text)
         assertTrue(file.error!!.contains("404"))
-    }
-
-    private fun assertFalse(b: Boolean) {
-        org.junit.Assert.assertFalse(b)
     }
 }
