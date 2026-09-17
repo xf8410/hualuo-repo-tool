@@ -502,7 +502,7 @@ class RepoWorkbenchState(
         openBrowseFile(GitHubEntry(path.substringAfterLast('/'), path, false, 0L))
     }
 
-    // ── CI 深看（浏览仓的 runs → jobs → 日志，三层各说各话） ────────────────
+    // ── CI 深看（浏览仓的 runs、jobs、日志三层各说各话） ────────────────────
 
     /** CI 卡开没有。 */
     var browseCiOpen by mutableStateOf(false)
