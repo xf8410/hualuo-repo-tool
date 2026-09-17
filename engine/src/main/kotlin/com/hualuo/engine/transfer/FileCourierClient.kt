@@ -54,8 +54,9 @@ sealed class CourierOutcome {
  * base64 也是流式直写 HTTP 输出——内存曲线是平的，与卷大小无关。
  *
  *  - 上传动作经 [VolumeUploader] 缝隙注入：纯 JVM 测试喂假 uploader，绝不碰真网；
- *  - 每卷失败自动重试 [maxRetries] 次（退避由 [sleeper] 注入），耗尽即整体失败并报清
- *    卡在哪一卷——不静默丢卷，也不假报成功；
+ *  - 每卷失败自动重试 [maxRetries] 次（退避由 [sleeper] 注入），**成功即停**——测试
+ *    立过功的一条：repeat 的 return@repeat 是「下一轮」不是「收工」，写错了会把
+ *    传成功的卷原样再传两遍（CI 抓过，改成 while 条件收口）；
  *  - 进度回调 [onProgress]（已完成卷数, 总卷数），接线层拿它画进度行（0.6.0 同款）；
  *  - 卷数封顶 [maxVolumes]：防止把仓库当无限盘打爆，超了直接拒绝出声。
  */
@@ -89,7 +90,8 @@ class FileCourierClient(
             var lastError: String? = null
             var sent = false
             try {
-                repeat(attempts) { attempt ->
+                var attempt = 0
+                while (attempt < attempts && !sent) {
                     if (attempt > 0) sleeper(1_000L * attempt)
                     try {
                         uploader.upload(volumePath, packed, "courier: $volumeName（${plan.files.size} 个文件，投递卷）")
@@ -98,7 +100,7 @@ class FileCourierClient(
                     } catch (e: Exception) {
                         lastError = "${e.javaClass.simpleName}: ${e.message ?: "（无消息）"}"
                     }
-                    if (sent) return@repeat
+                    attempt += 1
                 }
             } finally {
                 packed.delete()
