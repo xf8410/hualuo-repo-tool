@@ -5,7 +5,11 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hualuo.engine.github.GitHubCiClient
+import com.hualuo.engine.github.GitHubEntry
+import com.hualuo.engine.github.GitHubRepoClient
+import com.hualuo.engine.github.GitHubRepoSummary
 import com.hualuo.engine.github.GitHubRun
+import com.hualuo.engine.github.normalizeGitHubRepo
 import com.hualuo.engine.search.SearchOutcome
 import com.hualuo.engine.search.WebSearchClient
 import com.hualuo.engine.search.WebSearchResult
@@ -22,6 +26,16 @@ import java.util.Date
 import java.util.Locale
 import kotlin.reflect.KProperty
 
+/** 文件投递批里的一条：用户选进来的一个文件或一棵目录树。 */
+data class CourierPick(
+    /** 屏上显示用的短标签（选文件时是系统选择器给的路径尾段，收集真名在投递时做）。 */
+    val label: String,
+    /** content URI 的字符串形状。状态层不认识安卓的 Uri 类，转回去是根界面那层的事。 */
+    val uri: String,
+    /** true = 一棵目录树（OpenDocumentTree 的结果），投递时递归收集。 */
+    val isTree: Boolean,
+)
+
 /**
  * 全局界面状态（v13.1 的 JS 变量一对一翻译）。
  *
@@ -37,8 +51,12 @@ import kotlin.reflect.KProperty
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
  *  - **仓库CI（GitHub 只读）**：runs 与最新发布版现场拉，失败/坏条目出声不冒充；
  *    仓库与令牌在设置「GitHub 工作台」里配，令牌只进请求头。
+ *  - **仓库工作台（浏览，只读）**：自己的仓（要令牌）与别人的公开仓清单 + contents 逐级浏览 +
+ *    文件原文预览（raw 档、有界读、二进制/截断明说）；改码提交在 B 段另接。
  *  - **工具页真电（网页搜索）**：免费档 DuckDuckGo（引擎件 WebSearchClient，fetch 缝隙
  *    让引擎测试不碰真网，这里给的就是真网）；结果真数据、失败出声不冒充。
+ *  - **长任务页真电（文件投递）**：选文件/选目录只发动作请求（[pendingDataAction] 桥上走），
+ *    收集与分卷投递在根界面的后台线程（CourierDelivery）；目标仓/分支/令牌在设置「文件投递」。
  *  - **备份（数据控制）**：按钮只发出动作请求（[pendingDataAction]），系统文件选择器在
  *    RootScreen 那层开；导入的设置**必须**经 [applyImportedBackup] / [applyAgoraImport]
  *    走活通道进——绕过活通道直接写文件，会被下一次 flush 用旧值盖掉（两份事实的老病）。
@@ -293,10 +311,293 @@ class AppUiState(
         }, "hualuo-update").start()
     }
 
+    // ── 仓库工作台（浏览，只读）：清单 + contents 逐级浏览 + 文件预览 ───────
+
+    private val repoClient = GitHubRepoClient()
+
+    /** 我的仓库清单是否在拉。 */
+    var myReposBusy by mutableStateOf(false)
+        private set
+
+    /** 我的仓库清单（真数据）。 */
+    var myRepos by mutableStateOf(emptyList<GitHubRepoSummary>())
+        private set
+
+    /** 清单的一句话收场（成功报条数，失败给理由）；null = 还没拉过。 */
+    var myReposNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 拉「我的仓库」（含私有，要令牌）。没令牌不出声拉网，一句话指路去设置。 */
+    fun refreshMyRepos() {
+        if (myReposBusy) return
+        val token = githubToken()
+        if (token.isNullOrEmpty()) {
+            myReposNote = "看自己的仓库要令牌：去设置「GitHub 工作台」填（看别人的不用）"
+            return
+        }
+        myReposBusy = true
+        Thread({
+            val list = runCatching { repoClient.listMyRepos(token) }.getOrElse {
+                myReposBusy = false
+                myReposNote = "拉不动 GitHub（${it.message ?: "出错了"}）"
+                return@Thread
+            }
+            myReposBusy = false
+            myRepos = list.repos
+            myReposNote = when {
+                list.error != null -> list.error
+                list.badEntries > 0 -> "拉到 ${list.repos.size} 个仓库；另有 ${list.badEntries} 条读不懂已跳过"
+                else -> "拉到 ${list.repos.size} 个仓库"
+            }
+        }, "hualuo-repos").start()
+    }
+
+    /** 进页才拉；已有数据或正在拉就不重复。 */
+    fun refreshMyReposIfStale() {
+        if (myRepos.isEmpty() && !myReposBusy) refreshMyRepos()
+    }
+
+    /** 正在浏览的仓（owner/name）；空串 = 没在浏览。 */
+    var browseRepo by mutableStateOf("")
+        private set
+
+    /** 浏览用的分支；null = 仓库默认分支。 */
+    var browseRef by mutableStateOf<String?>(null)
+        private set
+
+    /** 当前目录路径（空 = 根）。 */
+    var browsePath by mutableStateOf("")
+        private set
+
+    /** 回退栈：进目录前把原路径压进来，「返回上一级」弹出。 */
+    var browseTrail by mutableStateOf(emptyList<String>())
+        private set
+
+    /** 当前目录条目（真数据，目录在前）。 */
+    var browseEntries by mutableStateOf(emptyList<GitHubEntry>())
+        private set
+
+    /** 浏览忙灯。 */
+    var browseBusy by mutableStateOf(false)
+        private set
+
+    /** 浏览的一句话收场；null = 没话。 */
+    var browseNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 进一个仓库，从根开始浏览。 */
+    fun browseInto(repo: String) {
+        if (browseBusy) return
+        val target = normalizeGitHubRepo(repo) ?: run {
+            toast("仓库写法不对：要 owner/name（粘整条链接也认）")
+            return
+        }
+        closeFileView()
+        browseRepo = target
+        browsePath = ""
+        browseTrail = emptyList()
+        loadBrowse()
+    }
+
+    /** 点目录条目：压栈进目录。文件条目不吃这套（预览走 openBrowseFile）。 */
+    fun browseDown(entry: GitHubEntry) {
+        if (browseBusy || !entry.isDir) return
+        browseTrail = browseTrail + browsePath
+        browsePath = entry.path
+        loadBrowse()
+    }
+
+    /** 返回上一级；已在根就没有上一级。 */
+    fun browseUp() {
+        if (browseBusy) return
+        val prev = browseTrail.lastOrNull() ?: return
+        browseTrail = browseTrail.dropLast(1)
+        browsePath = prev
+        loadBrowse()
+    }
+
+    /** 退出浏览（清单还在，重进不用重拉）。 */
+    fun exitBrowse() {
+        if (browseBusy) return
+        closeFileView()
+        browseRepo = ""
+        browsePath = ""
+        browseTrail = emptyList()
+        browseEntries = emptyList()
+        browseNote = null
+    }
+
+    /** 看别人的仓：输入框里的 owner/name（粘整条链接也认），过了写法闸就进浏览。 */
+    fun browseOtherRepo() {
+        if (browseBusy) return
+        browseInto(otherRepoQuery)
+    }
+
+    /** 「看别人的仓」输入框的词（不落盘：这是次导航动作，不是设置）。 */
+    var otherRepoQuery by mutableStateOf("")
+
+    private fun loadBrowse() {
+        browseBusy = true
+        val repo = browseRepo
+        val path = browsePath
+        val ref = browseRef
+        val token = githubToken()
+        Thread({
+            val result = runCatching { repoClient.browse(repo, path, ref, token) }.getOrElse {
+                browseBusy = false
+                browseNote = "拉不动 GitHub（${it.message ?: "出错了"}）"
+                return@Thread
+            }
+            browseBusy = false
+            browseEntries = result.entries
+            browseNote = when {
+                result.error != null -> result.error
+                result.badEntries > 0 -> "有 ${result.badEntries} 条读不懂已跳过"
+                else -> null
+            }
+        }, "hualuo-browse").start()
+    }
+
+    /** 预览中的文件路径；空 = 没开预览。 */
+    var fileViewPath by mutableStateOf("")
+        private set
+
+    /** 文件原文（raw 档拿的，有界 512K；null = 没内容，理由在 note）。 */
+    var fileViewText by mutableStateOf<String?>(null)
+        private set
+
+    /** 预览的一句话收场（字符数/截断/二进制/失败理由）。 */
+    var fileViewNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 预览忙灯。 */
+    var fileViewBusy by mutableStateOf(false)
+        private set
+
+    /** 点文件条目：拉原文预览（raw 档、有界读；二进制与截断都明说）。 */
+    fun openBrowseFile(entry: GitHubEntry) {
+        if (browseBusy || fileViewBusy || entry.isDir) return
+        val repo = browseRepo
+        if (repo.isEmpty()) return
+        fileViewBusy = true
+        fileViewPath = entry.path
+        fileViewText = null
+        fileViewNote = null
+        val ref = browseRef
+        val token = githubToken()
+        Thread({
+            val result = runCatching { repoClient.readFile(repo, entry.path, ref, token) }.getOrElse {
+                fileViewBusy = false
+                fileViewNote = "拉不动 GitHub（${it.message ?: "出错了"}）"
+                return@Thread
+            }
+            fileViewBusy = false
+            fileViewText = result.text
+            fileViewNote = when {
+                result.error != null -> result.error
+                result.truncated -> "只读了前 ${result.charCount} 字符（文件太大，有界读封顶）"
+                else -> "${result.charCount} 字符"
+            }
+        }, "hualuo-fileview").start()
+    }
+
+    /** 收起文件预览。 */
+    fun closeFileView() {
+        fileViewPath = ""
+        fileViewText = null
+        fileViewNote = null
+        fileViewBusy = false
+    }
+
+    // ── 长任务页真电：文件投递（courier；SAF 与投递执行在 RootScreen/CourierDelivery） ──
+
+    /**
+     * 已选进投递批的条目。只活在本进程、不落盘：SAF 授权跟着进程走，进程死了
+     * 重新选一遍才靠得住，把 URI 装进设置文件是假安心。想清空点「清空已选」。
+     */
+    var courierPicks by mutableStateOf(emptyList<CourierPick>())
+        private set
+
+    /** 投递是否在跑：按钮看它禁点，桥上看它拒绝重复发车。 */
+    var courierBusy by mutableStateOf(false)
+        private set
+
+    /** 最近一次投递的收场话（含收集报告与落点）；null = 本进程还没投过。 */
+    var courierNote by mutableStateOf<String?>(null)
+        private set
+
+    /** 根界面把选择器的结果交进来（一次选中的可以是一个或多个）。 */
+    fun addCourierPicks(picks: List<CourierPick>) {
+        if (picks.isEmpty()) return
+        courierPicks = courierPicks + picks
+    }
+
+    /** 清空已选批（不影响仓里已经投出去的卷）。 */
+    fun clearCourierPicks() {
+        courierPicks = emptyList()
+    }
+
+    /**
+     * 长任务页「选文件」「选目录」：只发动作请求，系统选择器归 RootScreen 开
+     * （备份同款桥：纯 JVM 状态层不认识 ActivityResult）。
+     */
+    fun requestCourierPick(tree: Boolean) {
+        if (courierBusy) {
+            toast("正在投递，先等这批跑完")
+            return
+        }
+        pendingDataAction = if (tree) ACTION_COURIER_PICK_TREE else ACTION_COURIER_PICK_FILES
+    }
+
+    /** 目标仓：设置「文件投递」里配，粘整条仓库链接也认（与仓库CI 同一套 normalize）。没配对返回 null。 */
+    fun courierRepo(): String? = normalizeGitHubRepo(text(UiKeys.COURIER_REPO).trim())
+
+    /** 目标分支：没配按 main 走（投自家仓的默认分支是最常见的一格省略）。 */
+    fun courierBranch(): String = text(UiKeys.COURIER_BRANCH).trim().ifBlank { "main" }
+
+    /** 令牌：文件投递那格留空就借用「GitHub 工作台」的令牌（同一把钥匙不逼人填两遍）。 */
+    fun courierToken(): String =
+        text(UiKeys.COURIER_TOKEN).trim().ifBlank { text(UiKeys.GITHUB_TOKEN).trim() }
+
+    /**
+     * 长任务页「开始投递」：先过三道闸（批里有货、仓写法对、令牌在手），过了才发动作请求——
+     * 真正的收集与分卷投递在 RootScreen 的后台线程（状态层不认识 ContentResolver）。
+     * 缺哪道闸就指名道姓出声，绝不空发请求去撞网络。
+     */
+    fun requestCourierDeliver() {
+        if (courierBusy) return
+        if (courierPicks.isEmpty()) {
+            toast("还没选要投的东西：先点「选文件」或「选目录」")
+            return
+        }
+        if (courierRepo() == null) {
+            toast("目标仓库没配对：去设置「文件投递」填 owner/name（粘整条仓库链接也认）")
+            return
+        }
+        if (courierToken().isEmpty()) {
+            toast("令牌不在手：私有仓库投递要令牌，去设置「文件投递」或「GitHub 工作台」填")
+            return
+        }
+        pendingDataAction = ACTION_COURIER_DELIVER
+    }
+
+    /** 投递发车（接线层在后台线程里叫）：忙灯亮、旧收场话清掉——旧账不许挂着顶数。 */
+    fun beginCourier() {
+        courierBusy = true
+        courierNote = null
+    }
+
+    /** 投递收场（接线层叫）：忙灯灭、结论入账。成功失败都走这里，不许静默。 */
+    fun finishCourier(note: String) {
+        courierBusy = false
+        courierNote = note
+    }
+
     // ── 备份（数据控制；动作桥接与文件选择器在 RootScreen） ─────────────────
 
     /**
-     * 数据控制页按钮点下的动作（export/import/import_agora）。设置子页的按钮只发请求，
+     * 数据控制页与文件投递共用的动作桥（export/import/import_agora、courier_pick_files、
+     * courier_pick_tree、courier_deliver）。设置子页的按钮只发请求，
      * 系统文件选择器（SAF）归 RootScreen 开——纯 JVM 状态层不认识安卓的 ActivityResult。
      */
     var pendingDataAction by mutableStateOf<String?>(null)
@@ -632,5 +933,18 @@ class AppUiState(
          * 窗口内，但一 MB 级的整文件直塞必炸——闸门拦的是「事故」不是「长文」。
          */
         const val MAX_PROMPT_CHARS = 50_000
+
+        /** 文件投递的动作键（pendingDataAction 桥上走）：RootScreen 认这三个。 */
+        const val ACTION_COURIER_PICK_FILES = "courier_pick_files"
+        const val ACTION_COURIER_PICK_TREE = "courier_pick_tree"
+        const val ACTION_COURIER_DELIVER = "courier_deliver"
+
+        /**
+         * 投递目标前缀：courier/时间戳/，斜杠结尾（引擎件的规矩，前缀由调用方给）。
+         * 一批一个目录：重投同批是原地覆盖（引擎件的「重投 = 原地修复」），
+         * 换一批自动换新目录，不同批互不打架。
+         */
+        fun buildCourierPrefix(nowMs: Long): String =
+            "courier/" + SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date(nowMs)) + "/"
     }
 }
