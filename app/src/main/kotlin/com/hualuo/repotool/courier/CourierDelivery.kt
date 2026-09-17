@@ -44,7 +44,7 @@ object CourierDelivery {
         val repo = state.courierRepo()
         val token = state.courierToken()
         if (picks.isEmpty() || repo == null || token.isEmpty()) {
-            state.courierNote = "投递没跑起来：批是空的或目标没配全（仓/令牌在设置「文件投递」里）"
+            state.finishCourier("投递没跑起来：批是空的或目标没配全（仓/令牌在设置「文件投递」里）")
             state.toast(state.courierNote ?: "")
             state.clearPendingDataAction()
             return
@@ -54,13 +54,11 @@ object CourierDelivery {
         val name = repo.substring(slash + 1)
         val branch = state.courierBranch()
         val prefix = AppUiState.buildCourierPrefix(System.currentTimeMillis())
-        state.courierBusy = true
-        state.courierNote = null
+        state.beginCourier()
         kernel.courierProgress = "正在收集文件……"
         val outcome = deliverAll(context, kernel, picks, owner, name, branch, token, prefix, repo)
         kernel.courierProgress = null
-        state.courierBusy = false
-        state.courierNote = outcome
+        state.finishCourier(outcome)
         state.toast(outcome)
         state.clearPendingDataAction()
     }
