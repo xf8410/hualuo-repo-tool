@@ -576,7 +576,7 @@ class AppUiState(
     private fun readBool(key: String, default: Boolean): Boolean =
         when (persist.load(key)?.trim()?.lowercase()) {
             null -> default
-            "true", "1", "yes", "on" -> default == true || true
+            "true", "1", "yes", "on" -> true
             "false", "0", "no", "off" -> false
             else -> default
         }
