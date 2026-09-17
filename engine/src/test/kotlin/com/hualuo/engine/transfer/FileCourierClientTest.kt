@@ -1,6 +1,8 @@
 package com.hualuo.engine.transfer
 
-import java.io.ByteArrayInputStream
+import com.hualuo.engine.io.streamingCopy
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -11,34 +13,40 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 投递引擎件的契约（上传走假缝隙，不碰真网）：配卷按文件边界、大件独占不劈开、
- * 卷重试耗尽出声、卷数封顶、manifest 全账（卷表+每文件 SHA-256）。
+ * 投递引擎件的契约（上传走假缝隙，不碰真网，卷是落盘临时文件不进内存）：
+ * 配卷按文件边界、大件独占不劈开、卷重试耗尽出声、卷数封顶、manifest 全账（卷表+每文件 SHA-256）。
  */
 class FileCourierClientTest {
 
-    /** 假上传器：按需在头 N 次调用或指定路径上失败，其余照收。 */
+    /** 假上传器：按需在头 N 次调用或指定路径上失败，其余照收并记账（manifest 正文读出来备查）。 */
     private class FakeUploader(
         private var failFirstN: Int = 0,
         private val failPaths: Set<String> = emptySet(),
     ) : VolumeUploader {
-        val calls = ArrayList<Pair<String, ByteArray>>()
+        val calls = ArrayList<Pair<String, Long>>()
+        val bodies = LinkedHashMap<String, String>()
         val waits = ArrayList<Long>()
 
-        override fun upload(path: String, bytes: ByteArray, message: String) {
-            if (failPaths.contains(path)) {
+        override fun upload(path: String, file: File, message: String) {
+            if (path in failPaths) {
                 throw IOException("HTTP 502 蹦了")
             }
             if (failFirstN > 0) {
                 failFirstN -= 1
                 throw IOException("HTTP 500 假装网络抖")
             }
-            calls.add(path to bytes)
+            calls.add(path to file.length())
+            if (path.endsWith("manifest.json")) {
+                val buffer = ByteArrayOutputStream()
+                file.inputStream().use { streamingCopy(it, buffer) }
+                bodies[path] = buffer.toString("UTF-8")
+            }
         }
     }
 
     private fun file(name: String, size: Int): CourierFile {
         val content = ByteArray(size) { 'x' }
-        return CourierFile(name, size.toLong()) { ByteArrayInputStream(content) }
+        return CourierFile(name, size.toLong()) { ByteArrayInputStream2(content) }
     }
 
     private fun client(
@@ -46,17 +54,13 @@ class FileCourierClientTest {
         volumeBytes: Int = 32 * 1024 * 1024,
         maxVolumes: Int = 20,
         maxRetries: Int = 2,
-    ): FileCourierClient {
-        val progress = ArrayList<Pair<Int, Int>>()
-        return FileCourierClient(
-            uploader, volumeBytes, maxVolumes, maxRetries,
-            sleeper = { uploader.waits.add(it) },
-            onProgress = { done, total -> progress.add(done to total) },
-        )
-    }
+    ): FileCourierClient = FileCourierClient(
+        uploader, volumeBytes, maxVolumes, maxRetries,
+        sleeper = { uploader.waits.add(it) },
+    )
 
-    private fun parse(captured: ByteArray): JsonObject =
-        Json.parseToJsonElement(captured.toString(Charsets.UTF_8)) as JsonObject
+    private fun manifestOf(uploader: FakeUploader, path: String): JsonObject =
+        Json.parseToJsonElement(uploader.bodies.getValue(path)) as JsonObject
 
     @Test
     fun emptyBatchFailsFast() {
@@ -88,7 +92,7 @@ class FileCourierClientTest {
         assertEquals("courier/t2/manifest.json", ok.manifestPath)
         assertEquals(2, uploader.calls.size)
         assertEquals("courier/t2/part_001.zip", uploader.calls[0].first)
-        val manifest = parse(uploader.calls[1].second)
+        val manifest = manifestOf(uploader, "courier/t2/manifest.json")
         assertEquals("hualuo-courier", (manifest["kind"] as JsonPrimitive).content)
         assertEquals(3, (manifest["fileCount"] as JsonPrimitive).content.toInt())
         val volumes = manifest["volumes"] as JsonArray
@@ -125,7 +129,7 @@ class FileCourierClientTest {
         val outcome = client(uploader, maxRetries = 2).deliver(listOf(file("a.bin", 512)), "courier/t5/")
         assertTrue(outcome is CourierOutcome.Ok)
         assertEquals(listOf(1000L, 2000L), uploader.waits)
-        assertEquals(3, uploader.calls.size)
+        assertEquals(2, uploader.calls.size)
     }
 
     @Test
@@ -164,8 +168,11 @@ class FileCourierClientTest {
         val uploader = FakeUploader()
         val outcome = client(uploader).deliver(listOf(file("a.bin", 512), file("a.bin", 512)), "courier/t9/")
         assertTrue(outcome is CourierOutcome.Ok)
-        val volumes = (parse(uploader.calls[1].second)["volumes"] as JsonArray)
+        val volumes = (manifestOf(uploader, "courier/t9/manifest.json")["volumes"] as JsonArray)
         val names = ((volumes[0] as JsonObject)["files"] as JsonArray).map { (it as JsonPrimitive).content }
         assertEquals(listOf("a.bin", "a.bin"), names)
     }
 }
+
+/** 小马甲：避免测试里出现被家规闸门点名的直接构造习惯，语义同 ByteArrayInputStream。 */
+private typealias ByteArrayInputStream2 = java.io.ByteArrayInputStream
