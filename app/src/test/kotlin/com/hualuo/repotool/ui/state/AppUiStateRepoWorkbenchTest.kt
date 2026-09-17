@@ -7,8 +7,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 仓库工作台（浏览）状态层的纯 JVM 测试：只钉**不发网就能判**的闸门与账本动作——
- * 写法闸拦在撞网之前、目录/文件分家、回退栈、收尾清场。真网络路径由引擎件测试看住。
+ * 仓库工作台状态层的纯 JVM 测试：只钉**不发网就能判**的闸门与账本动作——
+ * 写法闸拦在撞网之前、目录/文件分家、回退栈、清场、分支/编辑的离线闸。
+ * 真网络路径由引擎件测试看住。
  */
 class AppUiStateRepoWorkbenchTest {
 
@@ -71,6 +72,8 @@ class AppUiStateRepoWorkbenchTest {
         assertTrue(s.browseTrail.isEmpty())
         assertTrue(s.browseEntries.isEmpty())
         assertTrue(s.fileViewPath.isEmpty())
+        assertFalse(s.branchPickerOpen)
+        assertFalse(s.commitsOpen)
     }
 
     @Test
@@ -81,5 +84,76 @@ class AppUiStateRepoWorkbenchTest {
         assertTrue(s.fileViewPath.isEmpty())
         assertTrue(s.fileViewText == null)
         assertFalse(s.fileViewBusy)
+        assertFalse(s.editingOpen)
+    }
+
+    @Test
+    fun toggleBranchPickerWithoutBrowseStaysOffline() {
+        val s = AppUiState()
+        s.toggleBranchPicker()
+
+        assertTrue(s.branchPickerOpen)
+        // 没在浏览仓库：闸住不发网，清单账本说人话
+        assertFalse(s.branchListBusy)
+        assertNotNull(s.branchListNote)
+        s.toggleBranchPicker()
+        assertFalse(s.branchPickerOpen)
+    }
+
+    @Test
+    fun switchBranchWithoutBrowseIsNoop() {
+        val s = AppUiState()
+        s.switchBranch("dev")
+
+        assertFalse(s.branchListBusy)
+        assertFalse(s.browseBusy)
+        assertFalse(s.commitsBusy)
+    }
+
+    @Test
+    fun toggleCommitsWithoutBrowseStaysOffline() {
+        val s = AppUiState()
+        s.toggleCommits()
+
+        assertTrue(s.commitsOpen)
+        assertFalse(s.commitsBusy)
+        s.toggleCommits()
+        assertFalse(s.commitsOpen)
+    }
+
+    @Test
+    fun startEditingWithoutContentIsBlocked() {
+        val s = AppUiState()
+        s.startEditing()
+
+        assertFalse(s.editingOpen)
+    }
+
+    @Test
+    fun commitEditWithoutMessageIsBlockedOffline() {
+        val s = AppUiState()
+        s.editingMessage = "   "
+        s.commitEdit()
+
+        // 编辑器没开：闸在第一道，什么请求都不发
+        assertFalse(s.editBusy)
+    }
+
+    @Test
+    fun commitEditWithClosedEditorIsNoop() {
+        val s = AppUiState()
+        s.commitEdit()
+
+        assertFalse(s.editBusy)
+    }
+
+    @Test
+    fun cancelEditingClearsTheDraft() {
+        val s = AppUiState()
+        s.cancelEditing()
+
+        assertFalse(s.editingOpen)
+        assertTrue(s.editingText.isEmpty())
+        assertTrue(s.editingMessage.isEmpty())
     }
 }
