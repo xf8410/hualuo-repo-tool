@@ -11,8 +11,8 @@ import org.junit.Test
 
 /**
  * 网关错误体归因的契约（0.7.0 第一刀）：
- *  - 非 2xx 带「上下文超限」证据 → 决策层 GiveUp(ContextOverflow)（既定行为，这里钉死防回退）；
- *  - HTTP 200 外壳里的流中 {"error":...} 块（不过决策表）→ 解析器就地归因 + 打码；
+ *  - 非 2xx 带「上下文超限」证据：决策层 GiveUp(ContextOverflow)（既定行为，这里钉死防回退）；
+ *  - HTTP 200 外壳里的流中 {"error":...} 块（不过决策表）：解析器就地归因 + 打码；
  *  - 归因证据 = message + code + type，用未打码原文判（打码插星号会拆关键词）。
  */
 class GatewayBodyAttributionTest {
