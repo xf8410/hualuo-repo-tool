@@ -42,7 +42,7 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  * 仓库CI页（v13 #p-repo）：**真数据**——GitHub Actions 最近几条 run + 检查更新，
  * 外加仓库工作台（状态舱 state.repo）：自己的仓清单（要令牌）、别人的公开仓、
  * contents 逐级浏览、分支切换、提交历史（维护记录）、文件原文预览、**改码提交**
- * （sha 对账、冲突出声不硬盖）、**CI 深看三层**（runs → jobs → 日志，不跳网页）。
+ * （sha 对账、冲突出声不硬盖）、**CI 深看三层**（runs、jobs、日志，不跳网页）。
  */
 @Composable
 fun RepoScreen(state: AppUiState) {
@@ -297,7 +297,7 @@ fun RepoScreen(state: AppUiState) {
                     }
                     LRow("刷新历史", chevron = true) { state.repo.refreshCommits() }
                 }
-                // CI 深看三层：runs → 点 run 看 jobs → 点 job 看日志；不跳网页
+                // CI 深看三层：runs、点 run 看 jobs、点 job 看日志；不跳网页
                 LRow(
                     "查看 CI",
                     if (state.repo.browseCiOpen) {
