@@ -2,7 +2,6 @@ package com.hualuo.engine.api
 
 import com.hualuo.engine.generation.GenerationSlot
 import com.hualuo.engine.generation.IdleWatchdog
-import com.hualuo.engine.http.RequestCost
 import com.hualuo.engine.http.RetryPolicy
 import com.hualuo.engine.toolcalls.ToolSpec
 import kotlinx.serialization.json.Json
@@ -18,7 +17,8 @@ import org.junit.Test
  * 工具协议在请求/响应两侧的形状测试（纯 JVM，脚本化假 transport）：
  *  - 请求体：tools 数组在、消息里的 tool_calls 与 tool_call_id 形状对；
  *  - 响应：流式碎片装配、非流式 message 形状、length 截断不冒充成品；
- *  - 老形状（不带 tools）回复工具调用按形状异常报错——不静默吞。
+ *  - 老形状（不带 tools）回复工具调用按形状异常报错——不静默吞；
+ *  - 断流证据：写到一半工具调用就断，IncompleteStream 要带上「当时正在写工具调用」。
  * 流程行为（重试红线/槽/卡死）仍归 ChatWireRunnerTest，不重。
  */
 class ToolCallsWireTest {
@@ -150,18 +150,19 @@ class ToolCallsWireTest {
 
     @Test
     fun brokenStreamWhileWritingToolCallSaysSoInEvidence() {
-        val transport = ScriptTransport { _, _ ->
-            throw WireStreamIOException(
-                42L,
-                java.io.IOException("reset"),
-            )
+        // 写到一半工具调用（碎片到了、收尾标记没来）就断：证据位必须为真，话要说得出来
+        val transport = ScriptTransport { _, sink ->
+            sink.onLine("""data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_half","function":{"name":"half","arguments":"{\"a\":"}}]}}]}""")
+            WireResponse(200, null, 30L, null) // 无 finish_reason / 无 [DONE]：可证明的没说完
         }
 
-        // 半路断：要报「当时正在写工具调用」（toolCallFrames 证据为真）
         val outcome = clientOf(transport).chatTurns(profile, listOf(ChatTurn("user", "x")), tools = listOf(toolSpec)) { }
 
-        // 这条脚本没有先喂碎片帧，所以证据为假；真正要钉的是「不抛穿、按错误收」
-        assertTrue("必须按错误收：$outcome", outcome is ChatOutcome.Failed)
+        assertTrue("必须按半路断收：$outcome", outcome is ChatOutcome.Failed)
+        val error = (outcome as ChatOutcome.Failed).error
+        assertTrue("要是 IncompleteStream：$error", error is GenerationError.IncompleteStream)
+        val message = error.userMessage()
+        assertTrue("要带「正在写工具调用」证据：$message", message.contains("正在写一个工具调用"))
     }
 
     @Test
