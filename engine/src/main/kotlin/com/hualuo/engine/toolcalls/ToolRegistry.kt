@@ -4,8 +4,8 @@ package com.hualuo.engine.toolcalls
  * 工具执行器：吃模型给的参数 JSON 原文，吐一段**给模型看的结果文本**。
  *
  * 纪律：
- *  - 结果必须有界（截断喂回是运行层的活，但执行器自己别产巨型文本）；
- *  - 抛异常可以（比如网络炸了），注册表会把异常翻成一段「失败在这」的结果文本回填给模型——
+ *  - 结果别产巨型文本（喂回上下文前还有一道 [ToolResultTrimmer.trim] 兜底，但执行器自己先省着点）；
+ *  - 抛异常可以（比如网络炸了）：注册表会把异常翻成一段「失败在这」的结果文本回填给模型——
  *    工具失败也是给模型的证据，不许静默吞成空气。
  */
 fun interface ToolHandler {
@@ -23,7 +23,7 @@ data class ToolOutcome(val ok: Boolean, val text: String)
  * 「不存在 + 现在有哪些」，让模型自己改口，而不是把异常抛穿把整轮生成弄死。
  *
  * 家常规矩：
- *  - 工具名走 OpenAI 的字符规（字母数字下划线横杠，1-64 位）：注册时就把关，
+ *  - 工具名走 OpenAI 的字符规（字母数字下划线横杠，1 到 64 位）：注册时就把关，
  *    拼错的名字在开发期炸出来，不许等模型调用时才 400；
  *  - 重名注册 = 后一份覆盖前一份（测试与覆盖场景方便），不留两份影子；
  *  - 线程模型：注册发生在启动期（单线程），执行发生在生成线程——本类不加锁，
@@ -36,20 +36,16 @@ class ToolRegistry {
     /** 一份注册：清单形状与执行器捆在一起，拆开放会有人只注册一半。 */
     data class Entry(val spec: ToolSpec, val handler: ToolHandler)
 
-    /**
-     * 注册一个工具。名字不合规直接抛（这是我们自己代码的错，开发期就该炸，不许等模型调用）。
-     */
+    /** 注册一个工具。名字不合规直接抛（这是我们自己代码的错，开发期就该炸，不许等模型调用）。 */
     fun register(spec: ToolSpec, handler: ToolHandler) {
         require(spec.name.matches(NAME_RULE)) {
-            "工具名「${spec.name}」不合规：只许字母、数字、下划线、横杠，1-64 位（OpenAI 的字符规）"
+            "工具名「${spec.name}」不合规：只许字母、数字、下划线、横杠，1 到 64 位（OpenAI 的字符规）"
         }
         entries[spec.name] = Entry(spec, handler)
     }
 
-    /** 清单（进请求 tools 数组的形状）；没注册过工具就是空清单——空清单不发 tools 字段，行为与老版一字不差。 */
+    /** 清单（进请求 tools 数组的形状）；空注册表给空清单：空清单不发 tools 字段，行为与老版一字不差。 */
     fun specs(): List<ToolSpec> = entries.values.map { it.spec }
-
-    fun find(name: String): Entry? = entries[name]
 
     fun isEmpty(): Boolean = entries.isEmpty()
 
@@ -61,17 +57,19 @@ class ToolRegistry {
      */
     fun execute(name: String, argumentsJson: String): ToolOutcome {
         val entry = entries[name]
-            ?: return ToolOutcome(
-                ok = false,
-                text = "工具「$name」不存在。现在能用的工具：" + availableNames(),
-            )
+            ?: return ToolOutcome(false, "工具「$name」不存在。现在能用的工具：" + availableNames())
         val result = runCatching { entry.handler.execute(argumentsJson) }
         return result.fold(
-            onSuccess = { ToolOutcome(ok = true, text = it) },
-            onFailure = { ToolOutcome(ok = false, text = "工具「$name」执行失败：${it.message ?: "内部出错"}") },
+            onSuccess = { ToolOutcome(true, it) },
+            onFailure = { ToolOutcome(false, "工具「$name」执行失败：${it.message ?: "内部出错"}") },
         )
     }
 
     private fun availableNames(): String =
         if (entries.isEmpty()) "（一个都还没接）" else entries.keys.joinToString("、")
+
+    private companion object {
+        /** OpenAI 的工具名字符规：字母、数字、下划线、横杠，1 到 64 位。 */
+        val NAME_RULE = Regex("[A-Za-z0-9_-]{1,64}")
+    }
 }
