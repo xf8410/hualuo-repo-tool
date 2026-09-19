@@ -19,7 +19,6 @@ import com.hualuo.engine.toolcalls.AssembledToolCall
 import com.hualuo.engine.toolcalls.ToolRegistry
 import com.hualuo.engine.toolcalls.ToolTurnBuilder
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_DEFAULT
-import com.hualuo.repotool.ui.data.RETRY_COSTLY_KEY
 import com.hualuo.repotool.ui.model.Badge
 import com.hualuo.repotool.ui.model.ChatMsg
 import com.hualuo.repotool.ui.model.IconKey
@@ -27,6 +26,11 @@ import com.hualuo.repotool.ui.model.Tone
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * 回合流的真运行层：**发送不再只是把按钮染红**——这条链是真的网络往返。
@@ -61,7 +65,7 @@ import java.util.Locale
  *    不许牵连上一条已完成的。
  *  - [worker] 注入点让 JVM 测试能同步跑完一整条链（单测不 sleep 等线程）。
  *
- * 参数写法钉三条 Kotlin 规矩（都是 CI 抓过的）：
+ * 参数写法钉几条 Kotlin 规矩（都是 CI 抓过的）：
  *  - 尾随 lambda 永远绑**最后一个**参数——本类最后一个是 clock，
  *    调用方传开关必须具名 `autoRetryCostly = {...}`，不许偷懒尾随；
  *  - **跨模块的 public 属性判空后不智能转换**（:engine 的 ModelListing.error 在 :app
@@ -509,6 +513,9 @@ class ChatRuntime(
 
         /** 工具回合轮次上限（防模型连轴转地调工具不给答案）；打到上限按拆小问题收场。 */
         const val MAX_TOOL_ROUNDS = 6
+
+        /** 工具参数解析（共享一把）：注册表执行前把 argumentsJson 给处理器，处理器自己解析。 */
+        val toolJson = Json { ignoreUnknownKeys = true }
     }
 }
 
