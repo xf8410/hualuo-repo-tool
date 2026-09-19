@@ -1,8 +1,8 @@
 package com.hualuo.engine.toolcalls
 
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 一个**装配完整**的工具调用（流式碎片拼完之后的样子）。
@@ -24,6 +24,7 @@ data class AssembledToolCall(
  * 形状按 OpenAI 兼容协议：choice.delta.tool_calls 是数组，每项
  * `{"index":0,"id":"call_x","function":{"name":"...","arguments":"{\"a\":"}}`，
  * 后续帧只有 `{"index":0,"function":{"arguments":"1}"}}`——**按 index 归组、按到达顺序拼接**。
+ * 非流式的 message 形状里条目没有 index：调用方把数组位置当默认 index 传进来（defaultIndex）。
  *
  * 纪律：
  *  - name 只认第一份非空的（后面的重复帧不覆盖，覆盖会把名字拼坏）；
@@ -40,21 +41,21 @@ class ToolCallAssembler {
 
     private val parts = LinkedHashMap<Int, Part>()
 
-    /** 喂一帧 delta.tool_calls（数组里每一项）。坏形状静默跳过：装配不因一帧垃圾全体报废。 */
-    fun feed(item: JsonObject) {
-        val index = item["index"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: return
+    /** 喂一帧 tool_calls 里的一个条目。缺 index 的用 [defaultIndex]（非流式形状的数组位置）。 */
+    fun feed(item: JsonObject, defaultIndex: Int = 0) {
+        val index = (item["index"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: defaultIndex
         val part = parts.getOrPut(index) { Part() }
-        item["id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+        (item["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
             if (part.id.isEmpty()) part.id = it
         }
         val fn = item["function"] as? JsonObject ?: return
-        fn["name"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+        (fn["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
             if (part.name.isEmpty()) part.name = it
         }
-        fn["arguments"]?.jsonPrimitive?.contentOrNull?.let { part.args.append(it) }
+        (fn["arguments"] as? JsonPrimitive)?.contentOrNull?.let { part.args.append(it) }
     }
 
-    /** 数一下装起来的调用个数（收尾时判「这轮到底是不是工具回合」用）。 */
+    /** 装起来的条目数（含没名字的垃圾帧；收尾判「当时是不是在写工具调用」用它）。 */
     fun count(): Int = parts.size
 
     /**
