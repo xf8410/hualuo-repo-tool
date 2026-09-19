@@ -2,17 +2,13 @@ package com.hualuo.engine.toolcalls
 
 import com.hualuo.engine.api.ChatTurn
 import com.hualuo.engine.api.WireToolCall
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 工具结果喂回上下文时的形状裁剪（纯函数，纯 JVM 好测）。
  *
  * 为什么必须有它：工具结果（读文件、看日志）动辄上万字，原样塞回历史，
  * 几次工具往返就能把上下文顶爆——「工具结果有界进上下文」是这条路线的红线。
- * 裁法是保守的：留头部、写清楚「截了多少字、原文在哪儿看」，绝不悄悄丢中间。
+ * 裁法是保守的：留头部、写清楚「省了多少字、要完整就再要」，绝不悄悄丢中间。
  */
 object ToolResultTrimmer {
 
@@ -20,7 +16,7 @@ object ToolResultTrimmer {
     const val RESULT_LIMIT = 4000
 
     /**
-     * 裁一条工具结果：[text] 超 [RESULT_LIMIT] 就留头 + 尾巴带账，
+     * 裁一条工具结果：[text] 超 [RESULT_LIMIT] 就留头 + 带账，
      * 否则原样返回。返回的永远是「读得懂来龙去脉」的文本，不是硬切。
      */
     fun trim(text: String): String {
@@ -35,7 +31,7 @@ object ToolResultTrimmer {
 }
 
 /**
- * 生成循环里「工具这一段」的形状约定（给 [com.hualuo.engine.api.OpenAiCompatClient] 拼请求用）：
+ * 生成循环里「工具这一段」的形状约定（给 OpenAiCompatClient 拼请求用）：
  * 一轮工具回合往历史里回填两条——assistant（带 tool_calls）与 tool（带结果）。
  *
  * 做成函数而不是散着拼：tool_call_id 错一处，模型就「接不上话」，然后原地重复调同一个工具
@@ -57,10 +53,3 @@ object ToolTurnBuilder {
         toolCallId = call.id,
     )
 }
-
-/**
- * 工具清单里的一个工具（名字/描述/参数 schema），JSON 化后原样进请求的 tools 数组。
- * schema 是字符串形式的 JSON 对象；拼错格式的 schema 在客户端那层会被换成空对象兜底，
- * 不会把整个请求弄红。
- */
-internal val dummyKeepJsonImport = Json { ignoreUnknownKeys = true }
