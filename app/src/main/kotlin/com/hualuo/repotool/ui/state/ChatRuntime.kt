@@ -26,11 +26,6 @@ import com.hualuo.repotool.ui.model.Tone
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * 回合流的真运行层：**发送不再只是把按钮染红**——这条链是真的网络往返。
@@ -513,9 +508,6 @@ class ChatRuntime(
 
         /** 工具回合轮次上限（防模型连轴转地调工具不给答案）；打到上限按拆小问题收场。 */
         const val MAX_TOOL_ROUNDS = 6
-
-        /** 工具参数解析（共享一把）：注册表执行前把 argumentsJson 给处理器，处理器自己解析。 */
-        val toolJson = Json { ignoreUnknownKeys = true }
     }
 }
 
