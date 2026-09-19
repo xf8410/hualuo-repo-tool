@@ -13,12 +13,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import kotlinx.serialization.json.addJsonObject
 
 /**
  * 一家提供商的接线所需的最小画像。
@@ -56,13 +56,13 @@ data class ChatTurn(
 
 /**
  * 一轮对话的收场（tool_calls 协议下的三态）：
- *  - [Text]：模型给了文本（[producedText] 表示流上真有过字——空收场不冒充成功的老规矩在接线层）；
+ *  - [Text]：这轮是纯文本收场（文本段在流式过程中已经逐段交给 onText，这里不再重放）；
  *  - [Calls]：模型要调工具，[calls] 装配完整；
  *  - [Failed]：带出路的错。
  */
 sealed class ChatOutcome {
-    data class Text(val producedText: Boolean) : ChatOutcome()
-    data class Calls(val calls: List<AssembledToolCall>, val producedText: Boolean) : ChatOutcome()
+    object Text : ChatOutcome()
+    data class Calls(val calls: List<AssembledToolCall>) : ChatOutcome()
     data class Failed(val error: GenerationError) : ChatOutcome()
 }
 
@@ -79,7 +79,7 @@ sealed class ChatOutcome {
  *  4) 拉模型列表：GET /models 的三种形状（data 数组、裸数组、models 字段）都认，
  *     认不出来的形状如实报空并带错误，不许编一份假列表糊弄界面。
  *
- * 失败一律返回 GenerationError（[ChatOutcome.Failed]）：出路话术全在分类那边，这里不重复造句子。
+ * 失败一律走 [ChatOutcome.Failed]（装着 GenerationError）：出路话术全在分类那边，这里不重复造句子。
  */
 class OpenAiCompatClient(
     private val transport: WireTransport,
@@ -122,8 +122,8 @@ class OpenAiCompatClient(
             sleeper = sleeper,
         )
         return when (val result = runner.run(request, RequestCost.Costly, onText)) {
-            is ChatRunResult.Ok -> ChatOutcome.Text(producedText = true)
-            is ChatRunResult.ToolCalls -> ChatOutcome.Calls(result.calls, result.producedText)
+            is ChatRunResult.Ok -> ChatOutcome.Text
+            is ChatRunResult.ToolCalls -> ChatOutcome.Calls(result.calls)
             is ChatRunResult.Failed -> ChatOutcome.Failed(result.error)
         }
     }
@@ -144,7 +144,7 @@ class OpenAiCompatClient(
     ) {
         is ChatOutcome.Text -> null
         is ChatOutcome.Calls -> GenerationError.Configuration(
-            "模型回了工具调用，但这次请求没带工具清单（形状异常）：按错误报，别装没看见",
+            "模型回了工具调用，但这轮请求没带工具清单（形状异常）：按错误报，别装没看见",
         )
         is ChatOutcome.Failed -> outcome.error
     }
@@ -232,7 +232,34 @@ class OpenAiCompatClient(
         temperature?.let { put("temperature", it) }
         maxTokens?.let { put("max_tokens", it) }
         putJsonArray("messages") {
-            history.forEach { turn -> addMessage(turn) }
+            history.forEach { turn ->
+                // 一条消息的形状：普通 role/content、assistant 带 tool_calls、tool 带 tool_call_id。
+                // 全部用标准 JSON DSL，不另开自定义小工具——形状就在这几行里，一眼能对。
+                addJsonObject {
+                    put("role", turn.role)
+                    if (turn.role == "tool") {
+                        put("tool_call_id", turn.toolCallId ?: "")
+                        put("content", turn.content)
+                    } else if (turn.toolCalls.isNotEmpty()) {
+                        // content 照给（空串也给）：多数网关要求这个键在，缺了会 400。
+                        put("content", turn.content)
+                        putJsonArray("tool_calls") {
+                            turn.toolCalls.forEach { call ->
+                                addJsonObject {
+                                    put("id", call.id)
+                                    put("type", "function")
+                                    putJsonObject("function") {
+                                        put("name", call.name)
+                                        put("arguments", call.argumentsJson)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        put("content", turn.content)
+                    }
+                }
+            }
         }
         if (tools.isNotEmpty()) {
             putJsonArray("tools") {
@@ -251,36 +278,6 @@ class OpenAiCompatClient(
             }
         }
     }.toString()
-
-    /** 一条消息的形状：普通 role/content、assistant 带 tool_calls、tool 带 tool_call_id。 */
-    private fun kotlinx.serialization.json.JsonArrayBuilder.addMessage(turn: ChatTurn) {
-        addJsonObject {
-            put("role", turn.role)
-            when {
-                turn.role == "tool" -> {
-                    put("tool_call_id", turn.toolCallId ?: "")
-                    put("content", turn.content)
-                }
-                turn.toolCalls.isNotEmpty() -> {
-                    // content 照给（空串也给）：多数网关要求这个键在，缺了会 400。
-                    put("content", turn.content)
-                    putJsonArray("tool_calls") {
-                        turn.toolCalls.forEach { call ->
-                            addJsonObject {
-                                put("id", call.id)
-                                put("type", "function")
-                                putJsonObject("function") {
-                                    put("name", call.name)
-                                    put("arguments", call.argumentsJson)
-                                }
-                            }
-                        }
-                    }
-                }
-                else -> put("content", turn.content)
-            }
-        }
-    }
 
     /** schema 原文解析成 JSON 对象；读不懂退回空对象 schema（形状不对的锅记在本地，不炸请求）。 */
     private fun parseSchemaOrEmpty(schemaJson: String): JsonObject =
