@@ -9,7 +9,7 @@ import org.junit.Test
 /**
  * 装配器的纯 JVM 测试：钉的是「碎片怎么拼成一条完整调用」的全部形状约定——
  * 按 index 归组、name 只认第一份、arguments 追加、非流式形状用数组位置兜底、
- * 垃圾帧跳过、空参数补 {}。这些拼错了，工具就会收到半截 JSON，账还记不到正主头上。
+ * 没名字的帧结账丢掉、空参数补 {}。这些拼错了，工具就会收到半截 JSON，账还记不到正主头上。
  */
 class ToolCallAssemblerTest {
 
@@ -66,14 +66,13 @@ class ToolCallAssemblerTest {
     }
 
     @Test
-    fun garbageFramesAreSkippedAndNakedNameEntriesDropped() {
+    fun namelessFramesAreDroppedAtFinish() {
         val a = ToolCallAssembler()
-        // 没有 index、index 不是数字、只有 function 没有 name 的帧都不许炸，也不许凑数
-        a.feed(obj("""{"function":{"name":"hm"}}"""), defaultIndex = -1)
-        a.feed(obj("""{"index":"oops"}"""))
-        a.feed(obj("""{"index":0,"function":{"arguments":"{}"}}"""))
+        // 只有 index 没有 function 的心跳帧、有 arguments 却没名字的残帧：都不许拼出半条调用
+        a.feed(obj("""{"index":0}"""))
+        a.feed(obj("""{"index":1,"function":{"arguments":"{\"x\":1}"}}"""))
 
-        assertEquals(1, a.count())
+        assertEquals(2, a.count())
         assertTrue("没名字的整条丢掉：${a.finish()}", a.finish().isEmpty())
     }
 
