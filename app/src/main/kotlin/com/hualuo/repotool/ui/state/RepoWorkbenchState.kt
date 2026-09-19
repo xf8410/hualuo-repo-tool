@@ -25,6 +25,7 @@ import com.hualuo.engine.github.normalizeGitHubRepo
  *
  * 家规不变：失败出声不冒充（成功/失败都写 note，绝不静默）；后台线程自己起（大会计 IO
  * 不进主线程）；令牌只进请求头；改码靠 sha 对账，409 冲突原话出声让人重开重改，草稿不丢。
+ * 搜索的四道闸用 [repoSearchGate] 的**同一来源判词**（双源话会在两处漂移，防双源）。
  */
 class RepoWorkbenchState(
     private val loadToken: () -> String?,
@@ -229,35 +230,28 @@ class RepoWorkbenchState(
     private var searchSeq = 0
 
     /**
-     * 搜当前浏览仓的代码。闸门全在发网之前：没在浏览、在非默认分支、空词、没令牌，
-     * 各说各的话；403 多半是搜索配额（引擎归因）；失败清场不拿旧结果顶数。
+     * 搜当前浏览仓的代码。四道闸（没在浏览、非默认分支、空词、没令牌）走
+     * [repoSearchGate] 同一来源判词，全在发网之前；失败清场不拿旧结果顶数。
      */
     fun runSearch() {
         if (searchBusy) return
+        val gate = repoSearchGate(browsing = browseRepo, ref = browseRef, query = searchQuery, token = githubToken())
+        if (gate != null) {
+            searchNote = gate
+            return
+        }
         val repo = browseRepo
-        if (repo.isEmpty()) {
-            searchNote = "没在浏览仓库，搜索没得搜"
-            return
-        }
-        if (browseRef != null) {
-            searchNote = "搜索只走默认分支的索引：现在在「$browseRef」，切回默认分支再搜"
-            return
-        }
-        val query = searchQuery.trim()
-        if (query.isEmpty()) {
-            searchNote = "先写搜索词：类名、函数名、报错原文都行"
-            return
-        }
         val token = githubToken()
-        if (token.isNullOrEmpty()) {
-            searchNote = "代码搜索必须带令牌（GitHub 搜索接口的死规矩）：去设置「GitHub 工作台」填"
+        if (repo.isEmpty() || token.isNullOrEmpty()) {
+            // 不可达（闸全过 = 两样都在手）；真到这儿当内部次序问题出声，不静默
+            searchNote = "搜索的状态对不上（内部次序问题）：退出来重进再试"
             return
         }
         searchBusy = true
         searchNote = null
         val seq = ++searchSeq
         Thread({
-            val result = runCatching { searchClient.searchCode(repo, query, token) }.getOrElse {
+            val result = runCatching { searchClient.searchCode(repo, searchQuery.trim(), token) }.getOrElse {
                 if (seq == searchSeq) {
                     searchBusy = false
                     searchNote = "搜索没发出去（${it.message ?: "出错"}）"
