@@ -1,6 +1,5 @@
 package com.hualuo.engine.toolcalls
 
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -72,9 +71,4 @@ class ToolCallAssembler {
                 argumentsJson = p.args.toString().ifBlank { "{}" },
             )
         }
-
-    private companion object {
-        @Suppress("unused")
-        val json = Json // 保持与其它文件的依赖形状一致；本类只做字符串拼接，不解析整帧
-    }
 }
