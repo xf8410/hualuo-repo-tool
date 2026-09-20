@@ -9,7 +9,8 @@ import org.junit.Test
 
 /**
  * 诊断解析的纯 JVM 契约：六族真实输出形状各钉一条、认不出计数、截断出声、
- * 空输出 = 真干净（不是解析器瞎了）、退出码原样带。
+ * 空输出 = 真干净（不是解析器瞎了）、退出码原样带；
+ * 外加两条「假条目防呆」：`-->` 定位行与纯数字位置片段都不许装成诊断。
  */
 class DiagnosticParserTest {
 
@@ -55,7 +56,7 @@ class DiagnosticParserTest {
         assertEquals("src/Main.java", report.items[0].file)
         assertEquals(10, report.items[0].line)
         assertEquals(0, report.items[0].column)
-        // 第二行 `symbol: variable z` 认不出 → 计数不静默
+        // 第二行 `symbol:   variable z` 认不出 → 计数不静默
         assertEquals(1, report.skippedLines)
     }
 
@@ -126,5 +127,23 @@ class DiagnosticParserTest {
 
         assertEquals(DiagnosticParser.MAX_ITEMS, report.items.size)
         assertTrue("截断必须出声", report.truncated)
+    }
+
+    @Test
+    fun arrowLocatorLineAloneIsNotADiagnostic() {
+        // `-->` 是 rustc 两行式的零件；它单独出现时绝不许被装成一条诊断
+        val report = DiagnosticParser.parse("  --> src/lib.rs:42:17", "gcc", exitCode = 1)
+
+        assertTrue("--> 是定位片段不是诊断：${report.items}", report.items.isEmpty())
+        assertEquals(1, report.skippedLines)
+    }
+
+    @Test
+    fun barePositionFragmentTailIsNotADiagnostic() {
+        // `src/X.kt:5:3` 是位置片段（有的工具会单独印一行），不是一条「说 3」的诊断
+        val report = DiagnosticParser.parse("src/X.kt:5:3", "kotlinc", exitCode = 1)
+
+        assertTrue("纯数字尾数不许装成诊断：${report.items}", report.items.isEmpty())
+        assertEquals(1, report.skippedLines)
     }
 }
