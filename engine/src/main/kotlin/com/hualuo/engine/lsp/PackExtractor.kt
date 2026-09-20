@@ -30,6 +30,10 @@ class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
     /**
      * 把 [packFile] 解到 [targetDir]：[targetDir] 是这次解包的最终落点（调用方给每个包一个独立目录）。
      * 成功返回账目。
+     *
+     * 自查修记（推 CI 之前逮住的）：这个函数的中间变量曾把 verifyEntry 的返回值当 File 使
+     * （写成 entry.length()），又把返回账当对象再取字段（bytes.bytes）——纯逻辑名混淆。
+     * 现在账与文件各走各的变量，名字直说类型，读一遍就不该再错。
      */
     fun extract(pack: LanguagePack, packFile: File, targetDir: File): ExtractReport {
         if (!packFile.isFile) {
@@ -43,8 +47,7 @@ class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
 
         try {
             unpack(packFile, staging)
-            val entry = verifyEntry(pack, staging)
-            val bytes = entry.length()
+            val check = verifyEntry(pack, staging)
             if (!staging.renameTo(targetDir)) {
                 if (!targetDir.exists()) {
                     throw PackInstallReject("解好的包改不了名，文件没生效：" + sanitizeForLog(targetDir.path))
@@ -54,7 +57,7 @@ class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
                     throw PackInstallReject("解好的包覆盖不了旧目录，文件没生效：" + sanitizeForLog(targetDir.path))
                 }
             }
-            return ExtractReport(targetDir, bytes.bytes, bytes.entryPath)
+            return ExtractReport(targetDir, check.bytes, check.entryPath)
         } catch (e: Exception) {
             deleteRecursively(staging)
             throw when (e) {
