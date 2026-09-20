@@ -10,7 +10,11 @@ import org.junit.Test
 /**
  * 写类工具的纯 JVM 契约测试：闸门点头才写、拒绝/超时/闸门炸了什么都不写、
  * 碰网之前挡下缺参/超限/缺令牌、写失败把 GitHub 的人话照传。
- * fetch 注入，绝不碰真网。
+ * putJson 注入，绝不碰真网。
+ *
+ * 修记（run 35482556874）：首版这里把默认仓库写成了 null，而测试参数里又没给 repo——
+ * 六条测试在「缺参数 repo」这一步就挂了，根本没走到闸门（脚手架错伪装成红）。
+ * 默认改成 o/r：这批测试的意图本来就是「配好了仓库，走完整提议与点头流程」。
  */
 class GitHubWriteToolTest {
 
@@ -28,7 +32,7 @@ class GitHubWriteToolTest {
         put: FakePut,
         confirmer: WriteConfirmer,
         token: String? = "tok",
-        repo: String? = null,
+        repo: String? = "o/r",
     ): ToolRegistry {
         val registry = ToolRegistry()
         GitHubWriteTool.register(
@@ -82,6 +86,7 @@ class GitHubWriteToolTest {
         val outcome = registry.execute("github_update_file", args())
 
         assertFalse(outcome.ok)
+        assertTrue("闸门炸了按拒收场：${outcome.text}", outcome.text.contains("没有确认"))
         assertEquals(0, put.urls.size)
     }
 
