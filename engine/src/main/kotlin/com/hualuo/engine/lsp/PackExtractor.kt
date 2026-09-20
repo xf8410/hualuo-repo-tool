@@ -24,16 +24,19 @@ import java.util.zip.ZipInputStream
  *
  * 失败一律抛 [PackInstallReject]（消息中文带原因与出路，用户可控文本过脱敏），
  * 并把暂存目录整个清掉——磁盘上不留半截。
+ *
+ * 修记（推 CI 之前自查逮住的两类错，都已修）：
+ *  1) 账与文件各走各的变量——曾把 verifyEntry 的返回值当 File 使、又当对象再取字段，纯名字混淆；
+ *  2) 「一个条目都没读到」有两种成因：真空包，还是压根不是 zip。
+ *     ZipInputStream 对垃圾字节很多情况下是**安静返回 null**而不是抛错，
+ *     所以这里补一次开头两字节的 PK 魔数探测，把「空包」与「不是 zip」分开报，
+ *     不拿「空包」冒充「坏包」——货不对板时说法必须对板。
  */
 class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
 
     /**
      * 把 [packFile] 解到 [targetDir]：[targetDir] 是这次解包的最终落点（调用方给每个包一个独立目录）。
      * 成功返回账目。
-     *
-     * 自查修记（推 CI 之前逮住的）：这个函数的中间变量曾把 verifyEntry 的返回值当 File 使
-     * （写成 entry.length()），又把返回账当对象再取字段（bytes.bytes）——纯逻辑名混淆。
-     * 现在账与文件各走各的变量，名字直说类型，读一遍就不该再错。
      */
     fun extract(pack: LanguagePack, packFile: File, targetDir: File): ExtractReport {
         if (!packFile.isFile) {
@@ -69,7 +72,7 @@ class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
         }
     }
 
-    /** 逐条目解，每条都过 ExtractGuard。认不出 ZIP 就是坏包——装包器已保证哈希对，这里不重新猜格式。 */
+    /** 逐条目解，每条都过 ExtractGuard。 */
     private fun unpack(packFile: File, staging: File) {
         var sawAnyEntry = false
         try {
@@ -92,7 +95,15 @@ class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
         } catch (e: ZipException) {
             throw PackInstallReject("这包不是有效的 zip（哈希对但结构坏）：" + sanitizeForLog(e.message ?: "格式错"))
         }
-        if (!sawAnyEntry) throw PackInstallReject("包里一个文件都没有（空包），作废")
+        if (!sawAnyEntry) {
+            throw PackInstallReject(
+                if (startsWithZipMagic(packFile)) {
+                    "包里一个文件都没有（空包），作废"
+                } else {
+                    "这包不是有效的 zip（开头不是 PK 魔数）。整包作废"
+                }
+            )
+        }
     }
 
     private fun writeEntry(guard: ExtractGuard, staging: File, zip: ZipInputStream, entry: ZipEntry) {
@@ -108,6 +119,15 @@ class PackExtractor(private val limits: ExtractLimits = ExtractLimits()) {
             }
         }
         guard.endEntry(entry.compressedSize)
+    }
+
+    /** 开头两字节是不是 PK（zip 魔数）。读不出来按「不是」处理，随后由上层报「不是 zip」。 */
+    private fun startsWithZipMagic(file: File): Boolean = try {
+        val head = ByteArray(2)
+        file.inputStream().use { it.read(head) }
+        head[0] == 0x50.toByte() && head[1] == 0x4B.toByte()
+    } catch (e: IOException) {
+        false
     }
 
     private data class EntryCheck(val entryPath: String, val bytes: Long)
