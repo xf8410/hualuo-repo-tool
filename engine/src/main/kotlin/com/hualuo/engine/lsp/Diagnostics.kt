@@ -16,7 +16,7 @@ data class Diagnostic(
     val column: Int,
     /** 严重度：error / warning / note / info（原样归一化小写）。 */
     val severity: String,
-    /** 给人看的一句话（去掉了无用的绝对路径前缀由调用方决定，这里保原样）。 */
+    /** 给人看的一句话。 */
     val message: String,
     /** 产出这条输出的工具名（gcc / kotlinc / rustc …），出错时对得上人。 */
     val source: String,
@@ -50,7 +50,10 @@ data class DiagnosticReport(
  *  - 认不出的行**计数**（[DiagnosticReport.skippedLines]）不静默；
  *  - 条数封顶 [MAX_ITEMS]，截断必须说出来；
  *  - 退出码为 0 且一条没认出时，那是「真干净」不是「解析器瞎了」——
- *    调用方结合 [DiagnosticReport.unparsedExcerpt] 判，解析器不替它下结论。
+ *    调用方结合 [DiagnosticReport.unparsedExcerpt] 判，解析器不替它下结论；
+ *  - 两类**假条目**当场掐掉：`-->` 定位行（rustc 两行式的零件，不是诊断）、
+ *    没有 severity 词又纯数字的「消息」（那是 `file:line:col` 位置片段的尾数，不是话）。
+ *    这两条是重写时补的：不加它们，一个位置片段会被装成一条严重度为 error 的假诊断。
  */
 object DiagnosticParser {
 
@@ -64,31 +67,40 @@ object DiagnosticParser {
         var skipped = 0
         var truncated = false
         val lines = output.split('\n')
+        val t = tool.lowercase()
         var i = 0
         while (i < lines.size) {
             val line = lines[i].trimEnd('\r')
             if (line.isBlank()) { i += 1; continue }
             if (items.size >= MAX_ITEMS) { truncated = true; break }
-            val parsed = when (tool.lowercase()) {
-                "rustc", "cargo" -> parseRustcLine(line, lines.getOrNull(i + 1), tool)
-                else -> parseSingleLine(line, tool)
+            val parsed = when (t) {
+                "rustc", "cargo" -> parseRustcLine(line, lines.getOrNull(i + 1))
+                else -> parseSingleLine(line, t)?.let { ParsedLine(it, false) }
             }
-            when {
-                parsed == null -> skipped += 1
+            when (parsed) {
+                null -> skipped += 1
                 else -> {
-                    items += parsed
-                    // rustc 两行式：吃掉下一行的 ` --> path:line:col`
-                    if (parsed.line > 0 && tool.lowercase().let { it == "rustc" || it == "cargo" }) i += 1
+                    items += parsed.diagnostic
+                    if (parsed.consumedNext) i += 1
                 }
             }
             i += 1
         }
-        val excerpt = if (items.isEmpty() && skipped > 0) lines.filter { it.isNotBlank() }.take(5).joinToString("\n") else null
+        val excerpt = if (items.isEmpty() && skipped > 0) {
+            lines.filter { it.isNotBlank() }.take(5).joinToString("\n")
+        } else {
+            null
+        }
         return DiagnosticReport(items, excerpt, skipped, truncated, exitCode)
     }
 
-    /** 单行形状（gcc/javac/kotlinc/go/tsc 与 rustc 的 ` --> ` 行）。 */
+    /** 一行解析的产物：[diagnostic] + 是否吃掉了下一行（rustc 两行式）。 */
+    private data class ParsedLine(val diagnostic: Diagnostic, val consumedNext: Boolean)
+
+    /** 单行形状（gcc/javac/kotlinc/go/tsc，以及 rustc 的单行形态）。 */
     private fun parseSingleLine(line: String, tool: String): Diagnostic? {
+        // `-->` 定位行是 rustc 两行式的零件，不是诊断：单行路径遇到就跳过（不吃成假条目）。
+        if (line.trimStart().startsWith("-->")) return null
         // tsc：`path(line,col): error TS1234: msg`
         tscShape.find(line)?.let { m ->
             return Diagnostic(
@@ -102,45 +114,41 @@ object DiagnosticParser {
         }
         // 通用：`path:line:col: severity: msg` 或 `path:line:col: msg` 或 `path:line: severity: msg`
         colonShape.find(line)?.let { m ->
-            val sev = m.groupValues[4].trim().lowercase().ifEmpty { "error" }
+            val sevRaw = m.groupValues[4].trim()
             val msg = m.groupValues[5].trim()
             if (msg.isEmpty()) return null
+            // 没有 severity 词又纯数字的「消息」= 位置片段的尾数（`a.kt:5:3` 的烂形），不是话。
+            if (sevRaw.isEmpty() && msg.all { it.isDigit() }) return null
             return Diagnostic(
                 file = m.groupValues[1],
                 line = m.groupValues[2].toIntOrNull() ?: 0,
                 column = m.groupValues[3].toIntOrNull() ?: 0,
-                severity = severityOf(sev),
+                severity = severityOf(sevRaw.ifEmpty { "error" }),
                 message = msg,
                 source = tool,
             )
-        }
-        // rustc ` --> path:line:col`（挂在上一行的 error 上）
-        rustArrow.find(line)?.let { m ->
-            return null // 由 rustc 两条式分支单独处理
         }
         return null
     }
 
     /** rustc 两条式：`error[E0308]: msg` + 下一行 `  --> path:line:col`。 */
-    private fun parseRustcLine(line: String, next: String?, tool: String): Diagnostic? {
-        val head = rustHead.find(line) ?: run {
-            // 也可能是普通单行（有的版本直接给 file:line:col）
-            return parseSingleLine(line, tool)
-        }
+    private fun parseRustcLine(line: String, next: String?): ParsedLine? {
+        val head = rustHead.find(line)
+            ?: return parseSingleLine(line, "rustc")?.let { ParsedLine(it, false) }
         val severity = severityOf(head.groupValues[1])
         val message = head.groupValues[2].trim()
         val target = next?.let { rustArrow.find(it) }
-            ?: run {
-                // 下一行不是箭头行：也给一条（行/列未知），别把错误丢了
-                return Diagnostic("", 0, 0, severity, message, tool)
-            }
-        return Diagnostic(
-            file = target.groupValues[1],
-            line = target.groupValues[2].toIntOrNull() ?: 0,
-            column = target.groupValues[3].toIntOrNull() ?: 0,
-            severity = severity,
-            message = message,
-            source = tool,
+            ?: return ParsedLine(Diagnostic("", 0, 0, severity, message, "rustc"), false)
+        return ParsedLine(
+            Diagnostic(
+                file = target.groupValues[1],
+                line = target.groupValues[2].toIntOrNull() ?: 0,
+                column = target.groupValues[3].toIntOrNull() ?: 0,
+                severity = severity,
+                message = message,
+                source = "rustc",
+            ),
+            consumedNext = true,
         )
     }
 
