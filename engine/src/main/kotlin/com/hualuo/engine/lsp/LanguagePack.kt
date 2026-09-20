@@ -15,9 +15,9 @@ import com.hualuo.engine.io.sanitizeForLog
  *  - id / version：ASCII 小写词符（a-z 0-9 点 下划线 减号），长 1 到 64——它们直接进路径；
  *  - serverBinary：ASCII 词符文件名（允许点号与减号），不许含双点——登记与查找都认它；
  *  - sha256Hex：64 位小写十六进制，大写视为不匹配（宁严勿宽）；
- *  - downloadUrl：只认 http 与 https；
- *  - 任何字段都不许含控制字符（换行能伪造日志行）；报错消息里的原样值一律先脱敏再拼，
- *    写法照 ExtractGuard 第五条规矩：报「U+000A」这种码位，不把字符本体印出去。
+ *  - downloadUrl：只认 http 与 https，且不许含控制字符；
+ *  - 任何字段都不许含控制字符（换行能伪造日志行）；报错消息里的原样值一律先脱敏再拼
+ *    （控制字符换成点、超长截断），不把字符本体原样印出去。
  */
 data class LanguagePack(
     val id: String,
@@ -35,6 +35,9 @@ data class LanguagePack(
         }
         require(isSha256(sha256Hex)) { "sha256 必须是 64 位小写十六进制（实际长度 ${sha256Hex.length}）" }
         require(isHttpOrHttps(downloadUrl)) { "下载地址只认 http 与 https（现在是：" + sanitizeForLog(downloadUrl) + "）" }
+        require(downloadUrl.none { it.hasControl() }) {
+            "下载地址不许含控制字符（换行能伪造日志行），现在是：" + sanitizeForLog(downloadUrl)
+        }
         require(displayName.isNotEmpty() && displayName.none { it.hasControl() }) { "显示名不能为空、也不许含控制字符" }
     }
 }
