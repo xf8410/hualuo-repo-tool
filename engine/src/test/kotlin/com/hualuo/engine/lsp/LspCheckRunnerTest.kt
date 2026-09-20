@@ -12,6 +12,10 @@ import org.junit.Test
  *  - 假缝隙下把超时、截断、账目三条纪律逐条钉死；
  *  - 真缝隙（ProcessBuilder）跑几条**真的短命令**（sh 脚本）验行为——
  *    这些命令凡有 POSIX shell 的机器都有，不依赖任何编译器，CI 与本地行为一致。
+ *
+ * 修记（推 CI 之前自查逮住的）：shell 测试命令里曾用 `$i` 与 `$((...))`——Kotlin 字符串模板
+ * 会把它们当变量引用吃掉（未定义变量，编译必红）。教训与全仓老账同源：**Kotlin 字符串里的
+ * 美元符号是语法，不是字面量**。现在测试命令一律选无美元符号的写法（yes 配 head 之类）。
  */
 class LspCheckRunnerTest {
 
@@ -129,12 +133,9 @@ class LspCheckRunnerTest {
         val dir = Files.createTempDirectory("lsp-check-cap").toFile()
         val runner = LspCheckRunner(timeoutMs = 20_000L, maxOutputBytes = 1024)
 
+        // yes 无限冲刷（每行 32 字节），head 取 200 行后收线：无美元符号，绕过字符串模板雷区。
         val result = runner.run(
-            listOf(
-                "/bin/sh",
-                "-c",
-                "i=0; while [ $i -lt 200 ]; do echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; i=$((i+1)); done",
-            ),
+            listOf("/bin/sh", "-c", "yes aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | head -n 200"),
             dir,
             "gcc",
         )
