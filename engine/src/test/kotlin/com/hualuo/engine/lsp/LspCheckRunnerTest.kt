@@ -4,15 +4,14 @@ import java.io.File
 import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * 检查执行器契约（纯 JVM）：
  *  - 假缝隙下把超时、截断、账目三条纪律逐条钉死；
- *  - 真缝隙（ProcessBuilder）跑几条**真的短命令**（cat/sleep 类）验行为——
- *    这些命令凡有 JVM 的机器都有，不依赖任何编译器，CI 与本地行为一致。
+ *  - 真缝隙（ProcessBuilder）跑几条**真的短命令**（sh 脚本）验行为——
+ *    这些命令凡有 POSIX shell 的机器都有，不依赖任何编译器，CI 与本地行为一致。
  */
 class LspCheckRunnerTest {
 
@@ -102,7 +101,6 @@ class LspCheckRunnerTest {
         val dir = Files.createTempDirectory("lsp-check-real").toFile()
         val script = File(dir, "hello.sh")
         script.writeText("echo 'x.kt:3:5: error: synthetic failure'\nexit 0\n")
-        script.setExecutable(true)
 
         val runner = LspCheckRunner(timeoutMs = 20_000L)
         val result = runner.run(listOf("/bin/sh", script.path), dir, "kotlinc")
@@ -131,7 +129,15 @@ class LspCheckRunnerTest {
         val dir = Files.createTempDirectory("lsp-check-cap").toFile()
         val runner = LspCheckRunner(timeoutMs = 20_000L, maxOutputBytes = 1024)
 
-        val result = runner.run(listOf("/bin/sh", "-c", "i=0; while [ $i -lt 200 ]; do echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; i=$((i+1)); done"), dir, "gcc")
+        val result = runner.run(
+            listOf(
+                "/bin/sh",
+                "-c",
+                "i=0; while [ $i -lt 200 ]; do echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; i=$((i+1)); done",
+            ),
+            dir,
+            "gcc",
+        )
 
         assertFalse("排干是为了防管道死锁，不是等超时", result.outcome.timedOut)
         assertTrue("超封顶必须说出来：${result.outcome}", result.outcome.outputTruncated)
