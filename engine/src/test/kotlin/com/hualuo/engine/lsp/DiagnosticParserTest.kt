@@ -11,6 +11,10 @@ import org.junit.Test
  * 诊断解析的纯 JVM 契约：六族真实输出形状各钉一条、认不出计数、截断出声、
  * 空输出 = 真干净（不是解析器瞎了）、退出码原样带；
  * 外加两条「假条目防呆」：`-->` 定位行与纯数字位置片段都不许装成诊断。
+ *
+ * 家规修记（CI run 35500938235 咬过的疤）：注释里不许有裸码位箭头（U+2192 等）——
+ * NoEmojiInSourceTest 逮的就是这个。错误归因刀记过同档的课，这刀又犯，
+ * 从此本文件内的「所以然」一律用逗号或汉字写，不用符号箭头。
  */
 class DiagnosticParserTest {
 
@@ -56,7 +60,7 @@ class DiagnosticParserTest {
         assertEquals("src/Main.java", report.items[0].file)
         assertEquals(10, report.items[0].line)
         assertEquals(0, report.items[0].column)
-        // 第二行 `symbol:   variable z` 认不出 → 计数不静默
+        // 第二行 `symbol:   variable z` 认不出，计数不静默
         assertEquals(1, report.skippedLines)
     }
 
@@ -72,7 +76,7 @@ class DiagnosticParserTest {
         assertEquals(17, d.column)
         assertEquals("error", d.severity)
         assertEquals("mismatched types", d.message)
-        // 两行式吃掉箭头行；`|` 与 `= note:` 行认不出 → 计入跳过
+        // 两行式吃掉箭头行；`|` 与 `= note:` 行认不出，计入跳过
         assertTrue("未识别行要计数：${report.skippedLines}", report.skippedLines >= 2)
     }
 
