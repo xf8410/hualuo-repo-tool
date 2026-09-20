@@ -285,7 +285,7 @@ class AppUiState(
         Thread({
             val snapshot = runCatching { ciClient.latestRuns(repo, token) }.getOrElse {
                 ciBusy = false
-                ciError = "拉不动 GitHub（${it.message ?: \"出错了\"}）"
+                ciError = "拉不动 GitHub（${it.message ?: "出错了"}）"
                 return@Thread
             }
             ciRuns = snapshot.runs
@@ -309,7 +309,7 @@ class AppUiState(
         Thread({
             val result = runCatching { ciClient.latestRelease(repo, token) }.getOrElse {
                 ciBusy = false
-                updateNote = "查不动（${it.message ?: \"出错了\"}）"
+                updateNote = "查不动（${it.message ?: "出错了"}）"
                 return@Thread
             }
             ciBusy = false
@@ -449,7 +449,7 @@ class AppUiState(
                 .exceptionOrNull()
             if (loadFailure != null) {
                 // 设置坏了不挡会话：会话账必须照样报全
-                return "备份里的设置读不懂（${loadFailure.message ?: \"格式不对\"}）：" +
+                return "备份里的设置读不懂（${loadFailure.message ?: "格式不对"}）：" +
                     "设置没动、会话 ${backup.sessionsImported} 份已入库" +
                     backup.warnings.joinToString("；", prefix = "；")
             }
