@@ -132,6 +132,11 @@ private val BusyBarAlpha = 0.55f
  *     （旧 Agora 底栏是 navigationBarsPadding + imePadding 同款）。
  * 抽屉/设置层/弹层各自在内部让位（见各自文件），版式与配色一字不动。
  *
+ * 修记（run 35610835722 的词法闸门红，改这条时别再犯）：本文件重写时曾把字符串模板里的
+ * **正常嵌套引号**误写成转义形式（反斜杠夹引号），SourceHygieneTest 逮出 15 处连锁
+ * 「引号被吃」。教训：`${...}` 模板内部是正常代码词法，嵌套字符串就用普通双引号，
+ * 不许带反斜杠——这是本仓第二次吃同款红（第一次是 PR #46 的 AppUiState）。
+ *
  * @param versionLabel 版本串由入口从 BuildConfig 注入（单源=version.properties），界面不写死。
  */
 @Composable
@@ -157,7 +162,7 @@ fun HualuoApp(versionLabel: String) {
                 BackupGateway.exportTo(context, uri, state.versionLabel) { done, total ->
                     kernel.backupProgress = "正在打包 $done/$total 份会话"
                 }
-            }.getOrElse { "导出失败：${it.message ?: \"写不进去\"}" }
+            }.getOrElse { "导出失败：${it.message ?: "写不进去"}" }
             kernel.backupProgress = null
             state.toast(failure ?: "备份已导出（设置 + 全部会话）")
             state.clearPendingDataAction()
@@ -180,7 +185,7 @@ fun HualuoApp(versionLabel: String) {
             }.getOrElse {
                 BackupGateway.ImportedBackup(
                     false, null, 0, 0,
-                    listOf("读不了这个文件：${it.message ?: \"打不开\"}"),
+                    listOf("读不了这个文件：${it.message ?: "打不开"}"),
                 )
             }
             kernel.backupProgress = null
@@ -205,7 +210,7 @@ fun HualuoApp(versionLabel: String) {
             }.getOrElse {
                 BackupGateway.AgoraImportOutcome(
                     false, null, 0, 0,
-                    "读不了这个文件：${it.message ?: \"打不开\"}",
+                    "读不了这个文件：${it.message ?: "打不开"}",
                 )
             }
             kernel.backupProgress = null
