@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -119,6 +122,16 @@ private val BusyBarAlpha = 0.55f
  * 写仓库确认卡（0.7.0 刀③）画在**最上层**：写仓库是全 App 最重的一个动作，
  * 不许被设置层/弹层盖住——模型提议改码时它必须第一个被看见，点头才写。
  *
+ * 系统栏让位（2026-09-22 修，用户手机实报「菜单点不到、底签太靠下」；只改距离）：
+ * targetSdk 35 在 Android 15+ 被系统强制 edge-to-edge，内容会直接顶进状态栏、
+ * 沉进手势导航条——主因是入口没做让位。修法对齐旧 Agora 的做法（实读其源码）：
+ * 入口 enableEdgeToEdge（透明系统栏），这里三处让位——
+ *  1) 顶栏吃状态栏（statusBarsPadding）：菜单钮不再压进状态栏、点得到；
+ *  2) 底栏吃导航栏（navigationBarsPadding）：五签落在手势条之上，不被裁；
+ *  3) 整列吃键盘（imePadding）：键盘弹起时输入区与底栏一起抬起，不让键盘盖住
+ *     （旧 Agora 底栏是 navigationBarsPadding + imePadding 同款）。
+ * 抽屉/设置层/弹层各自在内部让位（见各自文件），版式与配色一字不动。
+ *
  * @param versionLabel 版本串由入口从 BuildConfig 注入（单源=version.properties），界面不写死。
  */
 @Composable
@@ -144,7 +157,7 @@ fun HualuoApp(versionLabel: String) {
                 BackupGateway.exportTo(context, uri, state.versionLabel) { done, total ->
                     kernel.backupProgress = "正在打包 $done/$total 份会话"
                 }
-            }.getOrElse { "导出失败：${it.message ?: "写不进去"}" }
+            }.getOrElse { "导出失败：${it.message ?: \"写不进去\"}" }
             kernel.backupProgress = null
             state.toast(failure ?: "备份已导出（设置 + 全部会话）")
             state.clearPendingDataAction()
@@ -167,7 +180,7 @@ fun HualuoApp(versionLabel: String) {
             }.getOrElse {
                 BackupGateway.ImportedBackup(
                     false, null, 0, 0,
-                    listOf("读不了这个文件：${it.message ?: "打不开"}"),
+                    listOf("读不了这个文件：${it.message ?: \"打不开\"}"),
                 )
             }
             kernel.backupProgress = null
@@ -192,7 +205,7 @@ fun HualuoApp(versionLabel: String) {
             }.getOrElse {
                 BackupGateway.AgoraImportOutcome(
                     false, null, 0, 0,
-                    "读不了这个文件：${it.message ?: "打不开"}",
+                    "读不了这个文件：${it.message ?: \"打不开\"}",
                 )
             }
             kernel.backupProgress = null
@@ -306,7 +319,12 @@ fun HualuoApp(versionLabel: String) {
 
     Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            // 整列吃键盘让位：键盘弹起时输入区与底栏一起抬起（系统栏让位三处之一）
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding(),
+            ) {
                 TopBar(state)
                 // 长活进度行（备份导出/导入/兑换、文件投递）：内核持有，Activity 重建不丢
                 ProgressLine(kernel.backupProgress)
@@ -385,10 +403,12 @@ private fun ProgressLine(text: String?) {
 
 @Composable
 private fun TopBar(state: AppUiState) {
+    // 顶栏吃状态栏让位（系统栏让位三处之一）：菜单钮不再压进状态栏，点得到
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Bg)
+            .statusBarsPadding()
             .padding(start = 14.dp, end = 14.dp, top = 13.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -431,10 +451,13 @@ private fun TopBar(state: AppUiState) {
 
 @Composable
 private fun BottomNav(state: AppUiState) {
+    // 底栏吃导航栏让位（系统栏让位三处之一）：五签落在手势条之上，不被裁。
+    // 底色先铺、再让位——手势条那一条也跟着是 CardBg，看起来是底栏的一部分。
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(CardBg)
+            .navigationBarsPadding()
             .padding(top = 7.dp, bottom = 11.dp),
     ) {
         NavTab.entries.forEach { tab ->
