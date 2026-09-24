@@ -143,7 +143,9 @@ class ModelSettingsState(
 
     private fun drainQueue() {
         val providerId = refreshQueue.removeFirstOrNull() ?: return
-        val session = sessionFor("$providerId:")
+        // 列表请求也要带提供商前缀；只用「provider:」会被 ModelRef 视为旧的无前缀模型，
+        // 从而错误地回到 activeProvider。占位模型名只用于建立会话，随后由 listModels 使用。
+        val session = sessionFor("$providerId:__hualuo_model_list__")
         if (session == null) {
             errors = errors + (providerId to "先在提供商页填 base URL")
             drainQueue()
