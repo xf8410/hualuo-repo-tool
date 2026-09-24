@@ -40,6 +40,7 @@ class ModelSettingsState(
         private set
     var errors: Map<String, String> by mutableStateOf(emptyMap())
         private set
+    private val refreshQueue = ArrayDeque<String>()
 
     val activeProvider: ProviderSettings?
         get() = settings.provider(settings.activeProviderId)
@@ -50,11 +51,7 @@ class ModelSettingsState(
 
     fun configureProvider(id: String, baseUrl: String, apiKey: String): Boolean {
         if (settings.provider(id) == null) return false
-        update { current ->
-            current.copy(providers = current.providers.map {
-                if (it.id == id) it.copy(baseUrl = baseUrl.trim(), apiKey = apiKey) else it
-            })
-        }
+        update { current -> current.copy(providers = current.providers.map { if (it.id == id) it.copy(baseUrl = baseUrl.trim(), apiKey = apiKey) else it }) }
         return true
     }
 
@@ -85,10 +82,7 @@ class ModelSettingsState(
     }
 
     fun setModelEnabled(modelId: String, enabled: Boolean) {
-        update { current ->
-            val next = if (enabled) current.enabledModels + modelId else current.enabledModels - modelId
-            current.copy(enabledModels = next)
-        }
+        update { current -> current.copy(enabledModels = if (enabled) current.enabledModels + modelId else current.enabledModels - modelId) }
     }
 
     fun setAlias(modelId: String, alias: String) {
@@ -133,14 +127,31 @@ class ModelSettingsState(
     }
 
     fun refreshProvider(providerId: String) {
-        if (busyProviderId != null) return
+        if (busyProviderId != null || refreshQueue.isNotEmpty()) {
+            if (providerId !in refreshQueue) refreshQueue.addLast(providerId)
+            return
+        }
+        refreshQueue.addLast(providerId)
+        drainQueue()
+    }
+
+    fun refreshAll() {
+        if (busyProviderId != null || refreshQueue.isNotEmpty()) return
+        settings.providers.map { it.id }.forEach { refreshQueue.addLast(it) }
+        drainQueue()
+    }
+
+    private fun drainQueue() {
+        val providerId = refreshQueue.removeFirstOrNull() ?: return
         val session = sessionFor("$providerId:")
         if (session == null) {
             errors = errors + (providerId to "先在提供商页填 base URL")
+            drainQueue()
             return
         }
         if (!isConfigured(providerId)) {
             errors = errors + (providerId to "这家还没配好：内置提供商需要密钥，本地端点需要地址")
+            drainQueue()
             return
         }
         busyProviderId = providerId
@@ -155,13 +166,9 @@ class ModelSettingsState(
                 val prefixed = listing.models.map { "$providerId:${it.removePrefix("models/")}" }.distinct()
                 update { current -> current.copy(availableModels = current.availableModels + (providerId to prefixed)) }
             }
+            drainQueue()
         }
         worker(Thread(body).apply { name = "hualuo-model-sync" })
-    }
-
-    fun refreshAll() {
-        if (busyProviderId != null) return
-        settings.providers.map { it.id }.forEach { refreshProvider(it) }
     }
 
     private fun update(transform: (ModelSettings) -> ModelSettings) {
@@ -175,10 +182,6 @@ class ModelSettingsState(
     private fun loadInitial(): ModelSettings {
         val stored = persist.load(ModelSettingsCodec.KEY)
         if (!stored.isNullOrBlank()) return ModelSettingsCodec.decode(stored)
-        return ModelSettingsCodec.migrateLegacy(
-            persist.load(ChatRuntime.KEY_NAME),
-            persist.load(ChatRuntime.KEY_BASE_URL),
-            persist.load(ChatRuntime.KEY_API_KEY),
-        )
+        return ModelSettingsCodec.migrateLegacy(persist.load(ChatRuntime.KEY_NAME), persist.load(ChatRuntime.KEY_BASE_URL), persist.load(ChatRuntime.KEY_API_KEY))
     }
 }
