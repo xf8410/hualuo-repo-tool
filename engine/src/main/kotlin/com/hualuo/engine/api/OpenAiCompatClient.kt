@@ -36,8 +36,8 @@ class OpenAiCompatClient(
     private val watchdog: IdleWatchdog,
     private val sleeper: (Long) -> Unit = ::napQuietly,
 ) {
-    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit): ChatOutcome {
-        val routed = ProviderRouting.sessionFor(profile.model)
+    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit, route: Boolean = true): ChatOutcome {
+        val routed = if (route) ProviderRouting.sessionFor(profile.model) else null
         if (routed != null && routed.protocol != ProviderProtocol.OPENAI_COMPAT) return ProviderClient(transport, slot, watchdog).chatTurns(routed, history, tools, onText)
         val active = routed?.profile ?: profile
         if (active.baseUrl.isBlank()) return ChatOutcome.Failed(GenerationError.Configuration("「${active.name}」没填 base URL，没东西可发"))
@@ -59,8 +59,8 @@ class OpenAiCompatClient(
 
     data class ModelListing(val models: List<String>, val error: GenerationError?)
 
-    fun listModels(profile: ProviderProfile): ModelListing {
-        val routed = ProviderRouting.sessionFor(profile.model)
+    fun listModels(profile: ProviderProfile, route: Boolean = true): ModelListing {
+        val routed = if (route) ProviderRouting.sessionFor(profile.model) else null
         if (routed != null && routed.protocol != ProviderProtocol.OPENAI_COMPAT) return ProviderClient(transport, slot, watchdog).listModels(routed).let { ModelListing(it.models, it.error) }
         val active = routed?.profile ?: profile
         if (active.baseUrl.isBlank()) return ModelListing(emptyList(), GenerationError.Configuration("「${active.name}」没填 base URL"))
