@@ -43,7 +43,12 @@ fun SettingsOverlay(state: AppUiState) {
 private fun SettingsHome(state: AppUiState, modifier: Modifier) {
     Column(modifier) {
         Row(Modifier.fillMaxWidth().padding(14.dp, 2.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp, 9.dp)) {
-            BasicTextField(state.settingsQuery, { state.settingsQuery = it }, textStyle = TextStyle(14.sp, color = Ink), modifier = Modifier.fillMaxWidth())
+            BasicTextField(
+                value = state.settingsQuery,
+                onValueChange = { state.settingsQuery = it },
+                textStyle = TextStyle(fontSize = 14.sp, color = Ink),
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(14.dp)) {
             val q = state.settingsQuery.trim().lowercase()
