@@ -36,7 +36,8 @@ class OpenAiCompatClient(
     private val watchdog: IdleWatchdog,
     private val sleeper: (Long) -> Unit = ::napQuietly,
 ) {
-    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit, route: Boolean = true): ChatOutcome {
+    // route 放在 onText 前，保证旧的 chatTurns(..., tools) { chunk -> } 尾随 lambda 仍绑定 onText。
+    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, maxTokens: Int? = null, route: Boolean = true, onText: (String) -> Unit): ChatOutcome {
         val routed = if (route) ProviderRouting.sessionFor(profile.model) else null
         if (routed != null && routed.protocol != ProviderProtocol.OPENAI_COMPAT) return ProviderClient(transport, slot, watchdog).chatTurns(routed, history, tools, onText)
         val active = routed?.profile ?: profile
@@ -51,7 +52,7 @@ class OpenAiCompatClient(
         }
     }
 
-    fun chat(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit): GenerationError? = when (val outcome = chatTurns(profile, history, emptyList(), temperature, maxTokens, onText)) {
+    fun chat(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit): GenerationError? = when (val outcome = chatTurns(profile, history, emptyList(), temperature, maxTokens, onText = onText)) {
         ChatOutcome.Text -> null
         is ChatOutcome.Calls -> GenerationError.Configuration("模型回了工具调用，但这轮请求没带工具清单（形状异常）：按错误报，别装没看见")
         is ChatOutcome.Failed -> outcome.error
