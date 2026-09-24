@@ -21,20 +21,12 @@ data class ModelListing(val models: List<String>, val error: GenerationError?)
 /** 请求时解析出的提供商设置。 */
 data class ProviderSession(val profile: ProviderProfile, val protocol: ProviderProtocol)
 
-/**
- * Agora 模型协议在 Hualuo 的纯 JVM 路由层。
- *
- * OpenAI 兼容族走原有接线层；Google、Anthropic、Ollama 使用各自的原生请求形状。
- * 四家从同一份历史和工具清单进来，出口仍是 ChatOutcome，上层不随协议分叉。
- */
 class ProviderClient(
     private val transport: WireTransport,
     private val slot: GenerationSlot,
     private val watchdog: IdleWatchdog,
 ) {
-    private val openAi by lazy {
-        OpenAiCompatClient(transport, slot, RetryPolicy(), watchdog)
-    }
+    private val openAi by lazy { OpenAiCompatClient(transport, slot, RetryPolicy(), watchdog) }
 
     fun chatTurns(
         session: ProviderSession,
@@ -42,17 +34,14 @@ class ProviderClient(
         tools: List<ToolSpec> = emptyList(),
         onText: (String) -> Unit,
     ): ChatOutcome = when (session.protocol) {
-        ProviderProtocol.OPENAI_COMPAT ->
-            openAi.chatTurns(session.profile, history, tools, onText = onText)
+        ProviderProtocol.OPENAI_COMPAT -> openAi.chatTurns(session.profile, history, tools, onText = onText)
         ProviderProtocol.GEMINI -> runNative(session, history, tools, GeminiRequests, ::GeminiParser, onText)
         ProviderProtocol.ANTHROPIC -> runNative(session, history, tools, AnthropicRequests, ::AnthropicParser, onText)
         ProviderProtocol.OLLAMA -> runNative(session, history, tools, OllamaRequests, ::OllamaParser, onText)
     }
 
     fun listModels(session: ProviderSession): ModelListing {
-        if (session.protocol == ProviderProtocol.OPENAI_COMPAT) {
-            return openAi.listModels(session.profile)
-        }
+        if (session.protocol == ProviderProtocol.OPENAI_COMPAT) return openAi.listModels(session.profile)
         val request = when (session.protocol) {
             ProviderProtocol.GEMINI -> WireRequest(
                 url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(session.profile.baseUrl), "models"),
@@ -60,31 +49,19 @@ class ProviderClient(
             )
             ProviderProtocol.ANTHROPIC -> WireRequest(
                 url = BaseUrlResolver.endpoint(session.profile.baseUrl, "models"),
-                headers = listOf(
-                    "x-api-key" to session.profile.apiKey,
-                    "anthropic-version" to "2023-06-01",
-                ),
+                headers = listOf("x-api-key" to session.profile.apiKey, "anthropic-version" to "2023-06-01"),
             )
-            ProviderProtocol.OLLAMA -> WireRequest(
-                url = BaseUrlResolver.endpoint(session.profile.baseUrl, "api/tags"),
-            )
+            ProviderProtocol.OLLAMA -> WireRequest(url = BaseUrlResolver.endpoint(session.profile.baseUrl, "api/tags"))
             ProviderProtocol.OPENAI_COMPAT -> error("已在前面返回")
         }
         val body = StringBuilder()
         return try {
-            val response = transport.exchange(request) { line ->
-                body.appendLine(line)
-                true
-            }
-            if (response.status !in 200..299) {
-                ModelListing(emptyList(), providerHttpError(response.status, response.errorBody))
-            } else {
+            val response = transport.exchange(request) { line -> body.appendLine(line); true }
+            if (response.status !in 200..299) ModelListing(emptyList(), providerHttpError(response.status, response.errorBody))
+            else {
                 val models = NativeModelParser.parse(session.protocol, body.toString())
-                if (models.isEmpty()) {
-                    ModelListing(emptyList(), GenerationError.SseParse(body.toString(), "清单形状无法识别"))
-                } else {
-                    ModelListing(models, null)
-                }
+                if (models.isEmpty()) ModelListing(emptyList(), GenerationError.SseParse(body.toString(), "清单形状无法识别"))
+                else ModelListing(models, null)
             }
         } catch (e: IOException) {
             ModelListing(emptyList(), GenerationError.Transport(FailureClass.NoConnection, e.message.orEmpty()))
@@ -99,33 +76,20 @@ class ProviderClient(
         parserFor: ((String) -> Unit) -> NativeStreamParser,
         onText: (String) -> Unit,
     ): ChatOutcome {
-        if (session.profile.baseUrl.isBlank()) {
-            return ChatOutcome.Failed(GenerationError.Configuration("「${session.profile.name}」没填 base URL"))
-        }
+        if (session.profile.baseUrl.isBlank()) return ChatOutcome.Failed(GenerationError.Configuration("「${session.profile.name}」没填 base URL"))
         val parser = parserFor(onText)
-        val claim = slot.tryBegin(Cancellable { transport.cancel() })
-            ?: return ChatOutcome.Failed(
-                GenerationError.Configuration("上一条还在生成，槽被占着：这条没发出去。等它收完或先按停止"),
-            )
+        val claim = slot.tryBegin(Cancellable { transport.cancel() }) ?: return ChatOutcome.Failed(
+            GenerationError.Configuration("上一条还在生成，槽被占着：这条没发出去。等它收完或先按停止"),
+        )
         return try {
-            val request = requests.build(session, history, tools)
-            val response = transport.exchange(request) { line ->
+            val response = transport.exchange(requests.build(session, history, tools)) { line ->
                 watchdog.beat()
                 parser.onLine(line)
             }
             when {
-                response.status !in 200..299 -> ChatOutcome.Failed(
-                    providerHttpError(response.status, response.errorBody),
-                )
+                response.status !in 200..299 -> ChatOutcome.Failed(providerHttpError(response.status, response.errorBody))
                 transport.isCancelled() -> ChatOutcome.Failed(GenerationError.Cancelled)
-                !parser.finished -> ChatOutcome.Failed(
-                    GenerationError.IncompleteStream(
-                        session.profile.name,
-                        parser.finishReason,
-                        parser.sawToolCallFrames,
-                        parser.sawText,
-                    ),
-                )
+                !parser.finished -> ChatOutcome.Failed(GenerationError.IncompleteStream(session.profile.name, parser.finishReason, parser.sawToolCallFrames, parser.sawText))
                 parser.toolCalls.isNotEmpty() -> ChatOutcome.Calls(parser.toolCalls)
                 else -> ChatOutcome.Text
             }
@@ -157,14 +121,7 @@ internal interface NativeStreamParser {
 
 internal object NativeJson {
     val json = Json { ignoreUnknownKeys = true }
-
-    fun object(raw: String): JsonObject = runCatching {
-        json.parseToJsonElement(raw) as JsonObject
-    }.getOrElse { JsonObject(emptyMap()) }
-
-    fun array(value: kotlinx.serialization.json.JsonElement?): JsonArray =
-        value as? JsonArray ?: JsonArray(emptyList())
-
-    fun primitive(value: kotlinx.serialization.json.JsonElement?): String? =
-        (value as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+    fun jsonObject(raw: String): JsonObject = runCatching { json.parseToJsonElement(raw) as JsonObject }.getOrElse { JsonObject(emptyMap()) }
+    fun array(value: kotlinx.serialization.json.JsonElement?): JsonArray = value as? JsonArray ?: JsonArray(emptyList())
+    fun primitive(value: kotlinx.serialization.json.JsonElement?): String? = (value as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
 }
