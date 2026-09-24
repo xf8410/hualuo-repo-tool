@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hualuo.engine.api.ModelRef
 import com.hualuo.engine.api.ProviderCatalog
+import com.hualuo.engine.api.ProviderClient
 import com.hualuo.engine.api.ProviderProfile
 import com.hualuo.engine.api.ProviderProtocol
 import com.hualuo.engine.api.ProviderSession
@@ -30,7 +31,7 @@ data class AvailableModel(
  * Agora 多提供商模型设置在 Hualuo 的活状态。
  *
  * 设置文件是唯一事实；这里只维护可观察快照。所有写操作都经 UiPersistence，
- * 不直接碰盘。同步模型时每家独立报成功或失败，一家坏的不清掉别家的真清单。
+ * 不同步直接碰盘。同步模型时每家独立报成功或失败，一家坏的不清掉别家的真清单。
  */
 class ModelSettingsState(
     private val persist: UiPersistence,
@@ -157,6 +158,66 @@ class ModelSettingsState(
                 model = parsed.model.ifBlank { rawModel },
             ),
             protocol = definition?.protocol ?: ProviderProtocol.OPENAI_COMPAT,
+        )
+    }
+
+    fun refreshProvider(providerId: String) {
+        if (busyProviderId != null) return
+        val session = sessionFor("$providerId:")
+        if (session == null) {
+            errors = errors + (providerId to "先在提供商页填 base URL")
+            return
+        }
+        if (!isConfigured(providerId)) {
+            errors = errors + (providerId to "这家还没配好：内置提供商需要密钥，本地端点需要地址")
+            return
+        }
+        busyProviderId = providerId
+        errors = errors - providerId
+        val body = Runnable {
+            val client = ProviderClient(
+                transportFactory(),
+                GenerationSlot(),
+                IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS),
+            )
+            val listing = client.listModels(session)
+            busyProviderId = null
+            if (listing.error != null) {
+                errors = errors + (providerId to listing.error.userMessage())
+            } else if (listing.models.isEmpty()) {
+                errors = errors + (providerId to "端点回话正常，但没有认出任何模型名")
+            } else {
+                val prefixed = listing.models.map {
+                    "$providerId:${it.removePrefix("models/")}"
+                }.distinct()
+                update { current ->
+                    current.copy(availableModels = current.availableModels + (providerId to prefixed))
+                }
+            }
+        }
+        worker(Thread(body).apply { name = "hualuo-model-sync" })
+    }
+
+    fun refreshAll() {
+        if (busyProviderId != null) return
+        settings.providers.map { it.id }.forEach { refreshProvider(it) }
+    }
+
+    private fun update(transform: (ModelSettings) -> ModelSettings) {
+        val next = transform(settings)
+        if (next == settings) return
+        settings = next
+        persist.save(ModelSettingsCodec.KEY, ModelSettingsCodec.encode(next))
+        changed()
+    }
+
+    private fun loadInitial(): ModelSettings {
+        val stored = persist.load(ModelSettingsCodec.KEY)
+        if (!stored.isNullOrBlank()) return ModelSettingsCodec.decode(stored)
+        return ModelSettingsCodec.migrateLegacy(
+            persist.load(ChatRuntime.KEY_NAME),
+            persist.load(ChatRuntime.KEY_BASE_URL),
+            persist.load(ChatRuntime.KEY_API_KEY),
         )
     }
 }
