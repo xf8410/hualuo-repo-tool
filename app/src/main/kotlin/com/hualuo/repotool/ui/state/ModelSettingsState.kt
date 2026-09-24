@@ -27,12 +27,7 @@ data class AvailableModel(
     val enabled: Boolean,
 )
 
-/**
- * Agora 多提供商模型设置在 Hualuo 的活状态。
- *
- * 设置文件是唯一事实；这里只维护可观察快照。所有写操作都经 UiPersistence，
- * 不同步直接碰盘。同步模型时每家独立报成功或失败，一家坏的不清掉别家的真清单。
- */
+/** Agora 多提供商模型设置在 Hualuo 的活状态。 */
 class ModelSettingsState(
     private val persist: UiPersistence,
     private val transportFactory: () -> WireTransport = ::UrlConnTransport,
@@ -50,15 +45,14 @@ class ModelSettingsState(
         get() = settings.provider(settings.activeProviderId)
 
     fun selectProvider(id: String) {
-        if (settings.provider(id) == null) return
-        update { it.copy(activeProviderId = id) }
+        if (settings.provider(id) != null) update { it.copy(activeProviderId = id) }
     }
 
     fun configureProvider(id: String, baseUrl: String, apiKey: String): Boolean {
         if (settings.provider(id) == null) return false
-        update {
-            it.copy(providers = it.providers.map { item ->
-                if (item.id == id) item.copy(baseUrl = baseUrl.trim(), apiKey = apiKey) else item
+        update { current ->
+            current.copy(providers = current.providers.map {
+                if (it.id == id) it.copy(baseUrl = baseUrl.trim(), apiKey = apiKey) else it
             })
         }
         return true
@@ -70,12 +64,7 @@ class ModelSettingsState(
         if (id.contains(':')) return "提供商名称不能含冒号，冒号留给模型分隔"
         if (ProviderCatalog.byId(id) != null || settings.provider(id) != null) return "已经有同名的提供商"
         if (baseUrl.isBlank()) return "base URL 不能为空"
-        update {
-            it.copy(
-                providers = it.providers + ProviderSettings(id, true, baseUrl.trim(), apiKey),
-                activeProviderId = id,
-            )
-        }
+        update { it.copy(providers = it.providers + ProviderSettings(id, true, baseUrl.trim(), apiKey), activeProviderId = id) }
         return null
     }
 
@@ -88,9 +77,7 @@ class ModelSettingsState(
                 providers = it.providers.filterNot { item -> item.id == id },
                 activeProviderId = if (it.activeProviderId == id) fallback else it.activeProviderId,
                 availableModels = it.availableModels - id,
-                enabledModels = it.enabledModels.filterNot { model ->
-                    ModelRef.parse(model).providerId == id
-                }.toSet(),
+                enabledModels = it.enabledModels.filterNot { model -> ModelRef.parse(model).providerId == id }.toSet(),
                 aliases = it.aliases.filterKeys { ModelRef.parse(it).providerId != id },
             )
         }
@@ -114,25 +101,14 @@ class ModelSettingsState(
 
     fun availableModels(): List<AvailableModel> = buildList {
         settings.availableModels.toSortedMap().forEach { (providerId, ids) ->
-            val providerName = displayProviderName(providerId)
             ids.sorted().forEach { id ->
                 val parsed = ModelRef.parse(id)
-                add(
-                    AvailableModel(
-                        id = id,
-                        providerId = providerId,
-                        providerName = providerName,
-                        modelName = parsed.model,
-                        alias = settings.aliases[id],
-                        enabled = id in settings.enabledModels,
-                    ),
-                )
+                add(AvailableModel(id, providerId, displayProviderName(providerId), parsed.model, settings.aliases[id], id in settings.enabledModels))
             }
         }
     }.sortedWith(compareBy({ it.providerName }, { it.modelName }))
 
     fun selectedModels(): List<AvailableModel> = availableModels().filter { it.enabled }
-
     fun displayProviderName(id: String): String = ProviderCatalog.byId(id)?.displayName ?: id
 
     fun isConfigured(id: String): Boolean {
@@ -140,7 +116,7 @@ class ModelSettingsState(
         val definition = ProviderCatalog.byId(id)
         val base = provider.baseUrl.ifBlank { definition?.defaultBaseUrl.orEmpty() }
         if (base.isBlank()) return false
-        return !definition?.keyRequired ?: true && provider.apiKey.isNotBlank()
+        return definition?.keyRequired != true || provider.apiKey.isNotBlank()
     }
 
     fun sessionFor(rawModel: String): ProviderSession? {
@@ -151,13 +127,8 @@ class ModelSettingsState(
         val baseUrl = provider.baseUrl.ifBlank { definition?.defaultBaseUrl.orEmpty() }
         if (baseUrl.isBlank()) return null
         return ProviderSession(
-            profile = ProviderProfile(
-                name = displayProviderName(providerId),
-                baseUrl = baseUrl,
-                apiKey = provider.apiKey,
-                model = parsed.model.ifBlank { rawModel },
-            ),
-            protocol = definition?.protocol ?: ProviderProtocol.OPENAI_COMPAT,
+            ProviderProfile(displayProviderName(providerId), baseUrl, provider.apiKey, parsed.model.ifBlank { rawModel }),
+            definition?.protocol ?: ProviderProtocol.OPENAI_COMPAT,
         )
     }
 
@@ -175,24 +146,14 @@ class ModelSettingsState(
         busyProviderId = providerId
         errors = errors - providerId
         val body = Runnable {
-            val client = ProviderClient(
-                transportFactory(),
-                GenerationSlot(),
-                IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS),
-            )
+            val client = ProviderClient(transportFactory(), GenerationSlot(), IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS))
             val listing = client.listModels(session)
             busyProviderId = null
-            if (listing.error != null) {
-                errors = errors + (providerId to listing.error.userMessage())
-            } else if (listing.models.isEmpty()) {
-                errors = errors + (providerId to "端点回话正常，但没有认出任何模型名")
-            } else {
-                val prefixed = listing.models.map {
-                    "$providerId:${it.removePrefix("models/")}"
-                }.distinct()
-                update { current ->
-                    current.copy(availableModels = current.availableModels + (providerId to prefixed))
-                }
+            if (listing.error != null) errors = errors + (providerId to listing.error.userMessage())
+            else if (listing.models.isEmpty()) errors = errors + (providerId to "端点回话正常，但没有认出任何模型名")
+            else {
+                val prefixed = listing.models.map { "$providerId:${it.removePrefix("models/")}" }.distinct()
+                update { current -> current.copy(availableModels = current.availableModels + (providerId to prefixed)) }
             }
         }
         worker(Thread(body).apply { name = "hualuo-model-sync" })
