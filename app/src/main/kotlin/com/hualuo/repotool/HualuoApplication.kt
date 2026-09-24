@@ -49,7 +49,25 @@ class HualuoApplication : Application() {
     val writeGate = WriteConfirmGate()
 
     /** 全部界面状态。全进程一份；Activity 重建只是重新接上它。 */
-    val uiState: AppUiState by lazy { AppUiState(uiBundle.persistence, uiBundle.store, writeGate) }
+    val uiState: AppUiState by lazy {
+        AppUiState(uiBundle.persistence, uiBundle.store, writeGate, memoryStore)
+    }
+
+    /**
+     * 记忆库（M4 第二刀的 app 侧挂载）：memory_db 目录建不起来就 null 降级——
+     * 记忆工具族不注册（模型碰不到），聊天照常。路径与旧 Agora 一致：
+     * filesDir/memory_db + filesDir/active_memory.md。
+     */
+    private val memoryStore: com.hualuo.engine.memory.MemoryStore? by lazy {
+        try {
+            com.hualuo.engine.memory.MemoryStore(
+                memoryDir = File(filesDir, "memory_db"),
+                activeFile = File(filesDir, "active_memory.md"),
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     private val startupNotice = OnceNotice { uiBundle.notice }
 
