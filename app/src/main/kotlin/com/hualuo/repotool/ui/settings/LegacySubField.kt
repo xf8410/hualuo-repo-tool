@@ -35,7 +35,7 @@ internal fun LegacySubField(
     radio: SnapshotStateMap<String, String>,
 ) {
     when (field) {
-        is SubField.Row -> LegacyRow(state, field)
+        is SubField.Row -> LegacyRow(state, field) {}
         is SubField.Seg -> Column(Modifier.padding(horizontal = 6.dp)) {
             Text(field.label, fontSize = 12.5.sp, color = SubInk)
             SegRow(field.options, segs[field.label] ?: field.sel) { segs[field.label] = it }
@@ -43,7 +43,12 @@ internal fun LegacySubField(
         is SubField.Input -> LegacyRow(state, SubField.Row(field.label)) {
             val v = inputs[field.label] ?: ""
             if (v.isEmpty()) Text(field.placeholder, fontSize = 13.sp, color = SubInk)
-            BasicTextField(v, { inputs[field.label] = it }, textStyle = TextStyle(13.sp, color = Ink), modifier = Modifier.weight(1f))
+            BasicTextField(
+                value = v,
+                onValueChange = { inputs[field.label] = it },
+                textStyle = TextStyle(fontSize = 13.sp, color = Ink),
+                modifier = Modifier.weight(1f),
+            )
         }
         is SubField.Slider -> Column(Modifier.padding(bottom = 9.dp)) {
             val v = sliders[field.label] ?: field.value.toFloat()
@@ -57,9 +62,9 @@ internal fun LegacySubField(
             Text(field.desc, fontSize = 12.5.sp, color = SubInk)
         }
         is SubField.BigInput -> BasicTextField(
-            inputs[field.placeholder] ?: "",
-            { inputs[field.placeholder] = it },
-            textStyle = TextStyle(14.sp, color = Ink),
+            value = inputs[field.placeholder] ?: "",
+            onValueChange = { inputs[field.placeholder] = it },
+            textStyle = TextStyle(fontSize = 14.sp, color = Ink),
             modifier = Modifier.fillMaxWidth(),
         )
         is SubField.Radio -> Column(Modifier.fillMaxWidth()) {
