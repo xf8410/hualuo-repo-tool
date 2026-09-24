@@ -20,7 +20,10 @@ import java.util.TimeZone
  * Android 侧调度（AlarmReceiver/WakeLock/到点真跑生成）不在本件——
  * 引擎件只管账与时刻，到点叫醒是 app 生态的事。
  */
-class TaskStore(private val file: File) {
+class TaskStore(
+    private val file: File,
+    private val zone: TimeZone = TimeZone.getDefault(),
+) {
 
     /** 一条后台任务。nextRunMs=0 表示 cron 解析得出但没有可算的下一次（8 年无匹配）。 */
     data class TaskRecord(
@@ -56,7 +59,7 @@ class TaskStore(private val file: File) {
             enabled = true,
             createdAtMs = nowMs,
             lastRunMs = 0L,
-            nextRunMs = parsed.next(nowMs) ?: 0L,
+            nextRunMs = parsed.next(nowMs, zone) ?: 0L,
         )
         writeAll(readAll().tasks + record)
         return record
@@ -119,7 +122,7 @@ class TaskStore(private val file: File) {
     private fun updatedNextIfEnabled(record: TaskRecord, nowMs: Long): TaskRecord? {
         if (!record.enabled) return null
         val parsed = CronExpression.parse(record.cron) ?: return null
-        return record.copy(nextRunMs = parsed.next(nowMs) ?: 0L)
+        return record.copy(nextRunMs = parsed.next(nowMs, zone) ?: 0L)
     }
 
     private fun readAll(): TaskListing {
