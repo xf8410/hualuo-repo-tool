@@ -19,6 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.theme.Accent
@@ -70,6 +72,7 @@ internal fun SettingInput(
                 value = value,
                 onValueChange = onChange,
                 singleLine = true,
+                visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
                 textStyle = TextStyle(fontSize = 13.sp, color = Ink),
                 modifier = Modifier.fillMaxWidth(),
             )
