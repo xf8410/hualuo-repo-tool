@@ -7,7 +7,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
@@ -123,17 +122,19 @@ object ModelSettingsCodec {
     }
 
     /** 把旧三键迁进新设置；只在新键不存在时调用，老用户原配置不丢。 */
-    fun migrateLegacy(legacyBaseUrl: String?, legacyApiKey: String?): ModelSettings {
+    fun migrateLegacy(legacyName: String?, legacyBaseUrl: String?, legacyApiKey: String?): ModelSettings {
         val base = defaultSettings()
         if (legacyBaseUrl.isNullOrBlank()) return base
+        val requested = legacyName.orEmpty().trim()
+        val id = requested.takeIf { it.isNotEmpty() && ProviderCatalog.byId(it) == null } ?: "custom"
         return base.copy(
             providers = base.providers + ProviderSettings(
-                id = "custom",
+                id = id,
                 custom = true,
                 baseUrl = legacyBaseUrl.trim(),
                 apiKey = legacyApiKey.orEmpty(),
             ),
-            activeProviderId = "custom",
+            activeProviderId = id,
         )
     }
 
