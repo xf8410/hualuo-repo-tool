@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.hualuo.engine.api.ProviderRouting
 import com.hualuo.repotool.ui.state.AppUiState
+import com.hualuo.repotool.ui.state.ModelSettingsState
 import com.hualuo.repotool.ui.state.UiPersistenceBundle
 import com.hualuo.repotool.ui.state.WriteConfirmGate
 import com.hualuo.repotool.ui.state.createUiPersistence
@@ -41,6 +43,13 @@ class HualuoApplication : Application() {
     /** 设置出口 + 会话仓 + 启动通知（读不懂才非空）。全进程一份。 */
     val uiBundle: UiPersistenceBundle by lazy { createUiPersistence(this) }
 
+    /** Agora 模型设置状态。它与 AppUiState 共用同一份 SettingsStore 出口。 */
+    val modelSettings: ModelSettingsState by lazy {
+        ModelSettingsState(uiBundle.persistence).also {
+            ProviderRouting.install(it::sessionFor)
+        }
+    }
+
     /**
      * 写类工具的确认闸门（0.7.0 刀③）：模型提议改仓库时摆确认卡，用户点头才写。
      * 挂进程不挂界面——确认卡渲染期间 Activity 重建（转屏/切出）不丢；
@@ -65,9 +74,9 @@ class HualuoApplication : Application() {
     var backupProgress by mutableStateOf<String?>(null)
 
     /**
-     * 长活进度行（文件投递，0.7.0 同款接法）：「正在收集 12 个文件」「正在投递卷 3/5」这类。
+     * 长活进度行（文件投递，0.7.0 同款接法）：「正在收集 12 个文件」「正在投递卷 3/12」这类。
      * 与 backupProgress 同一条道理：投递跑几分钟，Activity 重建（转屏/切出）进度行不许丢；
-     * 投递线程写、界面读；收尾必须写 null 收行，不许挂着上一次的旧账骗人。
+     * 投递线程写、界面读；动作收尾必须写 null 收行，不许挂着上一次的旧账骗人。
      */
     var courierProgress by mutableStateOf<String?>(null)
 }
