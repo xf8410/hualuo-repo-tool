@@ -8,11 +8,7 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 internal object GeminiRequests : NativeRequests {
-    override fun build(
-        session: ProviderSession,
-        history: List<ChatTurn>,
-        tools: List<ToolSpec>,
-    ): WireRequest {
+    override fun build(session: ProviderSession, history: List<ChatTurn>, tools: List<ToolSpec>): WireRequest {
         val model = session.profile.model.removePrefix("models/")
         val base = BaseUrlResolver.withV1(session.profile.baseUrl)
         val system = history.firstOrNull { it.role == "system" }?.content
@@ -28,7 +24,7 @@ internal object GeminiRequests : NativeRequests {
                                 addJsonObject {
                                     putJsonObject("functionCall") {
                                         put("name", call.name)
-                                        put("arguments", NativeJson.object(call.argumentsJson))
+                                        put("arguments", NativeJson.jsonObject(call.argumentsJson))
                                     }
                                 }
                             }
@@ -44,23 +40,17 @@ internal object GeminiRequests : NativeRequests {
                     }
                 }
             }
-            if (!system.isNullOrBlank()) {
-                putJsonObject("system_instruction") {
-                    putJsonArray("parts") { addJsonObject { put("text", system) } }
-                }
+            if (!system.isNullOrBlank()) putJsonObject("system_instruction") {
+                putJsonArray("parts") { addJsonObject { put("text", system) } }
             }
-            if (tools.isNotEmpty()) {
-                putJsonArray("tools") {
-                    addJsonObject {
-                        putJsonArray("function_declarations") {
-                            tools.forEach { tool ->
-                                addJsonObject {
-                                    put("name", tool.name)
-                                    put("description", tool.description)
-                                    put("parameters", NativeJson.object(tool.parametersJson))
-                                }
-                            }
-                        }
+            if (tools.isNotEmpty()) putJsonArray("tools") {
+                addJsonObject {
+                    putJsonArray("function_declarations") {
+                        tools.forEach { tool -> addJsonObject {
+                            put("name", tool.name)
+                            put("description", tool.description)
+                            put("parameters", NativeJson.jsonObject(tool.parametersJson))
+                        } }
                     }
                 }
             }
@@ -68,10 +58,7 @@ internal object GeminiRequests : NativeRequests {
         return WireRequest(
             url = "$base/models/$model:streamGenerateContent?alt=sse",
             method = "POST",
-            headers = listOf(
-                "content-type" to "application/json; charset=utf-8",
-                "x-goog-api-key" to session.profile.apiKey,
-            ),
+            headers = listOf("content-type" to "application/json; charset=utf-8", "x-goog-api-key" to session.profile.apiKey),
             body = body.toString(),
         )
     }
@@ -82,11 +69,7 @@ internal object GeminiRequests : NativeRequests {
 }
 
 internal object AnthropicRequests : NativeRequests {
-    override fun build(
-        session: ProviderSession,
-        history: List<ChatTurn>,
-        tools: List<ToolSpec>,
-    ): WireRequest {
+    override fun build(session: ProviderSession, history: List<ChatTurn>, tools: List<ToolSpec>): WireRequest {
         val system = history.filter { it.role == "system" }.joinToString("\n") { it.content }
         val body = buildJsonObject {
             put("model", session.profile.model)
@@ -98,103 +81,73 @@ internal object AnthropicRequests : NativeRequests {
                     addJsonObject {
                         put("role", turn.role)
                         putJsonArray("content") {
-                            if (turn.content.isNotBlank()) {
-                                addJsonObject {
-                                    put("type", "text")
-                                    put("text", turn.content)
-                                }
+                            if (turn.content.isNotBlank()) addJsonObject {
+                                put("type", "text")
+                                put("text", turn.content)
                             }
-                            turn.toolCalls.forEach { call ->
-                                addJsonObject {
-                                    put("type", "tool_use")
-                                    put("id", call.id)
-                                    put("name", call.name)
-                                    put("input", NativeJson.object(call.argumentsJson))
-                                }
-                            }
-                            if (turn.role == "tool") {
-                                addJsonObject {
-                                    put("type", "tool_result")
-                                    put("tool_use_id", turn.toolCallId.orEmpty())
-                                    put("content", turn.content)
-                                }
+                            turn.toolCalls.forEach { call -> addJsonObject {
+                                put("type", "tool_use")
+                                put("id", call.id)
+                                put("name", call.name)
+                                put("input", NativeJson.jsonObject(call.argumentsJson))
+                            } }
+                            if (turn.role == "tool") addJsonObject {
+                                put("type", "tool_result")
+                                put("tool_use_id", turn.toolCallId.orEmpty())
+                                put("content", turn.content)
                             }
                         }
                     }
                 }
             }
-            if (tools.isNotEmpty()) {
-                putJsonArray("tools") {
-                    tools.forEach { tool ->
-                        addJsonObject {
-                            put("name", tool.name)
-                            put("description", tool.description)
-                            put("input_schema", NativeJson.object(tool.parametersJson))
-                        }
-                    }
-                }
+            if (tools.isNotEmpty()) putJsonArray("tools") {
+                tools.forEach { tool -> addJsonObject {
+                    put("name", tool.name)
+                    put("description", tool.description)
+                    put("input_schema", NativeJson.jsonObject(tool.parametersJson))
+                } }
             }
         }
         return WireRequest(
             url = BaseUrlResolver.endpoint(session.profile.baseUrl, "messages"),
             method = "POST",
-            headers = listOf(
-                "content-type" to "application/json; charset=utf-8",
-                "x-api-key" to session.profile.apiKey,
-                "anthropic-version" to "2023-06-01",
-            ),
+            headers = listOf("content-type" to "application/json; charset=utf-8", "x-api-key" to session.profile.apiKey, "anthropic-version" to "2023-06-01"),
             body = body.toString(),
         )
     }
 }
 
 internal object OllamaRequests : NativeRequests {
-    override fun build(
-        session: ProviderSession,
-        history: List<ChatTurn>,
-        tools: List<ToolSpec>,
-    ): WireRequest {
+    override fun build(session: ProviderSession, history: List<ChatTurn>, tools: List<ToolSpec>): WireRequest {
         val body = buildJsonObject {
             put("model", session.profile.model)
             put("stream", true)
             putJsonArray("messages") {
-                history.forEach { turn ->
-                    addJsonObject {
-                        put("role", turn.role)
-                        put("content", turn.content)
-                        if (turn.toolCalls.isNotEmpty()) {
-                            putJsonArray("tool_calls") {
-                                turn.toolCalls.forEach { call ->
-                                    addJsonObject {
-                                        putJsonObject("function") {
-                                            put("name", call.name)
-                                            put("arguments", NativeJson.object(call.argumentsJson))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (tools.isNotEmpty()) {
-                putJsonArray("tools") {
-                    tools.forEach { tool ->
-                        addJsonObject {
+                history.forEach { turn -> addJsonObject {
+                    put("role", turn.role)
+                    put("content", turn.content)
+                    if (turn.toolCalls.isNotEmpty()) putJsonArray("tool_calls") {
+                        turn.toolCalls.forEach { call -> addJsonObject {
                             putJsonObject("function") {
-                                put("name", tool.name)
-                                put("description", tool.description)
-                                put("parameters", NativeJson.object(tool.parametersJson))
+                                put("name", call.name)
+                                put("arguments", NativeJson.jsonObject(call.argumentsJson))
                             }
-                        }
+                        } }
                     }
-                }
+                } }
+            }
+            if (tools.isNotEmpty()) putJsonArray("tools") {
+                tools.forEach { tool -> addJsonObject {
+                    putJsonObject("function") {
+                        put("name", tool.name)
+                        put("description", tool.description)
+                        put("parameters", NativeJson.jsonObject(tool.parametersJson))
+                    }
+                } }
             }
         }
         val headers = mutableListOf("content-type" to "application/json; charset=utf-8")
-        if (session.profile.apiKey.isNotBlank()) {
-            headers += "authorization" to "Bearer ${session.profile.apiKey}"
-        }
+        if (session.profile.apiKey.isNotBlank()) headers += "authorization" to "Bearer ${session.profile.apiKey}"
         return WireRequest(
             url = BaseUrlResolver.endpoint(session.profile.baseUrl, "api/chat"),
             method = "POST",
