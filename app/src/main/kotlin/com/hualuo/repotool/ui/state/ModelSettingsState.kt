@@ -159,8 +159,9 @@ class ModelSettingsState(
         val body = Runnable {
             val client = ProviderClient(transportFactory(), GenerationSlot(), IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS))
             val listing = client.listModels(session)
+            val error = listing.error
             busyProviderId = null
-            if (listing.error != null) errors = errors + (providerId to listing.error.userMessage())
+            if (error != null) errors = errors + (providerId to error.userMessage())
             else if (listing.models.isEmpty()) errors = errors + (providerId to "端点回话正常，但没有认出任何模型名")
             else {
                 val prefixed = listing.models.map { "$providerId:${it.removePrefix("models/")}" }.distinct()
