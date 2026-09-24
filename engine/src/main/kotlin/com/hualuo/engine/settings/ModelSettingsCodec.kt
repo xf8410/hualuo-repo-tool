@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
@@ -17,14 +18,9 @@ import kotlinx.serialization.json.putJsonObject
 data class CustomProvider(val name: String, val baseUrl: String)
 
 /** 一家提供商的当前设置；内置项没有 name 字段，名字由目录提供。 */
-data class ProviderSettings(
-    val id: String,
-    val custom: Boolean,
-    val baseUrl: String,
-    val apiKey: String,
-)
+data class ProviderSettings(val id: String, val custom: Boolean, val baseUrl: String, val apiKey: String)
 
-/** 模型设置的单份事实。值序列化进 settings 文件，未知字段不参与运行。 */
+/** 模型设置的单份事实。 */
 data class ModelSettings(
     val providers: List<ProviderSettings>,
     val activeProviderId: String,
@@ -35,10 +31,7 @@ data class ModelSettings(
     fun provider(id: String): ProviderSettings? = providers.firstOrNull { it.id == id }
 }
 
-/**
- * 模型设置 JSON 编解码。Agora 的多 DataStore 字段压成 settings 文件里的一个值，
- * 键名和语义保持一致：多提供商、激活钥匙、模型清单、启用集合与别名。
- */
+/** 多提供商模型设置编解码。 */
 object ModelSettingsCodec {
     const val KEY = "model.settings_json"
     const val FORMAT = 1
@@ -56,32 +49,25 @@ object ModelSettingsCodec {
         put("format", FORMAT)
         put("active_provider", settings.activeProviderId)
         putJsonArray("providers") {
-            settings.providers.forEach { p ->
-                addJsonObject {
-                    put("id", p.id)
-                    put("custom", p.custom)
-                    put("base_url", p.baseUrl)
-                    put("api_key", p.apiKey)
-                }
-            }
+            settings.providers.forEach { p -> addJsonObject {
+                put("id", p.id)
+                put("custom", p.custom)
+                put("base_url", p.baseUrl)
+                put("api_key", p.apiKey)
+            } }
         }
         putJsonObject("available_models") {
             settings.availableModels.toSortedMap().forEach { (id, models) ->
                 putJsonArray(id) { models.sorted().forEach { add(JsonPrimitive(it)) } }
             }
         }
-        putJsonArray("enabled_models") {
-            settings.enabledModels.sorted().forEach { add(JsonPrimitive(it)) }
-        }
-        putJsonObject("aliases") {
-            settings.aliases.toSortedMap().forEach { (id, alias) -> put(id, alias) }
-        }
+        putJsonArray("enabled_models") { settings.enabledModels.sorted().forEach { add(JsonPrimitive(it)) } }
+        putJsonObject("aliases") { settings.aliases.toSortedMap().forEach { (id, alias) -> put(id, alias) } }
     }.toString()
 
     fun decode(raw: String?): ModelSettings {
         if (raw.isNullOrBlank()) return defaultSettings()
-        val root = runCatching { json.parseToJsonElement(raw) }.getOrNull() as? JsonObject
-            ?: return defaultSettings()
+        val root = runCatching { json.parseToJsonElement(raw) }.getOrNull() as? JsonObject ?: return defaultSettings()
         val providers = mutableListOf<ProviderSettings>()
         val seen = mutableSetOf<String>()
         val providerArray = root["providers"] as? JsonArray ?: JsonArray(emptyList())
@@ -90,62 +76,41 @@ object ModelSettingsCodec {
             val id = p.primitive("id") ?: return@forEach
             if (!seen.add(id)) return@forEach
             providers += ProviderSettings(
-                id = id,
-                custom = p.primitive("custom")?.toBooleanStrictOrNull()
-                    ?: (ProviderCatalog.byId(id) == null),
-                baseUrl = p.primitive("base_url").orEmpty(),
-                apiKey = p.primitive("api_key").orEmpty(),
+                id,
+                p.primitive("custom")?.toBooleanStrictOrNull() ?: (ProviderCatalog.byId(id) == null),
+                p.primitive("base_url").orEmpty(),
+                p.primitive("api_key").orEmpty(),
             )
         }
         val defaults = defaultSettings()
         if (providers.isEmpty()) providers += defaults.providers
         val available = linkedMapOf<String, List<String>>()
-        val availableObject = root["available_models"] as? JsonObject
-        availableObject?.forEach { (id, value) ->
+        (root["available_models"] as? JsonObject)?.forEach { (id, value) ->
             val array = value as? JsonArray ?: return@forEach
             val models = array.mapNotNull { it.primitiveValue() }.distinct()
             if (models.isNotEmpty()) available[id] = models
         }
         val enabledArray = root["enabled_models"] as? JsonArray ?: JsonArray(emptyList())
-        val enabled = enabledArray.mapNotNull { it.primitiveValue() }
-            .filter { it.contains(":") }.toSet()
+        val enabled = enabledArray.mapNotNull { it.primitiveValue() }.filter { it.contains(":") }.toSet()
         val aliases = linkedMapOf<String, String>()
-        val aliasObject = root["aliases"] as? JsonObject
-        aliasObject?.forEach { (id, value) ->
-            val alias = value.primitiveValue()
-            if (!alias.isNullOrBlank()) aliases[id] = alias
-        }
+        (root["aliases"] as? JsonObject)?.forEach { (id, value) -> value.primitiveValue()?.let { aliases[id] = it } }
         val requestedActive = root.primitive("active_provider")
-        val active = requestedActive?.takeIf { id -> providers.any { it.id == id } }
-            ?: providers.first().id
+        val active = requestedActive?.takeIf { id -> providers.any { it.id == id } } ?: providers.first().id
         return ModelSettings(providers, active, available, enabled, aliases)
     }
 
-    /** 把旧三键迁进新设置；只在新键不存在时调用，老用户原配置不丢。 */
     fun migrateLegacy(legacyName: String?, legacyBaseUrl: String?, legacyApiKey: String?): ModelSettings {
         val base = defaultSettings()
         if (legacyBaseUrl.isNullOrBlank()) return base
         val requested = legacyName.orEmpty().trim()
         val id = requested.takeIf { it.isNotEmpty() && ProviderCatalog.byId(it) == null } ?: "custom"
         return base.copy(
-            providers = base.providers + ProviderSettings(
-                id = id,
-                custom = true,
-                baseUrl = legacyBaseUrl.trim(),
-                apiKey = legacyApiKey.orEmpty(),
-            ),
+            providers = base.providers + ProviderSettings(id, true, legacyBaseUrl.trim(), legacyApiKey.orEmpty()),
             activeProviderId = id,
         )
     }
 
-    fun displayModel(raw: String, settings: ModelSettings): String =
-        settings.aliases[raw] ?: ModelRef.parse(raw).model
-
-    fun providerForModel(raw: String, settings: ModelSettings): String? =
-        ModelRef.parse(raw).providerId.takeIf { it.isNotBlank() }
-            ?: settings.availableModels.entries.firstOrNull { (_, models) ->
-                models.any { ModelRef.parse(it).model == raw }
-            }?.key
+    fun displayModel(raw: String, settings: ModelSettings): String = settings.aliases[raw] ?: ModelRef.parse(raw).model
 }
 
 private fun JsonObject.primitive(key: String): String? =
