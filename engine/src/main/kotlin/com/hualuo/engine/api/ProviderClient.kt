@@ -15,10 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
-/** 模型清单的统一收场。 */
 data class ModelListing(val models: List<String>, val error: GenerationError?)
-
-/** 请求时解析出的提供商设置。 */
 data class ProviderSession(val profile: ProviderProfile, val protocol: ProviderProtocol)
 
 class ProviderClient(
@@ -28,12 +25,7 @@ class ProviderClient(
 ) {
     private val openAi by lazy { OpenAiCompatClient(transport, slot, RetryPolicy(), watchdog) }
 
-    fun chatTurns(
-        session: ProviderSession,
-        history: List<ChatTurn>,
-        tools: List<ToolSpec> = emptyList(),
-        onText: (String) -> Unit,
-    ): ChatOutcome = when (session.protocol) {
+    fun chatTurns(session: ProviderSession, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), onText: (String) -> Unit): ChatOutcome = when (session.protocol) {
         ProviderProtocol.OPENAI_COMPAT -> openAi.chatTurns(session.profile, history, tools, onText = onText)
         ProviderProtocol.GEMINI -> runNative(session, history, tools, GeminiRequests, ::GeminiParser, onText)
         ProviderProtocol.ANTHROPIC -> runNative(session, history, tools, AnthropicRequests, ::AnthropicParser, onText)
@@ -41,7 +33,10 @@ class ProviderClient(
     }
 
     fun listModels(session: ProviderSession): ModelListing {
-        if (session.protocol == ProviderProtocol.OPENAI_COMPAT) return openAi.listModels(session.profile)
+        if (session.protocol == ProviderProtocol.OPENAI_COMPAT) {
+            val legacy = openAi.listModels(session.profile)
+            return ModelListing(legacy.models, legacy.error)
+        }
         val request = when (session.protocol) {
             ProviderProtocol.GEMINI -> WireRequest(
                 url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(session.profile.baseUrl), "models"),
@@ -82,10 +77,7 @@ class ProviderClient(
             GenerationError.Configuration("上一条还在生成，槽被占着：这条没发出去。等它收完或先按停止"),
         )
         return try {
-            val response = transport.exchange(requests.build(session, history, tools)) { line ->
-                watchdog.beat()
-                parser.onLine(line)
-            }
+            val response = transport.exchange(requests.build(session, history, tools)) { line -> watchdog.beat(); parser.onLine(line) }
             when {
                 response.status !in 200..299 -> ChatOutcome.Failed(providerHttpError(response.status, response.errorBody))
                 transport.isCancelled() -> ChatOutcome.Failed(GenerationError.Cancelled)
