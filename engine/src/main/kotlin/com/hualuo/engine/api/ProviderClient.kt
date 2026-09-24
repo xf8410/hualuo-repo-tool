@@ -26,7 +26,7 @@ class ProviderClient(
     private val openAi by lazy { OpenAiCompatClient(transport, slot, RetryPolicy(), watchdog) }
 
     fun chatTurns(session: ProviderSession, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), onText: (String) -> Unit): ChatOutcome = when (session.protocol) {
-        ProviderProtocol.OPENAI_COMPAT -> openAi.chatTurns(session.profile, history, tools, onText = onText)
+        ProviderProtocol.OPENAI_COMPAT -> openAi.chatTurns(session.profile, history, tools, onText = onText, route = false)
         ProviderProtocol.GEMINI -> runNative(session, history, tools, GeminiRequests, ::GeminiParser, onText)
         ProviderProtocol.ANTHROPIC -> runNative(session, history, tools, AnthropicRequests, ::AnthropicParser, onText)
         ProviderProtocol.OLLAMA -> runNative(session, history, tools, OllamaRequests, ::OllamaParser, onText)
@@ -34,7 +34,7 @@ class ProviderClient(
 
     fun listModels(session: ProviderSession): ModelListing {
         if (session.protocol == ProviderProtocol.OPENAI_COMPAT) {
-            val legacy = openAi.listModels(session.profile)
+            val legacy = openAi.listModels(session.profile, route = false)
             return ModelListing(legacy.models, legacy.error)
         }
         val request = when (session.protocol) {
