@@ -8,6 +8,7 @@ import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.state.UiPersistenceBundle
 import com.hualuo.repotool.ui.state.WriteConfirmGate
 import com.hualuo.repotool.ui.state.createUiPersistence
+import java.io.File
 
 /**
  * 「只许响一次」的通知：进程活着时，无论 Activity 死几次，同一句话只出一次声。
