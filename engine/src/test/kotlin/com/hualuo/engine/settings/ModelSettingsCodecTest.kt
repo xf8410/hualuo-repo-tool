@@ -18,7 +18,7 @@ class ModelSettingsCodecTest {
         val decoded = ModelSettingsCodec.decode(ModelSettingsCodec.encode(original))
         assertEquals("bai2", decoded.activeProviderId)
         assertEquals("https://gw.test/v1", decoded.provider("bai2")?.baseUrl)
-        assertEquals(listOf("bai2:qwen", "bai2:deepseek"), decoded.availableModels["bai2"])
+        assertEquals(listOf("bai2:deepseek", "bai2:qwen"), decoded.availableModels["bai2"])
         assertEquals(setOf("bai2:qwen"), decoded.enabledModels)
         assertEquals("快模型", decoded.aliases["bai2:qwen"])
     }
