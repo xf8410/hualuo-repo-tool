@@ -20,7 +20,7 @@ class TaskStoreTest {
 
     private val zone = TimeZone.getTimeZone("Asia/Shanghai")
 
-    private fun store(): TaskStore = TaskStore(File(tmp.root, "tasks.jsonl"))
+    private fun store(): TaskStore = TaskStore(File(tmp.root, "tasks.jsonl"), zone)
 
     private fun at(y: Int, mo: Int, d: Int, h: Int, mi: Int): Long =
         Calendar.getInstance(zone).apply {
@@ -106,7 +106,7 @@ class TaskStoreTest {
         val b = s.create("B", "b", "30 12 * * *", "", now)
         s.delete(a.id)
         // 删完重开一个新 store 实例验证盘上就是两条->删一条
-        val reopened = TaskStore(File(tmp.root, "tasks.jsonl"))
+        val reopened = TaskStore(File(tmp.root, "tasks.jsonl"), zone)
         val listing = reopened.list()
         assertEquals(1, listing.tasks.size)
         assertEquals(b.id, listing.tasks[0].id)
