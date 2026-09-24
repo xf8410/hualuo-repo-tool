@@ -101,4 +101,9 @@ object UiKeys {
     const val COURIER_REPO = "courier.repo"
     const val COURIER_BRANCH = "courier.branch"
     const val COURIER_TOKEN = "courier.token"
+
+    /** 对话日志同步（logsync）：收场立马传 + 失败 15 分钟补传。目标固定私有仓，默认开。 */
+    const val LOGSYNC_ENABLED = "logsync.enabled"
+    const val LOGSYNC_REPO = "logsync.repo"
+    const val LOGSYNC_BRANCH = "logsync.branch"
 }
