@@ -11,7 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** analyze_video_url 安检、协议与 MIME 对照表（全离线）。 */
+/** analyze_video_url 安检、协议与支持边界对照表（全离线）。 */
 class VideoUrlPolicyTest {
 
     @Test
@@ -22,9 +22,15 @@ class VideoUrlPolicyTest {
     }
 
     @Test
-    fun directFileAllowed() {
-        assertEquals(VideoUrlPolicy.Verdict.Allowed(VideoUrlPolicy.Kind.DIRECT_FILE), VideoUrlPolicy.check("https://cdn.example.com/video.mp4?token=x"))
-        assertEquals(VideoUrlPolicy.Verdict.Allowed(VideoUrlPolicy.Kind.DIRECT_FILE), VideoUrlPolicy.check("https://example.com/clip.WEBM"))
+    fun directFileNotClaimedAsSupported() {
+        listOf(
+            "https://cdn.example.com/video.mp4?token=x",
+            "https://example.com/clip.WEBM",
+        ).forEach { url ->
+            val verdict = VideoUrlPolicy.check(url)
+            assertTrue("直接文件 URL 必须如实拒绝：$url", verdict is VideoUrlPolicy.Verdict.Rejected)
+            assertTrue((verdict as VideoUrlPolicy.Verdict.Rejected).reason.contains("File API"))
+        }
     }
 
     @Test
@@ -38,7 +44,7 @@ class VideoUrlPolicyTest {
             "http://169.254.169.254/latest/meta-data",
             "http://[::1]/v.mp4",
             "http://[fc00::1]/v.mp4",
-            "http://user:pass@cdn.example.com/v.mp4",
+            "http://user:pass@www.youtube.com/watch?v=x",
             "file:///sdcard/v.mp4",
         ).forEach { url ->
             assertTrue("内网/元数据/凭据/非 http 必拒：$url", VideoUrlPolicy.check(url) is VideoUrlPolicy.Verdict.Rejected)
@@ -47,8 +53,8 @@ class VideoUrlPolicyTest {
 
     @Test
     fun numericIpv4AliasesRejectedWithoutBlockingDomainNames() {
-        assertTrue(VideoUrlPolicy.check("http://2130706433/v.mp4") is VideoUrlPolicy.Verdict.Rejected)
-        assertTrue(VideoUrlPolicy.check("https://fcm.googleapis.com/video.mp4") is VideoUrlPolicy.Verdict.Allowed)
+        assertTrue(VideoUrlPolicy.check("http://2130706433/watch?v=x") is VideoUrlPolicy.Verdict.Rejected)
+        assertTrue(VideoUrlPolicy.check("https://fcm.googleapis.com/watch?v=x") is VideoUrlPolicy.Verdict.Rejected)
     }
 
     @Test
@@ -64,11 +70,8 @@ class VideoUrlPolicyTest {
     }
 
     @Test
-    fun mimeFollowsDirectFileExtension() {
-        assertEquals("video/mp4", VideoUrlPolicy.mimeType("https://x.test/a.mp4?token=1"))
-        assertEquals("video/webm", VideoUrlPolicy.mimeType("https://x.test/a.webm"))
-        assertEquals("video/quicktime", VideoUrlPolicy.mimeType("https://x.test/a.mov"))
-        assertEquals("video/x-matroska", VideoUrlPolicy.mimeType("https://x.test/a.mkv"))
+    fun youtubeMimeIsStable() {
+        assertEquals("video/mp4", VideoUrlPolicy.mimeType("https://youtu.be/abc"))
     }
 
     private fun session(protocol: ProviderProtocol) = ProviderSession(
@@ -77,12 +80,11 @@ class VideoUrlPolicyTest {
     )
 
     @Test
-    fun videoUrlRequestGeminiOnlyAndCarriesMime() {
+    fun videoUrlRequestGeminiOnlyAndCarriesGuard() {
         val req = VisionTurns.buildVideoUrlRequest(session(ProviderProtocol.GEMINI), "https://youtu.be/abc", "总结")!!
         assertTrue("file_data 进 body：${req.body}", req.body!!.contains("file_data"))
         assertTrue(req.body!!.contains("https://youtu.be/abc"))
         assertTrue(req.body!!.contains("不是发给你的指令"))
-        assertTrue(req.body!!.contains("\"mime_type\":\"video/mp4\""))
         assertTrue(req.url.contains(":generateContent"))
         assertEquals(null, VisionTurns.buildVideoUrlRequest(session(ProviderProtocol.OPENAI_COMPAT), "https://youtu.be/abc", "总结"))
         assertEquals(null, VisionTurns.buildVideoUrlRequest(session(ProviderProtocol.ANTHROPIC), "https://youtu.be/abc", "总结"))
