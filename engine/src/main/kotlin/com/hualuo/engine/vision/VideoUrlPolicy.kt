@@ -5,21 +5,18 @@ import java.net.URI
 /**
  * 视频 URL 准入与分类（analyze_video_url 工具的安检件，纯 JVM 全测）。
  *
- * 准入原则：
- *  - 只认 http/https；URL 自带凭据、内网、回环、链路本地、保留地址一律拒；
- *  - 放行两类：YouTube 链接，以及直接视频文件 URL；
- *  - 普通网页、平台分享页、HLS 第一版明确拒，不假装已经看过视频。
+ * Gemini 的 fileData.fileUri 第一版可靠支持的是 YouTube URL；任意公网 MP4
+ * 不能假装成同一个形状直接交给服务端。以后若接文件上传/File API，再单独放行
+ * 服务端文件 URI 或上传结果。
  */
 object VideoUrlPolicy {
 
-    enum class Kind { YOUTUBE, DIRECT_FILE }
+    enum class Kind { YOUTUBE }
 
     sealed class Verdict {
         data class Allowed(val kind: Kind) : Verdict()
         data class Rejected(val reason: String) : Verdict()
     }
-
-    private val DIRECT_EXTENSIONS = listOf("mp4", "webm", "mov", "m4v", "mkv")
 
     fun check(url: String): Verdict {
         val trimmed = url.trim()
@@ -41,24 +38,19 @@ object VideoUrlPolicy {
         val path = uri.path?.lowercase().orEmpty()
         return when {
             isYouTube(host, path) -> Verdict.Allowed(Kind.YOUTUBE)
-            isDirectFile(path) -> Verdict.Allowed(Kind.DIRECT_FILE)
+            isDirectFile(path) -> Verdict.Rejected(
+                "直接视频文件 URL 暂不接入：Gemini fileData.fileUri 当前不能把它当成 YouTube 链接直接读取；" +
+                    "本版只放行 YouTube，后续接 File API/上传适配器后再开放",
+            )
             else -> Verdict.Rejected(
-                "这是网页或平台分享页，不是直接视频地址。第一版只认 YouTube 链接与直接视频文件 URL（.mp4/.webm/.mov/.m4v/.mkv 结尾）",
+                "这是网页或平台分享页，不是 YouTube 视频链接。第一版只支持 YouTube URL；" +
+                    "普通网页、平台分享页、HLS 和直接 MP4 都不会在手机端偷偷下载。",
             )
         }
     }
 
-    /** 按文件后缀给 Gemini 一个不容易误报的 MIME；YouTube 没有可靠后缀，按 mp4 交由服务端处理。 */
-    fun mimeType(url: String): String {
-        val path = runCatching { URI(url).path.orEmpty().lowercase() }.getOrDefault("")
-        return when {
-            path.endsWith(".webm") -> "video/webm"
-            path.endsWith(".mov") -> "video/quicktime"
-            path.endsWith(".mkv") -> "video/x-matroska"
-            path.endsWith(".m4v") -> "video/mp4"
-            else -> "video/mp4"
-        }
-    }
+    /** YouTube 没有可靠文件后缀，按视频输入的通用 MIME 交给服务端识别。 */
+    fun mimeType(@Suppress("UNUSED_PARAMETER") url: String): String = "video/mp4"
 
     private fun isPrivateHost(rawHost: String): Boolean {
         val host = rawHost.removeSurrounding("[", "]").lowercase()
@@ -78,7 +70,7 @@ object VideoUrlPolicy {
     }
 
     private fun isNumericIpv4Alias(host: String): Boolean =
-        host.isNotEmpty() && host.all { it.isDigit() || it in listOf('x', 'X', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F') }
+        host.isNotEmpty() && host.all { it.isDigit() || it in "0123456789abcdefABCDEF".toSet() }
 
     private fun decodeIpv4Alias(host: String): String {
         val lower = host.lowercase()
@@ -122,6 +114,6 @@ object VideoUrlPolicy {
 
     private fun isDirectFile(path: String): Boolean {
         val clean = path.substringBefore('?').substringBefore('#')
-        return DIRECT_EXTENSIONS.any { clean.endsWith(".$it") }
+        return listOf("mp4", "webm", "mov", "m4v", "mkv").any { clean.endsWith(".$it") }
     }
 }
