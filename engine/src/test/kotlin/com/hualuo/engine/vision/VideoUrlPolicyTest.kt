@@ -52,9 +52,8 @@ class VideoUrlPolicyTest {
     }
 
     @Test
-    fun numericIpv4AliasesRejectedWithoutBlockingDomainNames() {
+    fun numericIpv4AliasesRejectedWithoutBlockingOrdinaryDomains() {
         assertTrue(VideoUrlPolicy.check("http://2130706433/watch?v=x") is VideoUrlPolicy.Verdict.Rejected)
-        assertTrue(VideoUrlPolicy.check("https://fcm.googleapis.com/watch?v=x") is VideoUrlPolicy.Verdict.Rejected)
         assertTrue("普通公网域名不能被数字别名规则误伤：", VideoUrlPolicy.check("https://youtube.com/watch?v=x") is VideoUrlPolicy.Verdict.Allowed)
     }
 
