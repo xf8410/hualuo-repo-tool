@@ -11,12 +11,8 @@ import org.junit.rules.TemporaryFolder
 /**
  * SessionStore 契约测试（全在 java.io 上跑，纯 JVM，不碰 Android）。
  *
- * 钉的是「盘上不许撒谎」这一族规矩：写出去的字原样读回来（含换行引号）、
- * 错误卡照存但永远不回喂、裁剪和坏行都要数着报、追加撞坏文件不许吞前文。
- *
- * 教训三课（CI 编译/测试段抓的）：①pathOf 返回的就是 File，别再套 File(...)；
- * ②③create 自己生成 id（参数是模型名）——想验净化规矩，拿 pathOf 直接问落点、
- * 把花样 id 递进 append/load 这些真的收 id 的口，别指望 create 收下它。
+ * 钉的是“盘上不许撒谎”和“重开不能换台”：写出去的字原样读回来、错误卡照存但
+ * 不回喂、坏头但可读正文仍能在抽屉里恢复、最近打开的会话重新打开后仍排第一。
  */
 class SessionStoreTest {
 
@@ -90,29 +86,28 @@ class SessionStoreTest {
         val s = store()
         val id = s.create("m")
         s.append(id, msg(StoredMsg.ROLE_USER, "好行一"))
-        // 手动塞两种坏行：缺右花括号的残行、角色不认识的行
         s.pathOf(id).appendText("{k:m,role:user\n")
         s.append(id, msg(StoredMsg.ROLE_ASSISTANT, "好行二"))
         s.pathOf(id).appendText("{\"k\":\"m\",\"role\":\"unknown-role\",\"text\":\"\",\"at\":1}\n")
 
         val loaded = s.load(id)!!
         assertEquals("两条好行原样在", listOf("好行一", "好行二"), loaded.messages.map { it.text })
-        assertEquals("坏了几行就得报几行", 2, loaded.badLines)
+        assertEquals("坏了几条就得报几条", 2, loaded.badLines)
     }
 
     @Test
-    fun missingHeadStillLoadsMessagesAndSaysSo() {
+    fun missingHeadStillLoadsMessagesAndStaysInLibrary() {
         val s = store()
         val id = s.create("m")
         s.append(id, msg(StoredMsg.ROLE_USER, "没头也行"))
         val f = s.pathOf(id)
-        // 把头行删掉：整段内容不许因为头烂了就全不见——首行按消息再解一次
         f.writeText(f.readLines().drop(1).joinToString("\n", postfix = "\n"))
 
         val loaded = s.load(id)!!
         assertNull("头读不懂就明说读不懂", loaded.head)
         assertEquals("首行落按消息解：这条不许被冤枉成坏行", 0, loaded.badLines)
         assertEquals("消息原样在", listOf("没头也行"), loaded.messages.map { it.text })
+        assertTrue("坏头但正文可读时不能从抽屉消失", s.list().heads.any { it.first == id })
     }
 
     @Test
@@ -120,6 +115,22 @@ class SessionStoreTest {
         val s = store()
         val ids = List(50) { s.create("m") }.toSet()
         assertEquals("同一毫秒连开 50 个会话也不许撞名", 50, ids.size)
+    }
+
+    @Test
+    fun activeSessionSurvivesReopenAndWinsOverNewerSession() {
+        val s = store()
+        val old = s.create("m")
+        s.append(old, msg(StoredMsg.ROLE_USER, "原来这段"))
+        val fresh = s.create("m")
+        s.append(fresh, msg(StoredMsg.ROLE_USER, "新会话"))
+
+        // 模拟用户切回旧会话，然后杀进程重开。
+        s.load(old)
+        val reopened = SessionStore(tmp.root)
+        val listing = reopened.list()
+        assertEquals("重开必须继续打开用户最后看的会话", old, listing.heads.first().first)
+        assertEquals("原来的对话正文不能消失", "原来这段", reopened.load(old)!!.messages.single().text)
     }
 
     @Test
@@ -159,12 +170,10 @@ class SessionStoreTest {
     @Test
     fun weirdIdsCannotEscapeDirectory() {
         val s = store()
-        // 路径穿越的 id 先问落点：净化后必须仍躺在仓目录内
         val landed = s.pathOf("../../etc/evil")
         assertEquals("花样 id 的落点不许出仓目录", tmp.root, landed.parentFile)
         assertFalse("落点名里不许再有目录分隔：${landed.name}", landed.name.contains('/'))
 
-        // 再把花样 id 递进真的收 id 的口：没有这条会话就如实扑空，且不许写出任何新文件
         assertFalse(s.append("../../etc/evil", msg(StoredMsg.ROLE_USER, "想黑谁")))
         assertNull(s.load("../../etc/evil"))
         assertTrue("扑空的操作不许顺手造文件", tmp.root.listFiles { f -> f.isFile }!!.isEmpty())
