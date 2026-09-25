@@ -23,14 +23,14 @@ object VideoUrlTool {
         val spec = ToolSpec(
             name = "analyze_video_url",
             description = "分析一个 YouTube 视频链接（服务端原生视频理解，不占本机存储）。" +
-                "url 必填，goal 可选。当前只支持 YouTube URL；当前选中的眼睛模型必须是 Gemini 系。",
+                "url 必填，goal 可选。当前只支持 YouTube URL；当前聊天模型必须是 Gemini 系。",
             parametersJson = """{"type":"object","properties":{"url":{"type":"string","description":"YouTube 视频链接"},"goal":{"type":"string","description":"想从视频里总结出什么，可留空"}},"required":["url"]}""",
         )
         registry.registerGated(
             spec,
             ToolHandler { argumentsJson ->
                 val session = sessionProvider()
-                    ?: return@ToolHandler errorResult("no_session", "没有可用的视频眼睛会话")
+                    ?: return@ToolHandler errorResult("no_session", "没有可用的模型会话")
                 val args = argsOf(argumentsJson)
                 val url = (args["url"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
                 if (url.isEmpty()) return@ToolHandler errorResult("no_url", "缺少视频 URL")
@@ -41,7 +41,7 @@ object VideoUrlTool {
                     is VideoUrlPolicy.Verdict.Allowed -> Unit
                 }
                 if (session.protocol != ProviderProtocol.GEMINI) {
-                    return@ToolHandler errorResult("protocol_unsupported", "当前视频眼睛模型不是 Gemini 系；本工具不偷偷降级成本地下载抽帧。")
+                    return@ToolHandler errorResult("protocol_unsupported", "当前聊天模型协议 ${session.protocol} 不支持服务端视频输入；把当前模型切到 Gemini 系再试。本工具不偷偷降级成本地下载抽帧。")
                 }
                 val instruction = buildString {
                     append("看完这个视频，整理成：【画面流水】按时间讲清发生了什么；")
@@ -59,7 +59,7 @@ object VideoUrlTool {
                     is VisionExec.Outcome.Failed -> errorResult("analysis_failed", outcome.reason)
                 }
             },
-            visibleIf = { sessionProvider()?.protocol == ProviderProtocol.GEMINI },
+            visibleIf = { sessionProvider() != null },
         )
     }
 
