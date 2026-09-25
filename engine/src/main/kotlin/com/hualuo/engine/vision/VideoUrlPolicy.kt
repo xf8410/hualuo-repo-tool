@@ -70,7 +70,7 @@ object VideoUrlPolicy {
     }
 
     private fun isNumericIpv4Alias(host: String): Boolean =
-        host.isNotEmpty() && host.all { it.isDigit() || it in "0123456789abcdefABCDEF".toSet() }
+        host.isNotEmpty() && (host.all { it.isDigit() } || (host.startsWith("0x") && host.drop(2).all { it in "0123456789abcdefABCDEF" }))
 
     private fun decodeIpv4Alias(host: String): String {
         val lower = host.lowercase()
