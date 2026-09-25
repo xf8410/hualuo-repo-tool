@@ -8,6 +8,7 @@ import com.hualuo.engine.api.WireRequest
 import com.hualuo.engine.api.WireResponse
 import com.hualuo.engine.api.WireTransport
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -32,10 +33,11 @@ class VideoUrlToolTest {
         val out = registry.execute("analyze_video_url", """{"url":"https://cdn.example.com/clip.webm"}""")
         assertTrue(out.ok); assertTrue(out.text.contains("url_rejected")); assertEquals(0, transport.calls)
     }
-    @Test fun nonGeminiFailsWithoutCallingNetwork() {
+    @Test fun nonGeminiIsInvisibleAndDoesNotCallNetwork() {
         val transport = FakeTransport("{}"); val registry = ToolRegistry(); VideoUrlTool.register(registry, { session(ProviderProtocol.OPENAI_COMPAT) }, { transport })
+        assertFalse(registry.specs().any { it.name == "analyze_video_url" })
         val out = registry.execute("analyze_video_url", """{"url":"https://youtu.be/abc"}""")
-        assertTrue(out.ok); assertTrue(out.text.contains("protocol_unsupported")); assertEquals(0, transport.calls)
+        assertTrue(out.text.contains("不存在") || out.text.contains("不可用")); assertEquals(0, transport.calls)
     }
     @Test fun rejectedPrivateUrlFailsWithoutCallingNetwork() {
         val transport = FakeTransport("{}"); val registry = ToolRegistry(); VideoUrlTool.register(registry, { session(ProviderProtocol.GEMINI) }, { transport })
