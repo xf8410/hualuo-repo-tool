@@ -33,17 +33,29 @@ class VideoUrlToolTest {
     }
 
     @Test
-    fun geminiUrlReturnsSummaryWithoutLocalTransportState() {
+    fun geminiYoutubeUrlReturnsSummary() {
         val transport = FakeTransport("""{"candidates":[{"content":{"parts":[{"text":"总结完毕"}]}}]}""")
         val registry = ToolRegistry()
         VideoUrlTool.register(registry, { session(ProviderProtocol.GEMINI) }, { transport })
 
-        val out = registry.execute("analyze_video_url", """{"url":"https://cdn.example.com/clip.webm","goal":"列出关键步骤"}""")
+        val out = registry.execute("analyze_video_url", """{"url":"https://youtu.be/abc","goal":"列出关键步骤"}""")
         assertTrue(out.ok)
         assertTrue(out.text.contains("总结完毕"))
         assertTrue(out.text.contains("analyze_video_url"))
         assertEquals(1, transport.calls)
-        assertTrue(transport.lastRequest!!.body!!.contains("video/webm"))
+        assertTrue(transport.lastRequest!!.body!!.contains("https://youtu.be/abc"))
+    }
+
+    @Test
+    fun directFileFailsWithoutCallingNetwork() {
+        val transport = FakeTransport("{}")
+        val registry = ToolRegistry()
+        VideoUrlTool.register(registry, { session(ProviderProtocol.GEMINI) }, { transport })
+
+        val out = registry.execute("analyze_video_url", """{"url":"https://cdn.example.com/clip.webm"}""")
+        assertTrue(out.ok)
+        assertTrue(out.text.contains("url_rejected"))
+        assertEquals(0, transport.calls)
     }
 
     @Test
@@ -52,19 +64,19 @@ class VideoUrlToolTest {
         val registry = ToolRegistry()
         VideoUrlTool.register(registry, { session(ProviderProtocol.OPENAI_COMPAT) }, { transport })
 
-        val out = registry.execute("analyze_video_url", """{"url":"https://cdn.example.com/clip.mp4"}""")
+        val out = registry.execute("analyze_video_url", """{"url":"https://youtu.be/abc"}""")
         assertTrue(out.ok)
         assertTrue(out.text.contains("protocol_unsupported"))
         assertEquals(0, transport.calls)
     }
 
     @Test
-    fun rejectedUrlFailsWithoutCallingNetwork() {
+    fun rejectedPrivateUrlFailsWithoutCallingNetwork() {
         val transport = FakeTransport("{}")
         val registry = ToolRegistry()
         VideoUrlTool.register(registry, { session(ProviderProtocol.GEMINI) }, { transport })
 
-        val out = registry.execute("analyze_video_url", """{"url":"http://127.0.0.1/v.mp4"}""")
+        val out = registry.execute("analyze_video_url", """{"url":"http://127.0.0.1/watch?v=x"}""")
         assertTrue(out.ok)
         assertTrue(out.text.contains("url_rejected"))
         assertEquals(0, transport.calls)
