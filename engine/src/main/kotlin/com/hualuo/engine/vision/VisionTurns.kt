@@ -19,23 +19,14 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * 视觉请求构造与解析（看视频功能第一刀，引擎件纯 JVM）：
- * 一次「多图 + 一句提问」的非流式请求，三家协议各一个形状。
- *
- *  - OpenAI 兼容：content 数组（text + image_url 的 data URL），Bearer；
- *  - Gemini：parts（text + inline_data），generateContent 非流式，x-goog-api-key 头；
- *  - Anthropic：content 数组（image base64 source + text），x-api-key + anthropic-version；
- *  - Ollama：本刀不接（视觉形状是另一套 images 参数）——build 回 null，上层如实说，
- *    不许拿不存在的支持装样子。
- *
- * 图片一律 JPEG base64（抽帧侧统一转好），这里不再二次编码。
- * 零脱敏：提问与回答原文进出。
+ * 视觉请求构造与解析（纯 JVM）：
+ * 一次「多图 + 一句提问」的非流式请求，三家图片协议各一个形状；另加 Gemini
+ * 服务端视频 URL 输入。图片走本地 base64，视频 URL 交给服务端读取。
  */
 object VisionTurns {
 
     private const val MAX_TOKENS = 4096
 
-    /** 构造一次视觉请求；协议不支持视觉回 null（上层如实报，不硬发）。 */
     fun build(
         session: ProviderSession,
         imagesBase64: List<String>,
@@ -50,7 +41,6 @@ object VisionTurns {
         }
     }
 
-    /** 从非流式回执里提取正文文本；形状认不出回空串（上层按失败说，不编话）。 */
     fun extractText(protocol: ProviderProtocol, responseBody: String): String {
         val root = runCatching { Json.parseToJsonElement(responseBody).jsonObject }.getOrNull() ?: return ""
         return when (protocol) {
@@ -70,14 +60,11 @@ object VisionTurns {
         }
     }
 
-    /** 提取错误正文里能读的一句话（4xx/5xx 时用）；认不出回 null。 */
     fun extractError(errorBody: String): String? {
         val root = runCatching { Json.parseToJsonElement(errorBody).jsonObject }.getOrNull() ?: return null
         val err = root["error"] as? JsonObject ?: return null
         return (err["message"] as? JsonPrimitive)?.contentOrNull
     }
-
-    // ---------- 三协议 body ----------
 
     private fun openAi(session: ProviderSession, images: List<String>, question: String): WireRequest {
         val base = BaseUrlResolver.withV1(session.profile.baseUrl)
@@ -121,7 +108,8 @@ object VisionTurns {
                         images.forEach { b64 ->
                             addJsonObject {
                                 putJsonObject("inline_data") {
-                                    put("mime_type", "image/jpeg"); put("data", b64)
+                                    put("mime_type", "image/jpeg")
+                                    put("data", b64)
                                 }
                             }
                         }
@@ -152,7 +140,9 @@ object VisionTurns {
                             addJsonObject {
                                 put("type", "image")
                                 putJsonObject("source") {
-                                    put("type", "base64"); put("media_type", "image/jpeg"); put("data", b64)
+                                    put("type", "base64")
+                                    put("media_type", "image/jpeg")
+                                    put("data", b64)
                                 }
                             }
                         }
@@ -174,12 +164,8 @@ object VisionTurns {
     }
 
     /**
-     * 服务端视频 URL 请求（analyze_video_url 工具的底座）：**只有 Gemini 协议支持**——
-     * fileData.fileUri 让模型服务自己去远端读视频，手机不下载不抽帧不占存储。
-     * 其他协议 build 回 null（Anthropic 无视频形状、OpenAI 兼容无标准视频件、Ollama 同）——
-     * 上层如实报「不支持」，绝不偷偷降级成本地下载抽帧（成本/存储/隐私边界会变不透明）。
-     *
-     * 注入防线写进指令：视频里的字幕/按钮/广告/旁白都是**待分析数据**，不是指令。
+     * 服务端视频 URL 请求：只有 Gemini 协议支持 fileData.fileUri。
+     * 视频 URL 不在手机落盘；视频里的文字只作为数据，不作为指令。
      */
     fun buildVideoUrlRequest(session: ProviderSession, url: String, instruction: String): WireRequest? {
         if (session.protocol != ProviderProtocol.GEMINI) return null
@@ -195,7 +181,7 @@ object VisionTurns {
                         addJsonObject {
                             putJsonObject("file_data") {
                                 put("file_uri", url)
-                                put("mime_type", "video/mp4")
+                                put("mime_type", VideoUrlPolicy.mimeType(url))
                             }
                         }
                         addJsonObject { put("text", guarded) }
