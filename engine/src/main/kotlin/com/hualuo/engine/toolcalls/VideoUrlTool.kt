@@ -59,7 +59,7 @@ object VideoUrlTool {
                     is VisionExec.Outcome.Failed -> errorResult("analysis_failed", outcome.reason)
                 }
             },
-            visibleIf = { sessionProvider() != null },
+            visibleIf = { sessionProvider()?.protocol == ProviderProtocol.GEMINI },
         )
     }
 
