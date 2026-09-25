@@ -53,9 +53,11 @@ object VideoImporter {
                 ?.toLongOrNull() ?: 0L
             if (durationMs <= 0L) return null
             val times = VideoPlan.frameTimes(durationMs)
-            val base = videoFile.nameWithoutExtension
+            // 用完整文件名做目录名，避免 foo.mp4 与 foo.webm 抽到同一目录互相覆盖。
+            val base = videoFile.name
             val dir = File(framesRoot, base).apply { mkdirs() }
             frameDir = dir
+            val relTimes = mutableListOf<Long>()
             val rels = mutableListOf<String>()
             times.forEachIndexed { i, tMs ->
                 val frame = retriever.getFrameAtTime(
@@ -72,6 +74,7 @@ object VideoImporter {
                         val sink = ByteSink()
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 85, sink)
                         out.writeBytes(sink.toBytes())
+                        relTimes += tMs
                         rels += rel
                     } finally {
                         if (scaled != null && scaled !== frame && !scaled.isRecycled) scaled.recycle()
@@ -82,7 +85,8 @@ object VideoImporter {
             }
             if (rels.isEmpty()) return null
             val manifest = File(inbox, "${videoFile.name}.manifest.json")
-            val timesJson = times.joinToString(",", "[", "]")
+            // 只写成功抽出的时间点；VideoTool 要求时间点与帧路径严格一一对应。
+            val timesJson = relTimes.joinToString(",", "[", "]")
             val framesJson = rels.joinToString(",", "[", "]") { jsonQuote(it) }
             manifest.writeText(
                 """{"name":${jsonQuote(videoFile.name)},"durationMs":$durationMs,"frameTimes":$timesJson,"frames":$framesJson}""",
