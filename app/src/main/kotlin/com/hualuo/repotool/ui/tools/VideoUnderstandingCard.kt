@@ -27,11 +27,7 @@ import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 import com.hualuo.repotool.ui.theme.WarnAmber
 
-/**
- * 视频库卡（看视频第二刀的界面）：导入录屏 -> 后台抽帧缓存 -> 对话里的 AI
- * 用 list_videos / watch_video 工具看。**理解发生在对话里**——主对话模型
- * 是什么（纯文本也行）都能看，眼睛模型在设置里单独配。
- */
+/** 视频库卡：导入录屏后只长期保留帧和 manifest，对话 AI 调工具读取文字。 */
 @Composable
 fun VideoUnderstandingCard(state: AppUiState) {
     val context = LocalContext.current
@@ -51,7 +47,13 @@ fun VideoUnderstandingCard(state: AppUiState) {
                     copied.delete()
                     state.video.setVideoImporting(false, "导入失败：抽不出帧（文件损坏或不是视频）")
                 } else {
-                    state.video.setVideoImporting(false, "已入库：${copied.name}——现在可以在对话里让 AI 看它了")
+                    val cleaned = runCatching { copied.delete() }.getOrDefault(false)
+                    val note = if (cleaned) {
+                        "已入库：${manifest.nameWithoutExtension}——原始录屏已清理，只保留帧和账本"
+                    } else {
+                        "已入库：${manifest.nameWithoutExtension}——但原始录屏清理失败，请到应用数据目录手动删除"
+                    }
+                    state.video.setVideoImporting(false, note)
                 }
             }, "hualuo-video-import").start()
         }
@@ -88,7 +90,7 @@ fun VideoUnderstandingCard(state: AppUiState) {
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            "眼睛模型在 设置-看视频的眼睛 里配；没配的话对话 AI 看不了视频。",
+            "录屏只作为抽帧输入，导入完成会清理原视频；眼睛模型在 设置-看视频的眼睛 里配。",
             fontSize = 10.5.sp, color = SubInk,
         )
     }
