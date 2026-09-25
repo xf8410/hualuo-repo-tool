@@ -64,21 +64,38 @@ object VideoUrlPolicy {
         val host = rawHost.removeSurrounding("[", "]").lowercase()
         if (host == "localhost" || host.endsWith(".localhost")) return true
         if (host == "metadata.google.internal" || host == "metadata") return true
-        if (host == "0.0.0.0" || host == "::" || host == "::1") return true
-        if (host.startsWith("fc") || host.startsWith("fd") || host.startsWith("ff")) return true
-        // fe80::/10 是链路本地地址；URI.host 可能是压缩写法，这里只拦明确前缀。
-        if (host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")) return true
-        if (host.startsWith("::ffff:")) {
-            val embedded = host.substringAfterLast(':')
-            if (isPrivateIpv4(embedded)) return true
-        }
+        if (host.contains(":")) return isPrivateIpv6(host)
+        if (isNumericIpv4Alias(host)) return isPrivateIpv4(decodeIpv4Alias(host))
         return isPrivateIpv4(host)
+    }
+
+    private fun isPrivateIpv6(host: String): Boolean {
+        if (host == "::" || host == "::1") return true
+        if (host.startsWith("fc") || host.startsWith("fd") || host.startsWith("ff")) return true
+        if (host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")) return true
+        val mapped = host.substringAfter("::ffff:", missingDelimiterValue = "")
+        return mapped.isNotEmpty() && isPrivateIpv4(mapped)
+    }
+
+    private fun isNumericIpv4Alias(host: String): Boolean =
+        host.isNotEmpty() && host.all { it.isDigit() || it in listOf('x', 'X', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F') }
+
+    private fun decodeIpv4Alias(host: String): String {
+        val lower = host.lowercase()
+        val value = if (lower.startsWith("0x")) {
+            lower.removePrefix("0x").toLongOrNull(16)
+        } else {
+            lower.toLongOrNull(10)
+        } ?: return "0.0.0.0"
+        if (value < 0L || value > 0xffff_ffffL) return "0.0.0.0"
+        return "${(value ushr 24) and 0xff}.${(value ushr 16) and 0xff}.${(value ushr 8) and 0xff}.${value and 0xff}"
     }
 
     private fun isPrivateIpv4(value: String): Boolean {
         val parts = value.split('.')
         if (parts.size != 4) return false
         val octets = parts.map { it.toIntOrNull() ?: return false }
+        if (octets.any { it !in 0..255 }) return true
         val a = octets[0]
         val b = octets[1]
         val c = octets[2]
