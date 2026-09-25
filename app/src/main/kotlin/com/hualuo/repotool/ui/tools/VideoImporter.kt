@@ -3,7 +3,6 @@ package com.hualuo.repotool.ui.tools
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import com.hualuo.engine.toolcalls.VideoTool
 import com.hualuo.engine.vision.VideoPlan
 import com.hualuo.repotool.ui.state.AppUiState
 import java.io.File
@@ -66,11 +65,12 @@ object VideoImporter {
                 if (frame != null) {
                     var scaled: Bitmap? = null
                     try {
-                        scaled = scaleDown(frame)
+                        val bitmap = scaleDown(frame)
+                        scaled = bitmap
                         val rel = "$base/f$i.jpg"
                         val out = File(dir, "f$i.jpg")
                         val sink = ByteSink()
-                        scaled.compress(Bitmap.CompressFormat.JPEG, 85, sink)
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, sink)
                         out.writeBytes(sink.toBytes())
                         rels += rel
                     } finally {
