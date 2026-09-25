@@ -8,6 +8,7 @@ import com.hualuo.engine.vision.VisionExec
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
@@ -38,7 +39,10 @@ object VideoUrlTool {
                 val args = argsOf(argumentsJson)
                 val url = (args["url"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
                 if (url.isEmpty()) return@ToolHandler errorResult("no_url", "缺少视频 URL")
-                val goal = (args["goal"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty().take(2_000)
+                if (url.length > MAX_URL_CHARS) {
+                    return@ToolHandler errorResult("url_too_long", "视频 URL 太长了，超过 $MAX_URL_CHARS 个字符")
+                }
+                val goal = (args["goal"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty().take(MAX_GOAL_CHARS)
                 when (val verdict = VideoUrlPolicy.check(url)) {
                     is VideoUrlPolicy.Verdict.Rejected -> return@ToolHandler errorResult("url_rejected", verdict.reason)
                     is VideoUrlPolicy.Verdict.Allowed -> Unit
@@ -78,4 +82,7 @@ object VideoUrlTool {
     private fun argsOf(argumentsJson: String): JsonObject =
         runCatching { Json.parseToJsonElement(argumentsJson) }.getOrNull() as? JsonObject
             ?: JsonObject(emptyMap())
+
+    private const val MAX_URL_CHARS = 4_096
+    private const val MAX_GOAL_CHARS = 2_000
 }
