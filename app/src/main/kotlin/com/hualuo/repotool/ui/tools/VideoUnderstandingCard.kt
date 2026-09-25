@@ -27,11 +27,7 @@ import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 import com.hualuo.repotool.ui.theme.WarnAmber
 
-/**
- * 视频库卡（看视频第二刀的界面）：导入录屏 -> 后台抽帧缓存 -> 对话里的 AI
- * 用 list_videos / watch_video 工具看。**理解发生在对话里**——主对话模型
- * 是什么（纯文本也行）都能看，眼睛模型在设置里单独配。
- */
+/** 视频库卡：导入录屏后只长期保留帧和 manifest。 */
 @Composable
 fun VideoUnderstandingCard(state: AppUiState) {
     val context = LocalContext.current
@@ -51,7 +47,8 @@ fun VideoUnderstandingCard(state: AppUiState) {
                     copied.delete()
                     state.video.setVideoImporting(false, "导入失败：抽不出帧（文件损坏或不是视频）")
                 } else {
-                    state.video.setVideoImporting(false, "已入库：${copied.name}——现在可以在对话里让 AI 看它了")
+                    val cleaned = runCatching { copied.delete() }.getOrDefault(false)
+                    state.video.setVideoImporting(false, if (cleaned) "已入库：${copied.nameWithoutExtension}——原视频已清理，只保留帧和账本" else "已入库：${copied.nameWithoutExtension}——原视频清理失败")
                 }
             }, "hualuo-video-import").start()
         }
@@ -59,49 +56,26 @@ fun VideoUnderstandingCard(state: AppUiState) {
 
     HCard {
         CardTitle("视频库（对话 AI 可看）")
-        Text(
-            "导入录屏后，对话里直接说「看一下 XX 视频」——AI 调 watch_video 自己读，主对话模型不用带视觉。",
-            fontSize = 12.sp, color = SubInk,
-        )
+        Text("导入录屏后，对话里直接说「看一下 XX 视频」——AI 调 watch_video 自己读，主对话模型不用带视觉。", fontSize = 12.sp, color = SubInk)
         Spacer(Modifier.height(8.dp))
         Row {
-            Box2Button(
-                if (state.video.videoImporting) "导入中…" else "导入录屏",
-                enabled = !state.video.videoImporting,
-                accent = !state.video.videoImporting,
-            ) {
-                picker.launch(arrayOf("video/*"))
-            }
+            Box2Button(if (state.video.videoImporting) "导入中…" else "导入录屏", !state.video.videoImporting, !state.video.videoImporting) { picker.launch(arrayOf("video/*")) }
         }
-        state.video.videoImportNote?.let { note ->
-            Spacer(Modifier.height(6.dp))
-            Text(note, fontSize = 12.sp, color = if (state.video.videoImporting) WarnAmber else SubInk)
-        }
+        state.video.videoImportNote?.let { note -> Spacer(Modifier.height(6.dp)); Text(note, fontSize = 12.sp, color = if (state.video.videoImporting) WarnAmber else SubInk) }
         if (state.video.videoLibraryCache.isNotEmpty()) {
             Spacer(Modifier.height(6.dp))
-            state.video.videoLibraryCache.forEach { line ->
-                Text("· $line", fontSize = 12.sp, color = Ink)
-            }
+            state.video.videoLibraryCache.forEach { Text("· $it", fontSize = 12.sp, color = Ink) }
         } else if (!state.video.videoImporting) {
-            Spacer(Modifier.height(6.dp))
-            Text("库还是空的", fontSize = 12.sp, color = SubInk)
+            Spacer(Modifier.height(6.dp)); Text("库还是空的", fontSize = 12.sp, color = SubInk)
         }
         Spacer(Modifier.height(6.dp))
-        Text(
-            "眼睛模型在 设置-看视频的眼睛 里配；没配的话对话 AI 看不了视频。",
-            fontSize = 10.5.sp, color = SubInk,
-        )
+        Text("录屏只作为抽帧输入，导入完成会清理原视频；眼睛模型在 设置-看视频的眼睛 里配。", fontSize = 10.5.sp, color = SubInk)
     }
 }
 
 @Composable
 private fun Box2Button(label: String, enabled: Boolean = true, accent: Boolean = false, onClick: () -> Unit) {
-    androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .background(if (accent) Accent else Bg, RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-    ) {
+    androidx.compose.foundation.layout.Box(Modifier.background(if (accent) Accent else Bg, RoundedCornerShape(12.dp)).clickable(enabled = enabled) { onClick() }.padding(horizontal = 14.dp, vertical = 10.dp)) {
         Text(label, fontSize = 13.sp, color = if (accent) Color.White else Ink, fontWeight = FontWeight.SemiBold)
     }
 }
