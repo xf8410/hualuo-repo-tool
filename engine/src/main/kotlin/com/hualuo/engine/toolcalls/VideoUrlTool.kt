@@ -13,8 +13,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
 /**
- * analyze_video_url：主模型拿到视频 URL 后调用，服务端直接读取视频。
- * 手机不下载、不抽帧、不保存视频；协议不支持时明确拒绝，不偷偷降级。
+ * analyze_video_url：主模型拿到 YouTube 链接后调用，Gemini 服务端直接读取视频。
+ * 手机不下载、不抽帧、不保存视频；其他输入明确拒绝，不偷偷降级。
  */
 object VideoUrlTool {
 
@@ -25,11 +25,10 @@ object VideoUrlTool {
     ) {
         val spec = ToolSpec(
             name = "analyze_video_url",
-            description = "分析一个视频链接的内容（服务端原生视频理解，不占本机存储）。" +
-                "参数：url（视频链接）+ goal（想从视频里了解什么，可选）。" +
-                "支持 YouTube 链接与直接视频文件 URL（.mp4/.webm/.mov/.m4v/.mkv 等）；" +
-                "普通网页、平台分享页和 HLS 当前不支持。当前聊天模型是 Gemini 系才能执行。",
-            parametersJson = """{"type":"object","properties":{"url":{"type":"string","description":"视频链接（YouTube 或直接视频文件 URL）"},"goal":{"type":"string","description":"想从视频里总结出什么，可留空"}},"required":["url"]}""",
+            description = "分析一个 YouTube 视频链接的内容（Gemini 服务端原生视频理解，不占本机存储）。" +
+                "参数：url（YouTube 链接）+ goal（想从视频里了解什么，可选）。" +
+                "普通网页、平台分享页、HLS 和直接 MP4 当前不支持；当前聊天模型必须是 Gemini 系。",
+            parametersJson = """{"type":"object","properties":{"url":{"type":"string","description":"YouTube 视频链接"},"goal":{"type":"string","description":"想从视频里总结出什么，可留空"}},"required":["url"]}""",
         )
         registry.registerGated(
             spec,
