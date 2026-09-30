@@ -29,12 +29,12 @@ import java.util.concurrent.atomic.AtomicBoolean
  *  2) **多处落盘**：Download/hualuo-crash-<时间戳>.txt（MediaStore，零权限，
  *     一次一份不覆盖）+ 内外私有目录 crash/last.txt；
  *  3) **直投私仓**：落盘之外再开后台线程把现场原文 PUT 到
- *     xf8410/hualuo-logs 的 crashprobe/ 目录（钥匙现读设置文件），限时 4 秒，
+ *     xf8410/hualuo-logs 的 crashprobe/ 目录（钥匙现读设置文件），限时等收尾，
  *     成不成都不算数——就算 Download 落盘被机型限制挡了，私仓里也有一份；
  *  4) **下次启动出声**：toast「上次闪退已留档在哪」。
  *
- * 红线自查：只写小文本不读大文件（红线二）；不碰 readBytes()/toByteArray()
- * 字面禁令（字节走 String.getBytes，写字走 OutputStreamWriter/File.writeText）；
+ * 红线自查：只写小文本不读大文件（红线二）；整文件读入内存的那类写法本文件
+ * 一行都不出现（字节走 String.getBytes，写字走 OutputStreamWriter/File.writeText）；
  * 不动 manifest（不加权限、不加 provider、不加 service——service 永久红线）；
  * 原异常处理器原样回调，系统收尸流程不变。定位修完，本文件整删即可。
  */
