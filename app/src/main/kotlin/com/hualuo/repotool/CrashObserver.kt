@@ -73,7 +73,7 @@ object CrashObserver {
         val pending = File(File(context.filesDir, "crash"), "pending.txt")
         if (!pending.isFile) return null
         val where = runCatching { pending.readText().trim() }.getOrNull()
-        // 读走就改名留档（pending → last），toast 不会每次启动复读
+        // 读走就改名留档（pending 改名成 last-notice.txt），toast 不会每次启动复读
         runCatching {
             if (!pending.renameTo(File(File(context.filesDir, "crash"), "last-notice.txt"))) {
                 pending.delete()
