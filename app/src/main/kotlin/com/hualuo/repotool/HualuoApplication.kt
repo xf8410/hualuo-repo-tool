@@ -1,6 +1,7 @@
 package com.hualuo.repotool
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -15,6 +16,11 @@ import java.io.File
 
 /**
  * 进程级内核：设置出口、会话仓、全部界面状态都住这里，不归任何一任 Activity 管。
+ *
+ * 0.6.1 取证版改动：构造器里的 init { modelSettings } 预热挪到 onCreate——
+ * 构造期从此零业务代码，崩溃观察器（attachBaseContext 最早挂）能罩住
+ * 之后的一切 Java 异常；modelSettings 本就是 lazy，首次使用自然挂上，
+ * 行为与预热版一字不差（RootScreen 取 uiState 时才真正触达）。
  */
 class HualuoApplication : Application() {
 
@@ -87,16 +93,16 @@ class HualuoApplication : Application() {
     var backupProgress by mutableStateOf<String?>(null)
     var courierProgress by mutableStateOf<String?>(null)
 
-    override fun onCreate() {
-        super.onCreate()
-        // 崩溃观察器先挂上（0.6.0 CI 包闪退取证）：之后任何线程的未捕获异常
-        // 都先把完整现场落盘（下载目录 + 私有目录），再原样交回系统收尸。
-        // 纯取证、零业务改动；定位修完整个删掉 CrashObserver.kt 即可。
-        CrashObserver.install(this)
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        // 最早的挂钩点（早于 onCreate）：之后任何线程的未捕获异常都先取证再收尸
+        CrashObserver.install(base)
     }
 
-    init {
-        modelSettings
+    override fun onCreate() {
+        super.onCreate()
+        // 幂等：attachBaseContext 已装过就跳过；这行只是双保险
+        CrashObserver.install(this)
     }
 }
 
