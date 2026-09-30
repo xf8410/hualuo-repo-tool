@@ -77,11 +77,23 @@ class HualuoApplication : Application() {
         )
     }
 
-    private val startupNotice = OnceNotice { uiBundle.notice }
+    private val startupNotice = OnceNotice {
+        listOfNotNull(uiBundle.notice, CrashObserver.consumeStartupCrashNotice(this))
+            .joinToString("；")
+            .ifEmpty { null }
+    }
     fun consumeStartupNotice(): String? = startupNotice.consume()
 
     var backupProgress by mutableStateOf<String?>(null)
     var courierProgress by mutableStateOf<String?>(null)
+
+    override fun onCreate() {
+        super.onCreate()
+        // 崩溃观察器先挂上（0.6.0 CI 包闪退取证）：之后任何线程的未捕获异常
+        // 都先把完整现场落盘（下载目录 + 私有目录），再原样交回系统收尸。
+        // 纯取证、零业务改动；定位修完整个删掉 CrashObserver.kt 即可。
+        CrashObserver.install(this)
+    }
 
     init {
         modelSettings
