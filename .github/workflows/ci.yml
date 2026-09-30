@@ -263,5 +263,22 @@ jobs:
         with:
           name: 自检日志-${{ github.run_id }}-${{ github.sha }}
           path: 日志/
-          # 500MB 免费配额教训（#301）：日志留 3 天足够回看
-          retention-days: 3
+
+      - name: 挂 Release（一 run 一存档，永久可查——用户规矩：跑一次 CI 留一个包）
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VER=$(cat version.properties | grep -oE '[0-9.]+' | head -1)
+          TAG="v${VER}-r${GITHUB_RUN_NUMBER}"
+          ASSET=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          DBG=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
+          test -s "$ASSET"
+          gh release create "$TAG" "$ASSET" ${DBG:+"$DBG"} \
+            --target "$GITHUB_SHA" \
+            --title "构建存档 r${GITHUB_RUN_NUMBER}（v${VER}）" \
+            --notes "自动存档：源码 $GITHUB_SHA；安装包 release 签名版 + debug。历史所有构建见 Releases 列表。" \
+            || gh release upload "$TAG" "$ASSET" ${DBG:+"$DBG"} --clobber
+          # 09-30 仓转公开后存储免费：恢复 90 天保留（历史安装包必须可追溯）
+          retention-days: 90
