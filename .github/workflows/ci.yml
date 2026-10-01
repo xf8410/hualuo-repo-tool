@@ -1,5 +1,5 @@
 name: 自检（每次提交都跑）
-run-name: "自检 #${{ github.run_number }} — ${{ github.event.head_commit.message || github.event_name }}"
+run-name: "${{ github.event.inputs.feature_no && format('功能 #{0}·{1}', github.event.inputs.feature_no, github.event.inputs.feature_name) || '自检（每次提交都跑）' }} #${{ github.run_number }}${{ github.event.inputs.ref && format(' · 源码:{0}', github.event.inputs.ref) || '' }}"
 
 # 这个 CI 的定位：先证明"没犯错"，再证明"能打包"。
 # 铁规：任何步骤都不许写 continue-on-error —— 旧 Agora 三步全开了这个开关，
@@ -32,6 +32,19 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      ref:
+        description: '要构建的历史 commit/分支（留空=main 最新）'
+        required: false
+        default: ''
+      feature_no:
+        description: '功能号（docs/FEATURE-LEDGER.csv 1-804，留空=常规自检）'
+        required: false
+        default: ''
+      feature_name:
+        description: '功能中文明细（与账本功能名列一致，用于 run 名与存档）'
+        required: false
+        default: ''
   pull_request:
 
 # contents:write 只为「密钥首铸」的回推；其余一切照旧只读。
@@ -50,6 +63,8 @@ jobs:
     steps:
       - name: 取出代码
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: 装 JDK 17
         uses: actions/setup-java@v4
@@ -257,11 +272,31 @@ jobs:
             fi
           } | tee "$GITHUB_STEP_SUMMARY"
 
-      - name: 收日志（无条件上传；红了就修根因——腾配额，不跳过不逃避）
+      - name: 定名（构建包中文明细命名：Hualuo-v版本-F功能号-功能名）
+        if: always()
+        run: |
+          VER=$(cat version.properties | grep -oE '[0-9.]+' | head -1)
+          REFSHA=$(git rev-parse --short HEAD)
+          FNO="${{ inputs.feature_no }}"
+          FNAME="${{ inputs.feature_name }}"
+          echo "VER=$VER" >> "$GITHUB_ENV"
+          echo "REFSHA=$REFSHA" >> "$GITHUB_ENV"
+          if [ -n "$FNO" ]; then
+            SAFE=$(echo "$FNAME" | tr -d '/\\:*?"<>| ' | cut -c1-40)
+            echo "ART_NAME=Hualuo-v${VER}-功能${FNO}-${SAFE}-构建包-src${REFSHA}" >> "$GITHUB_ENV"
+            echo "REL_TAG=功能${FNO}-src${REFSHA}" >> "$GITHUB_ENV"
+            echo "REL_TITLE=功能 ${FNO}·${FNAME}（v${VER}·源码${REFSHA}）" >> "$GITHUB_ENV"
+          else
+            echo "ART_NAME=Hualuo-v${VER}-常规自检-r${GITHUB_RUN_NUMBER}-构建包-src${REFSHA}" >> "$GITHUB_ENV"
+            echo "REL_TAG=v${VER}-r${GITHUB_RUN_NUMBER}-src${REFSHA}" >> "$GITHUB_ENV"
+            echo "REL_TITLE=常规自检 r${GITHUB_RUN_NUMBER}（v${VER}·源码${REFSHA}）" >> "$GITHUB_ENV"
+          fi
+
+      - name: 收日志（无条件上传；红了就修根因，不跳过不逃避）
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: 自检日志-${{ github.run_id }}-${{ github.sha }}
+          name: ${{ env.ART_NAME }}
           path: 日志/
 
       - name: 挂 Release（一 run 一存档，永久可查——用户规矩：跑一次 CI 留一个包）
@@ -270,15 +305,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          VER=$(cat version.properties | grep -oE '[0-9.]+' | head -1)
-          TAG="v${VER}-r${GITHUB_RUN_NUMBER}"
           ASSET=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           DBG=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
           test -s "$ASSET"
-          gh release create "$TAG" "$ASSET" ${DBG:+"$DBG"} \
-            --target "$GITHUB_SHA" \
-            --title "构建存档 r${GITHUB_RUN_NUMBER}（v${VER}）" \
-            --notes "自动存档：源码 $GITHUB_SHA；安装包 release 签名版 + debug。历史所有构建见 Releases 列表。" \
-            || gh release upload "$TAG" "$ASSET" ${DBG:+"$DBG"} --clobber
+          gh release create "$REL_TAG" "$ASSET" ${DBG:+"$DBG"} \
+            --target "HEAD" \
+            --title "$REL_TITLE" \
+            --notes "自动存档：源码 ${REFSHA}（历史功能重跑用 inputs.ref 指定）。安装包 release 签名版 + debug。功能账本见 docs/FEATURE-LEDGER.csv。" \
+            || gh release upload "$REL_TAG" "$ASSET" ${DBG:+"$DBG"} --clobber
           # 09-30 仓转公开后存储免费：恢复 90 天保留（历史安装包必须可追溯）
           retention-days: 90
