@@ -320,11 +320,17 @@ jobs:
             REL_APK="Hualuo-v${VER}-自检r${GITHUB_RUN_NUMBER}-签名版.apk"
             REL_DBG="Hualuo-v${VER}-自检r${GITHUB_RUN_NUMBER}-调试版.apk"
           fi
-          cp "$ASSET" "/tmp/$REL_APK"; test -s "$DBG" && cp "$DBG" "/tmp/$REL_DBG"
-          gh release create "$REL_TAG" "/tmp/$REL_APK" ${DBG:+"/tmp/$REL_DBG"} \
-            --target "$FULLSHA" \
-            --title "$REL_TITLE" \
-            --notes "自动存档：源码 ${REFSHA}（历史功能重跑用 inputs.ref 指定）。安装包 release 签名版 + debug。功能账本见 docs/FEATURE-LEDGER.csv。" \
-            || gh release upload "$REL_TAG" "/tmp/$REL_APK" ${DBG:+"/tmp/$REL_DBG"} --clobber
+          cp "$ASSET" "/tmp/$REL_APK"
+          if [ -n "${DBG:-}" ] && [ -s "$DBG" ]; then cp "$DBG" "/tmp/$REL_DBG"; DBGARG="/tmp/$REL_DBG"; else DBGARG=""; fi
+          # 先建 release（不带资产），等就绪再传资产（create 带资产会在第二个撞 404）
+          gh release create "$REL_TAG" --target "$FULLSHA" --title "$REL_TITLE" \
+            --notes "自动存档：源码 ${REFSHA}。功能账本见 docs/FEATURE-LEDGER.csv。"
+          sleep 5
+          ok=0
+          for i in 1 2 3; do
+            if gh release upload "$REL_TAG" "/tmp/$REL_APK" ${DBGARG:+"$DBGARG"} --clobber; then ok=1; break; fi
+            sleep 8
+          done
+          [ "$ok" = "1" ] || { echo "资产上传三次失败"; exit 1; }
           # 09-30 仓转公开后存储免费：恢复 90 天保留（历史安装包必须可追溯）
           retention-days: 90
