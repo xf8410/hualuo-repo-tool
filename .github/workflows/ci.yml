@@ -282,6 +282,7 @@ jobs:
           FNAME="${{ inputs.feature_name }}"
           echo "VER=$VER" >> "$GITHUB_ENV"
           echo "REFSHA=$REFSHA" >> "$GITHUB_ENV"
+          echo "FULLSHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           if [ -n "$FNO" ]; then
             SAFE=$(echo "$FNAME" | tr -d '/\\:*?"<>| ' | cut -c1-40)
             echo "ART_NAME=Hualuo-v${VER}-功能${FNO}-${SAFE}-构建包-src${REFSHA}" >> "$GITHUB_ENV"
@@ -310,7 +311,7 @@ jobs:
           DBG=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
           test -s "$ASSET"
           gh release create "$REL_TAG" "$ASSET" ${DBG:+"$DBG"} \
-            --target "HEAD" \
+            --target "$FULLSHA" \
             --title "$REL_TITLE" \
             --notes "自动存档：源码 ${REFSHA}（历史功能重跑用 inputs.ref 指定）。安装包 release 签名版 + debug。功能账本见 docs/FEATURE-LEDGER.csv。" \
             || gh release upload "$REL_TAG" "$ASSET" ${DBG:+"$DBG"} --clobber
