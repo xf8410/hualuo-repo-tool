@@ -52,7 +52,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: 自检-${{ github.ref }}
+  # 功能跑批：按功能号分组（不同功能可并行，同功能重跑才互斥）；常规 push 仍按分支互斥
+  group: ${{ github.event.inputs.feature_no && format('功能-{0}', github.event.inputs.feature_no) || format('自检-{0}', github.ref) }}
   cancel-in-progress: true
 
 jobs:
