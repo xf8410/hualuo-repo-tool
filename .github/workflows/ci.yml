@@ -311,12 +311,13 @@ jobs:
           ASSET=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           DBG=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
           test -s "$ASSET"
+          # 资产名必须纯 ASCII：gh 上传层会把中文名清洗成点（硬限制），中文明细在 Release 标题与 run 名
           if [ -n "${FNO:-}" ]; then
-            REL_APK="Hualuo-v${VER}-功能${FNO}-签名版.apk"
-            REL_DBG="Hualuo-v${VER}-功能${FNO}-调试版.apk"
+            REL_APK="Hualuo-v${VER}-F${FNO}-signed.apk"
+            REL_DBG="Hualuo-v${VER}-F${FNO}-debug.apk"
           else
-            REL_APK="Hualuo-v${VER}-自检r${GITHUB_RUN_NUMBER}-签名版.apk"
-            REL_DBG="Hualuo-v${VER}-自检r${GITHUB_RUN_NUMBER}-调试版.apk"
+            REL_APK="Hualuo-v${VER}-r${GITHUB_RUN_NUMBER}-signed.apk"
+            REL_DBG="Hualuo-v${VER}-r${GITHUB_RUN_NUMBER}-debug.apk"
           fi
           cp "$ASSET" "/tmp/$REL_APK"
           if [ -n "${DBG:-}" ] && [ -s "$DBG" ]; then cp "$DBG" "/tmp/$REL_DBG"; DBGARG="/tmp/$REL_DBG"; else DBGARG=""; fi
