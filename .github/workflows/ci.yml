@@ -336,5 +336,3 @@ jobs:
           }
           up "/tmp/$REL_APK" || { echo "签名版上传失败"; exit 1; }
           if [ -n "$DBGARG" ]; then up "$DBGARG" || { echo "调试版上传失败"; exit 1; }; fi
-          # 09-30 仓转公开后存储免费：恢复 90 天保留（历史安装包必须可追溯）
-          retention-days: 90
