@@ -26,6 +26,14 @@ class SettingsStore(private val storage: SettingsStorage) {
     private val collected = ArrayList<SettingsIssue>()
     private var dirty = false
 
+    /**
+     * 全表单锁（2026-10-03 修）：模型清单同步线程（hualuo-model-sync）会从后台调
+     * save/setString，而 UI 线程同时在 text()/keys() 遍历同一张表——LinkedHashMap
+     * 非线程安全，裸并发 = ConcurrentModificationException 偶发闪退。
+     * 所有公开读写一律进这把锁；锁内不碰 storage（IO 在锁外做，避免拖死 UI）。
+     */
+    private val storeLock = Any()
+
     init {
         reload()
     }
@@ -35,18 +43,20 @@ class SettingsStore(private val storage: SettingsStorage) {
     /** 从后端重读一份，丢掉尚未保存的改动。后端没内容等于空表，不算错误。 */
     fun reload(): LoadReport {
         val text = storage.read()
-        return if (text == null) {
-            values.clear()
-            collected.clear()
-            dirty = false
-            LoadReport(hadContent = false, keyCount = 0, issueCount = 0)
-        } else {
-            adoptText(text)
+        return synchronized(storeLock) {
+            if (text == null) {
+                values.clear()
+                collected.clear()
+                dirty = false
+                LoadReport(hadContent = false, keyCount = 0, issueCount = 0)
+            } else {
+                adoptText(text)
+            }
         }
     }
 
     /** 用内存里的一份文本载入（从备份恢复、或者测试直接喂样本时用）。不碰后端。 */
-    fun loadText(text: String): LoadReport = adoptText(text)
+    fun loadText(text: String): LoadReport = synchronized(storeLock) { adoptText(text) }
 
     private fun adoptText(text: String): LoadReport {
         val parsed = LinkedHashMap<String, String>()
@@ -63,7 +73,7 @@ class SettingsStore(private val storage: SettingsStorage) {
     // ── 坏消息 ──────────────────────────────────────────────────────────────
 
     /** 已累计的坏消息（载入时发现的，加上取值时新记的）。 */
-    fun issues(): List<SettingsIssue> = collected.toList()
+    fun issues(): List<SettingsIssue> = synchronized(storeLock) { collected.toList() }
 
     /** 取出并清空坏消息：界面弹一次就够，同一条不该反复刷屏。 */
     fun drainIssues(): List<SettingsIssue> {
@@ -74,20 +84,20 @@ class SettingsStore(private val storage: SettingsStorage) {
 
     // ── 只读视图 ────────────────────────────────────────────────────────────
 
-    fun keys(): Set<String> = values.keys.toSet()
-    fun size(): Int = values.size
-    fun has(key: String): Boolean = values.containsKey(key)
-    fun raw(key: String): String? = values[key]
+    fun keys(): Set<String> = synchronized(storeLock) { values.keys.toSet() }
+    fun size(): Int = synchronized(storeLock) { values.size }
+    fun has(key: String): Boolean = synchronized(storeLock) { values.containsKey(key) }
+    fun raw(key: String): String? = synchronized(storeLock) { values[key] }
 
     /** 有改动还没落盘（自动保存轮询与「退出前提醒」都看这个）。 */
-    fun isDirty(): Boolean = dirty
+    fun isDirty(): Boolean = synchronized(storeLock) { dirty }
 
     /** 当前内容的文本形式（不碰后端）。 */
-    fun text(): String = serialize()
+    fun text(): String = synchronized(storeLock) { serialize() }
 
     // ── 取值 ────────────────────────────────────────────────────────────────
 
-    fun string(key: String, default: String = ""): String = values[key] ?: default
+    fun string(key: String, default: String = ""): String = synchronized(storeLock) { values[key] ?: default }
 
     fun boolean(key: String, default: Boolean): Boolean {
         val stored = values[key] ?: return default
@@ -149,7 +159,7 @@ class SettingsStore(private val storage: SettingsStorage) {
      * 写一个值。键名不合法是调用方写错代码，直接抛，不做「悄悄换个名字存」。
      * 值里有孤立代理位不抛（那是调用方从模型/文件里拿来的），但当场记一条坏消息。
      */
-    fun setString(key: String, value: String) {
+    fun setString(key: String, value: String) = synchronized(storeLock) {
         requireValidKey(key)
         val lone = firstUnpairedSurrogate(value)
         if (lone >= 0) {
@@ -171,10 +181,12 @@ class SettingsStore(private val storage: SettingsStorage) {
 
     /** 删一个键，返回是不是真删掉了。 */
     fun remove(key: String): Boolean {
-        if (!values.containsKey(key)) return false
-        values.remove(key)
-        dirty = true
-        return true
+        synchronized(storeLock) {
+            if (!values.containsKey(key)) return false
+            values.remove(key)
+            dirty = true
+            return true
+        }
     }
 
     /** 批量删，返回实际删掉的数量（草稿发出去之后清草稿用）。 */
@@ -184,15 +196,20 @@ class SettingsStore(private val storage: SettingsStorage) {
 
     /** 全量写回后端。失败带原因返回，不抛异常。 */
     fun save(): SaveResult {
-        val body = serialize()
+        val body: String
+        val keyCount: Int
+        synchronized(storeLock) {
+            body = serialize()
+            keyCount = values.size
+        }
         return try {
             storage.write(body)
-            dirty = false
-            SaveResult(persisted = true, keyCount = values.size, charCount = body.length, failure = null)
+            synchronized(storeLock) { dirty = false }
+            SaveResult(persisted = true, keyCount = keyCount, charCount = body.length, failure = null)
         } catch (e: Exception) {
             SaveResult(
                 persisted = false,
-                keyCount = values.size,
+                keyCount = keyCount,
                 charCount = body.length,
                 failure = "${e.javaClass.simpleName}: ${e.message ?: "（无消息）"}",
             )
