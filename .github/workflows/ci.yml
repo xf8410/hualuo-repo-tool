@@ -286,8 +286,7 @@ jobs:
           echo "FNO=$FNO" >> "$GITHUB_ENV"
           echo "FNAME=$FNAME" >> "$GITHUB_ENV"
           if [ -n "$FNO" ]; then
-            SAFE=$(echo "$FNAME" | tr -d '/\\:*?"<>| ' | cut -c1-40)
-            echo "ART_NAME=Hualuo-v${VER}-功能${FNO}-${SAFE}-构建包-src${REFSHA}" >> "$GITHUB_ENV"
+            echo "ART_NAME=Hualuo-v${VER}-功能${FNO}-构建包-src${REFSHA}" >> "$GITHUB_ENV"
             echo "REL_TAG=功能${FNO}-src${REFSHA}" >> "$GITHUB_ENV"
             echo "REL_TITLE=功能 ${FNO}·${FNAME}（v${VER}·源码${REFSHA}）" >> "$GITHUB_ENV"
           else
@@ -313,9 +312,8 @@ jobs:
           DBG=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
           test -s "$ASSET"
           if [ -n "${FNO:-}" ]; then
-            SAFE=$(echo "$FNAME" | tr -d '/\\:*?"<>| ' | cut -c1-40)
-            REL_APK="Hualuo-v${VER}-功能${FNO}-${SAFE}-签名版.apk"
-            REL_DBG="Hualuo-v${VER}-功能${FNO}-${SAFE}-调试版.apk"
+            REL_APK="Hualuo-v${VER}-功能${FNO}-签名版.apk"
+            REL_DBG="Hualuo-v${VER}-功能${FNO}-调试版.apk"
           else
             REL_APK="Hualuo-v${VER}-自检r${GITHUB_RUN_NUMBER}-签名版.apk"
             REL_DBG="Hualuo-v${VER}-自检r${GITHUB_RUN_NUMBER}-调试版.apk"
