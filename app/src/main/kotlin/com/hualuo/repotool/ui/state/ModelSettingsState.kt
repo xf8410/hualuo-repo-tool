@@ -40,6 +40,13 @@ class ModelSettingsState(
         private set
     var errors: Map<String, String> by mutableStateOf(emptyMap())
         private set
+
+    /**
+     * 队列与同步互斥锁（2026-10-03 修）：refreshProvider 从 UI 线程 addLast，
+     * drainQueue 从 hualuo-model-sync 后台线程 removeFirstOrNull——ArrayDeque
+     * 非线程安全，双线程裸奔会丢元素/内部数组错乱。队列操作一律进这把锁。
+     */
+    private val queueLock = Any()
     private val refreshQueue = ArrayDeque<String>()
 
     val activeProvider: ProviderSettings?
@@ -167,22 +174,27 @@ class ModelSettingsState(
     }
 
     fun refreshProvider(providerId: String) {
-        if (busyProviderId != null || refreshQueue.isNotEmpty()) {
-            if (providerId !in refreshQueue) refreshQueue.addLast(providerId)
-            return
+        val shouldDrain = synchronized(queueLock) {
+            if (busyProviderId != null || refreshQueue.isNotEmpty()) {
+                if (providerId !in refreshQueue) refreshQueue.addLast(providerId)
+                return
+            }
+            refreshQueue.addLast(providerId)
+            true
         }
-        refreshQueue.addLast(providerId)
         drainQueue()
     }
 
     fun refreshAll() {
-        if (busyProviderId != null || refreshQueue.isNotEmpty()) return
-        settings.providers.map { it.id }.forEach { refreshQueue.addLast(it) }
+        synchronized(queueLock) {
+            if (busyProviderId != null || refreshQueue.isNotEmpty()) return
+            settings.providers.map { it.id }.forEach { refreshQueue.addLast(it) }
+        }
         drainQueue()
     }
 
     private fun drainQueue() {
-        val providerId = refreshQueue.removeFirstOrNull() ?: return
+        val providerId = synchronized(queueLock) { refreshQueue.removeFirstOrNull() } ?: return
         val session = sessionFor("$providerId:__hualuo_model_list__")
         if (session == null) {
             errors = errors + (providerId to "先在提供商页填 base URL")
@@ -197,18 +209,26 @@ class ModelSettingsState(
         busyProviderId = providerId
         errors = errors - providerId
         val body = Runnable {
-            val client = ProviderClient(transportFactory(), GenerationSlot(), IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS))
-            val listing = client.listModels(session)
-            val error = listing.error
-            busyProviderId = null
-            if (error != null) errors = errors + (providerId to error.userMessage())
-            else if (listing.models.isEmpty()) errors = errors + (providerId to "端点回话正常，但没有认出任何模型名")
-            else {
-                val customIds = settings.customModels.filter { it.providerId == providerId }.map { it.id }
-                val prefixed = (listing.models.map { "$providerId:${it.removePrefix("models/")}" } + customIds).distinct()
-                update { current -> current.copy(availableModels = current.availableModels + (providerId to prefixed)) }
+            // try/finally 兜底（2026-10-03 修）：listModels 只兜 IOException，
+            // 链上任何 RuntimeException 逃逸会让 busyProviderId 永远非空——
+            // 之后所有刷新只入队不消费，模型列表永远刷不出（功能卡死不崩，更阴）。
+            try {
+                val client = ProviderClient(transportFactory(), GenerationSlot(), IdleWatchdog(IdleWatchdog.TRANSFER_IDLE_MS))
+                val listing = client.listModels(session)
+                val error = listing.error
+                if (error != null) errors = errors + (providerId to error.userMessage())
+                else if (listing.models.isEmpty()) errors = errors + (providerId to "端点回话正常，但没有认出任何模型名")
+                else {
+                    val customIds = settings.customModels.filter { it.providerId == providerId }.map { it.id }
+                    val prefixed = (listing.models.map { "$providerId:${it.removePrefix("models/")}" } + customIds).distinct()
+                    update { current -> current.copy(availableModels = current.availableModels + (providerId to prefixed)) }
+                }
+            } catch (t: Throwable) {
+                errors = errors + (providerId to "模型清单同步线程异常：${t.javaClass.simpleName}: ${t.message ?: "（无消息）"}")
+            } finally {
+                busyProviderId = null
+                drainQueue()
             }
-            drainQueue()
         }
         worker(Thread(body).apply { name = "hualuo-model-sync" })
     }
