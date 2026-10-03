@@ -59,9 +59,9 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  *
  * **模型胶囊不许吃掉整行**（2026-10-03 真机实报：「对话模型按钮没有缩写，导致发送按键没办法用了」）：
  * 以前这里直接把整条模型 id（`openrouter:stealth/space-bunny-alpha`）摆进去，
- * 胶囊无限宽 → 后面的发送钮被挤出屏幕，点不到。现在两处收口：
+ * 胶囊无限宽，于是后面的发送钮被挤出屏幕、点不到。现在两处收口：
  *  - 文字走 [currentModelChipText]（别名优先、剥 provider: 前缀、按上限截断）；
- *  - 胶囊自己 `widthIn(max = ...)` + 单行省略号（旧仓同款：胶囊宽上限 160dp 上下）。
+ *  - 胶囊自己 `widthIn(max = ...)` 加单行省略号（旧仓同款：胶囊宽上限 160dp 上下）。
  * 这两条是配套的：只截字不设上限，字短时胶囊仍可能撑；只设上限不截字，短屏上照样省略。
  *
  * 图形字符一律走资源（`stringResource(IconKey.X.resId)`）—— 家规，闸门 NoEmojiInSourceTest。
