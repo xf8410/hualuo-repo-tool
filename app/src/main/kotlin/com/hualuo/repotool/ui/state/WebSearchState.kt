@@ -7,26 +7,25 @@ import com.hualuo.engine.search.SearchProviders
 /**
  * 网页搜索设置舱：选哪家、那家的密钥、SearXNG 实例地址、默认条数。
  *
- * 与 [ObserveUiState] 同一路数：值一律落设置文件（键名见 [UiKeys]），
- * **执行那一刻现读**（[config] 每次都重新读一遍底层存储，不缓存），所以设置页改完
- * 下一句对话就生效，不用重启。界面重算靠读底层（[UiPersistence.load] 走的是同一份
- * SettingsStore 快照），不需要这里再存一份影子状态。
+ * **收口靠界面那条活通道**：取值与存值都由 [AppUiState] 的 `text` / `setText` 进来，
+ * 于是本舱天然跟着自动保存与重组走（不用另存一份影子状态，那正是「两份事实」的老病）。
+ *
+ * **执行那一刻现读**：[config] 每次重新拼一份，不缓存 —— 设置页改完下一句对话就生效。
  *
  * 读侧的收口规矩（都在这里做，别散在界面里）：
  *  - 认不出的提供商 id 回默认那家（[SearchProviders.normalize]）：设置文件是手可编辑的，
  *    手输错字不许把网页工具打死；
  *  - 密钥去空白，空串就是「没配」：界面据此显出提示，不假装有钥匙；
- *  - 条数读不懂回 5、越界夹到 1..10。
+ *  - 条数读不懂回 5、越界夹到 1..10（模型给的 num_results 之外还有这一道收口）。
  */
 class WebSearchState(
-    private val persist: UiPersistence,
-    /** 改值后推一格修订号：根界面的自动保存看护只盯这一个数，界面增删字段不用改看护点。 */
-    private val bumpRevision: () -> Unit = {},
+    private val load: (String) -> String,
+    private val save: (String, String) -> Unit,
 ) {
 
     /** 当前那家（认过 id 的，脏值已回默认）。 */
     val provider: SearchProviderInfo
-        get() = SearchProviders.normalize(persist.load(UiKeys.WEB_SEARCH_PROVIDER))
+        get() = SearchProviders.normalize(load(UiKeys.WEB_SEARCH_PROVIDER))
 
     /** 这家要不要密钥（决定显不显密钥框）。 */
     val needsKey: Boolean get() = provider.needsKey
@@ -35,13 +34,16 @@ class WebSearchState(
     val usesBaseUrl: Boolean get() = provider.usesBaseUrl
 
     /** 当前那家的密钥（没配就是空串）。 */
-    fun apiKey(): String = persist.load(UiKeys.webSearchKey(provider.id)).orEmpty()
+    fun apiKey(): String = load(UiKeys.webSearchKey(provider.id)).trim()
 
     /** 自托管实例地址（没填就是空串，执行侧会回退到公共实例）。 */
-    fun baseUrl(): String = persist.load(UiKeys.WEB_SEARCH_BASE_URL).orEmpty()
+    fun baseUrl(): String = load(UiKeys.WEB_SEARCH_BASE_URL).trim().trimEnd('/')
 
     /** 默认返回条数（1..10，读不懂回 5）。 */
-    fun numResults(): Int = readWebSearchNumResults(persist)
+    fun numResults(): Int =
+        load(UiKeys.WEB_SEARCH_NUM_RESULTS).trim().toIntOrNull()
+            ?.coerceIn(SearchConfig.MIN_NUM_RESULTS, SearchConfig.MAX_NUM_RESULTS)
+            ?: SearchConfig.DEFAULT_NUM_RESULTS
 
     /** 换一家：id 落设置；**不动其它家的密钥**（换一家不丢上一家的钥匙）。 */
     fun setProvider(id: String) {
@@ -60,7 +62,15 @@ class WebSearchState(
     }
 
     /** 引擎件要的配置快照（现读现拼，不缓存）。 */
-    fun config(): SearchConfig = readWebSearchConfig(persist)
+    fun config(): SearchConfig {
+        val info = provider
+        return SearchConfig(
+            providerId = info.id,
+            apiKey = apiKey(),
+            baseUrl = baseUrl(),
+            numResults = numResults(),
+        )
+    }
 
     /** 界面上那一句「现在会用谁」：认过 id 的名字，不是手输的原始串。 */
     fun providerLabel(): String = provider.name
@@ -73,11 +83,5 @@ class WebSearchState(
         } else {
             "${info.name}：每搜最多 ${numResults()} 条"
         }
-    }
-
-    private fun save(key: String, value: String) {
-        if (persist.load(key) == value) return
-        persist.save(key, value)
-        bumpRevision()
     }
 }
