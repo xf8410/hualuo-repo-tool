@@ -6,20 +6,17 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,12 +53,25 @@ import com.hualuo.repotool.ui.theme.ErrRed
  * 「所有语言」的落点：扩展名全量映射（认不得的也按纯文本照显，永不报不支持）；
  * 「所有格式」的落点：文本按行块看、二进制按页 hex 看、上传分卷流式（无大小上限、
  * 断点续传、进度条实时）。
+ *
+ * 【本卡不许自己滚动 —— 2026-10-03 崩溃修复留下的家规】
+ * 工具页 ToolsScreen 整页已经在 Column(verticalScroll) 里滚；这张卡以前又自己套了一层
+ * fillMaxSize().verticalScroll()，于是内层滚动容器被外层以「无限高」约束测量，
+ * Android 16 上当场 IllegalStateException（崩溃现场 2026-10-03 10:47:33 与 10:49:50，
+ * 一分钟连崩 8 次）。同理，卡里的行列表也不能再用 LazyColumn（纵向惰性列表放进纵向滚动
+ * 列里一样炸），改成分段（LINE_PAGE 行一段）+ 上下段按钮，行内横向滚动不受影响。
+ * 判据一句话：**整页只留一个纵向滚动容器，纵向列表一律分段不嵌套。**
  */
+private const val LINE_PAGE = 300
+
 @Composable
 fun ViewerCard(state: AppUiState) {
     val v = state.viewer
     val ctx = LocalContext.current
     var fontSize by remember { mutableStateOf(12f) }
+    var linePage by remember { mutableStateOf(0) }
+    // 换文件就回到第一段，别拿上一页的段号去数新文件
+    LaunchedEffect(v.openedName) { linePage = 0 }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -75,9 +85,8 @@ fun ViewerCard(state: AppUiState) {
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 14.dp)
-            .verticalScroll(rememberScrollState()),
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp),
     ) {
         Spacer(Modifier.height(8.dp))
 
@@ -108,11 +117,24 @@ fun ViewerCard(state: AppUiState) {
                         TextButton(onClick = { v.loadMoreText() }) { Text("加载更多") }
                     }
                 }
-                LazyColumn(modifier = Modifier.height(420.dp)) {
-                    items(v.textLines.size) { i ->
-                        val line = v.textLines[i]
+                val total = v.textLines.size
+                val from = (linePage * LINE_PAGE).coerceIn(0, maxOf(0, total - 1))
+                val to = (from + LINE_PAGE).coerceAtMost(total)
+                Text(
+                    "第 ${from + 1}-$to 行 / 共 $total 行" + if (v.hasMoreText) "（后面还有没读进来的）" else "",
+                    fontSize = 11.5.sp,
+                    color = SubInk,
+                )
+                if (total > LINE_PAGE) {
+                    Row {
+                        TextButton(enabled = linePage > 0, onClick = { linePage -= 1 }) { Text("上一段") }
+                        TextButton(enabled = to < total, onClick = { linePage += 1 }) { Text("下一段") }
+                    }
+                }
+                Column {
+                    for (i in from until to) {
                         Text(
-                            text = colorized(line, v),
+                            text = colorized(v.textLines[i], v),
                             fontSize = fontSize.sp,
                             fontFamily = FontFamily.Monospace,
                             lineHeight = (fontSize * 1.4f).sp,
@@ -132,9 +154,8 @@ fun ViewerCard(state: AppUiState) {
                     TextButton(onClick = { v.loadHexPage((v.hexOffset - 4096).coerceAtLeast(0)) }) { Text("上一页") }
                     TextButton(onClick = { v.loadHexPage(v.hexOffset + 4096) }) { Text("下一页") }
                 }
-                LazyColumn(modifier = Modifier.height(360.dp)) {
-                    items(v.hexRows.size) { i ->
-                        val r = v.hexRows[i]
+                Column {
+                    for (r in v.hexRows) {
                         Text(
                             text = buildAnnotatedString {
                                 append(String.format("%08x  ", r.offset))
@@ -229,7 +250,7 @@ private fun FieldLine(label: String, value: String, onChange: (String) -> Unit) 
     }
 }
 
-/** 一行文本的染色账（行内现算，行数多时只染可见行——LazyColumn 天然惰性）。 */
+/** 一行文本的染色账（行内现算；分段显示，行数再多也只画当前这段）。 */
 private fun colorized(line: String, v: com.hualuo.repotool.ui.state.ViewerUiState): AnnotatedString {
     return buildAnnotatedString {
         append(line)
