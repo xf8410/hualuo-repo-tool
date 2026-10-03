@@ -32,10 +32,10 @@ fun searchConfigFrom(load: (String) -> String): SearchConfig {
 fun searchProviderFrom(load: (String) -> String): SearchProviderInfo =
     SearchProviders.normalize(load(UiKeys.WEB_SEARCH_PROVIDER))
 
-/** 默认条数：读不懂回 5，越界夹到 1..10。 */
+/** 默认条数：读不懂回 5，越界夹到范围里。 */
 fun searchNumResultsFrom(load: (String) -> String): Int =
     load(UiKeys.WEB_SEARCH_NUM_RESULTS).trim().toIntOrNull()
-        ?.coerceIn(SearchConfig.MIN_NUM_RESULTS, SearchConfig.MAX_NUM_RESULTS)
+        ?.coerceIn(SearchProviders.MIN_RESULTS, SearchProviders.MAX_RESULTS)
         ?: SearchConfig.DEFAULT_NUM_RESULTS
 
 /**
