@@ -3,12 +3,12 @@ package com.hualuo.repotool.ui.state
 import com.hualuo.engine.api.ModelRef
 
 /**
- * 模型在屏上叫什么名字（纯函数，界面层与纯 JVM 测试共用这一份）。
+ * 模型在屏上叫什么名字。纯函数收口 + 一处现场读设置，界面层只管画。
  *
- * 为什么单独成件：模型 id 长这样 `openrouter:stealth/space-bunny-alpha`，
- * 直接摆进输入区那排胶囊会把整行撑爆——2026-10-03 机主实报「对话模型按钮没有缩写，
- * 导致发送按键没办法用了」：发送钮被挤出屏幕，点不到。收口规矩写在这里，
- * 界面只负责画，规矩不许散到各个调用点。
+ * 为什么单独成件：模型 id 长这样 `openrouter:stealth/space-bunny-alpha`。
+ * 以前输入区那排胶囊直接把它整条塞进去，于是胶囊吃掉整行宽度，
+ * 发送钮被挤出屏幕点不到 —— 2026-10-03 机主实报「对话模型按钮没有缩写，
+ * 导致发送按键没办法用了」。收口规矩写在这里，调用点不许各写一套。
  *
  * 三条口径（照旧仓那排胶囊的形状：别名优先，其次模型原名，再缀提供商）：
  *  1. 有别名就叫别名（人自己起的名字最要紧）；
@@ -16,13 +16,13 @@ import com.hualuo.engine.api.ModelRef
  *  3. 还要缩：超过上限就截断加省略号，界面上再做一次 ellipsis，双保险。
  */
 
-/** 一个模型都没选时屏上摆这句（不许摆空白格，空白会被当成没这回事）。 */
+/** 一个模型都没选（或选的那个没启用）时屏上摆这句，不许摆空白格。 */
 const val MODEL_UNPICKED = "未选择"
 
-/** 输入区那排胶囊里的上限（Agora 同款：胶囊宽上限 160dp 上下，名字放不下就缩）。 */
+/** 输入区那排胶囊里的上限（旧仓同款：胶囊宽有上限，名字放不下就缩）。 */
 const val MODEL_CHIP_MAX_CHARS = 18
 
-/** 切换列表里的上限（列表比胶囊宽，少缩一点）。 */
+/** 切换列表与设置卡片里的上限（比胶囊宽，少缩一点）。 */
 const val MODEL_ROW_MAX_CHARS = 30
 
 /** 屏上显示名：别名优先，其次模型原名（剥掉 provider: 与 models/ 前缀），再退回整条 id。 */
@@ -36,8 +36,8 @@ fun modelDisplayName(modelId: String, alias: String?): String {
 }
 
 /**
- * 带提供商的一句：`名 (提供商)`。提供商为空就只写名（自加模型挂的提供商名可能是空的，
- * 那时硬凑一个括号只会更难读）。
+ * 带提供商的一句：`名 (提供商)`。提供商为空就只写名
+ * （自加模型挂的提供商名可能取不到，硬凑一个括号只会更难读）。
  */
 fun modelLabelWithProvider(modelId: String, alias: String?, providerName: String?): String {
     val name = modelDisplayName(modelId, alias)
@@ -55,3 +55,35 @@ fun abbreviateModelLabel(label: String, maxChars: Int): String {
 /** 胶囊与列表直接用的一句：带提供商 + 按上限截断。 */
 fun modelChipText(modelId: String, alias: String?, providerName: String?, maxChars: Int): String =
     abbreviateModelLabel(modelLabelWithProvider(modelId, alias, providerName), maxChars)
+
+/** 别名与提供商名从模型设置里现场取；设置句柄没挂上就两个都给空（不许因此崩，界面照常画）。 */
+private fun aliasAndProvider(modelId: String): Pair<String?, String?> {
+    val models = ModelSettingsRuntime.current() ?: return null to null
+    val alias = models.settings.aliases[modelId]
+    val providerId = ModelRef.parse(modelId).providerId
+    val providerName = if (providerId.isBlank()) null else models.displayProviderName(providerId)
+    return alias to providerName
+}
+
+/**
+ * 当前模型在设置卡片与切换列表里的那一句（不缩，留给有横向空间的地方）。
+ * 选中的模型没在已启用清单里就说「未选择」——那才是真话（旧仓同款口径）。
+ */
+fun currentModelLabel(state: AppUiState): String {
+    val models = ModelSettingsRuntime.current()
+    if (models != null && models.selectedModels().none { it.id == state.currentModel }) {
+        return MODEL_UNPICKED
+    }
+    val (alias, provider) = aliasAndProvider(state.currentModel)
+    return modelLabelWithProvider(state.currentModel, alias, provider)
+}
+
+/** 当前模型在输入区胶囊上的那一句：按 [MODEL_CHIP_MAX_CHARS] 截断，胶囊宽度因此有上限。 */
+fun currentModelChipText(state: AppUiState): String {
+    val models = ModelSettingsRuntime.current()
+    if (models != null && models.selectedModels().none { it.id == state.currentModel }) {
+        return MODEL_UNPICKED
+    }
+    val (alias, provider) = aliasAndProvider(state.currentModel)
+    return modelChipText(state.currentModel, alias, provider, MODEL_CHIP_MAX_CHARS)
+}
