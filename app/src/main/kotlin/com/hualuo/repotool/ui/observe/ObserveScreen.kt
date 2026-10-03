@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,10 +38,17 @@ import com.hualuo.repotool.ui.state.AppUiState
  *
  * 红线：全只读——本页只发 GET；18767 端口冻结不碰；写类端点
  * （sniff toggle/clear、update、il2cpp/call）在工具族与本页都不存在。
+ *
+ * 【事件流为什么不滚】本页整页在 Column(verticalScroll) 里滚，里面再放纵向惰性列表
+ * 就是同一场事故（内层拿无限高约束 → IllegalStateException）。事件流改成**分段**：
+ * 最新的一段摆在最上，往上翻点「更旧」，每段 EV_PAGE 行。
  */
+private const val EV_PAGE = 40
+
 @Composable
 fun ObserveScreen(state: AppUiState) {
     val o = state.observe
+    var evPage by remember { mutableStateOf(0) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -119,8 +124,24 @@ fun ObserveScreen(state: AppUiState) {
             }
             if (o.eventNote != null) Text(o.eventNote!!, fontSize = 11.5.sp, color = com.hualuo.repotool.ui.theme.SubInk)
             if (o.eventRows.isNotEmpty()) {
-                LazyColumn(modifier = Modifier.fillMaxWidth().height(260.dp)) {
-                    items(o.eventRows.size) { i ->
+                val total = o.eventRows.size
+                val pageCount = (total + EV_PAGE - 1) / EV_PAGE
+                val page = evPage.coerceIn(0, pageCount - 1)
+                val end = total - page * EV_PAGE
+                val start = maxOf(0, end - EV_PAGE)
+                Text(
+                    "第 ${page + 1}/$pageCount 段 · 摆的是第 ${start + 1}-$end 条（共 $total 条，最新在上）",
+                    fontSize = 11.5.sp,
+                    color = com.hualuo.repotool.ui.theme.SubInk,
+                )
+                if (pageCount > 1) {
+                    Row {
+                        TextButton(enabled = page > 0, onClick = { evPage = page - 1 }) { Text("更新的一段") }
+                        TextButton(enabled = page < pageCount - 1, onClick = { evPage = page + 1 }) { Text("更旧的一段") }
+                    }
+                }
+                Column {
+                    for (i in end - 1 downTo start) {
                         Text(
                             o.eventRows[i],
                             fontSize = 11.sp,
