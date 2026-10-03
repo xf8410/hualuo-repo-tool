@@ -1,0 +1,44 @@
+name: 功能·语言高亮批次
+on:
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: "留空=整批五个语言；填 c / cpp / csharp / javascript / typescript 只跑那一个"
+        required: false
+        default: ""
+
+jobs:
+  lang_highlight:
+    name: "语法高亮与查看器着色 · ${{ matrix.label }}"
+    runs-on: ubuntu-latest
+    # 单个语言失败不许掐掉整批：五个语言互不相干，掐了就白跑
+    if: ${{ inputs.lang == '' || inputs.lang == matrix.lang }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lang: c
+            label: "C（c）"
+          - lang: cpp
+            label: "C++（cpp）"
+          - lang: csharp
+            label: "C#（csharp）"
+          - lang: javascript
+            label: "JavaScript（javascript）"
+          - lang: typescript
+            label: "TypeScript（typescript）"
+    steps:
+      - name: 取代码
+        uses: actions/checkout@v4
+
+      - name: 装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: 装 Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 只跑这个语言那一条测试
+        run: ./gradlew :engine:test --tests "com.hualuo.engine.language.LanguageHighlightMatrixTest._${{ matrix.lang }}Case" --stacktrace
