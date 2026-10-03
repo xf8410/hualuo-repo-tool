@@ -51,12 +51,9 @@ class ViewerUiState(private val persist: UiPersistence) {
     // ── 进制换算卡 ──
     var radixInput by mutableStateOf("255")
     var radixView by mutableStateOf<HexDump.RadixView?>(null)
-    private set
     var radixNote by mutableStateOf<String?>(null)
-        private set
     var floatInput by mutableStateOf("1.5")
     var floatView by mutableStateOf<HexDump.FloatView?>(null)
-        private set
 
     // ── 上传 ──
     var uploadRepo by mutableStateOf(persist.load(UiKeys.GITHUB_REPO) ?: "")
