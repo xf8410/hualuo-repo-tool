@@ -7,7 +7,6 @@ import java.net.URL
 import java.net.URLEncoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -17,7 +16,7 @@ import kotlinx.serialization.json.contentOrNull
  *
  * 移植口径（照旧仓 `WebSearchToolProvider` 与 `DuckDuckGoScraper` 逐条对齐，只搬行为不搬依赖）：
  *  - **密钥只进请求头/请求体**，绝不进任何结果文本与报错（GitHub 那条老规矩一样）；
- *  - **失败要能行动**：没配密钥就说「去设置里配」，实例地址空就说走公共实例，
+ *  - **失败要能行动**：没配密钥就说「去设置里配」，实例地址空就走公共实例，
  *    非 2xx 带状态码，形状不认识就说形状变了——绝不拿空列表冒充「搜完没有」；
  *  - **取网动作经 [fetch] 缝隙注入**：纯 JVM 测试喂假响应，绝不碰真网；
  *  - **响应有界**（[FETCH_CHAR_CAP] 字符封顶），一家回一兆 HTML 也不许撑爆内存；
@@ -74,12 +73,13 @@ class ProviderSearchClient(
     // ---------- 请求怎么拼 ----------
 
     private fun buildRequest(info: SearchProviderInfo, cfg: SearchConfig, query: String): SearchRequest {
-        val q = URLEncoder.encode(query, "UTF-8")
+        val encoded = URLEncoder.encode(query, "UTF-8")
         val key = cfg.cleanedKey
+        val count = cfg.cappedNumResults
         return when (info.id) {
             SearchProviders.BRAVE -> SearchRequest(
                 method = "GET",
-                url = "https://api.search.brave.com/res/v1/web/search?q=$q&count=${cfg.cappedNumResults}",
+                url = "https://api.search.brave.com/res/v1/web/search?q=$encoded&count=$count",
                 headers = listOf(
                     "Accept" to "application/json",
                     "X-Subscription-Token" to key,
@@ -89,19 +89,19 @@ class ProviderSearchClient(
                 method = "POST",
                 url = "https://google.serper.dev/search",
                 headers = listOf("Content-Type" to "application/json", "X-API-KEY" to key),
-                body = """{"q":"$query","num":${cfg.cappedNumResults}}""",
+                body = """{"q":"$query","num":$count}""",
             )
             SearchProviders.TAVILY -> SearchRequest(
                 method = "POST",
                 url = "https://api.tavily.com/search",
                 headers = listOf("Content-Type" to "application/json"),
-                body = """{"api_key":"$key","query":"$query","max_results":${cfg.cappedNumResults},""" +
+                body = """{"api_key":"$key","query":"$query","max_results":$count,""" +
                     """"search_depth":"advanced","include_answer":false}""",
             )
             SearchProviders.SEARXNG -> SearchRequest(
                 method = "GET",
-                // 自托管实例的 JSON 端点；实例地址来自设置，空值已在 cfg.effectiveBaseUrl 里回退到公共实例
-                url = "${cfg.effectiveBaseUrl}/search?q=$q&format=json",
+                // 自托管实例的 JSON 端点；实例地址来自设置，空值已在 effectiveBaseUrl 里回退到公共实例
+                url = "${cfg.effectiveBaseUrl}/search?q=$encoded&format=json",
                 headers = listOf("Accept" to "application/json", "User-Agent" to BROWSER_UA),
             )
             else -> throw IllegalStateException("未知提供商 ${info.id}：请求不该走到这里")
@@ -191,10 +191,13 @@ class ProviderSearchClient(
                 conn.disconnect()
             }
         }
-
-        /** 只读一个 JSON 字段的小工具（测试与解析共用，避免各处重复 cast）。 */
-        internal fun jsonField(text: String, key: String): String? =
-            ((runCatching { Json.parseToJsonElement(text) }.getOrNull() as? JsonObject)?.get(key)
-                as? JsonPrimitive)?.contentOrNull
     }
 }
+
+/** 一次搜索请求：方法、网址、头、请求体（GET 留 null）。传输细节全部封在取网缝隙里。 */
+data class SearchRequest(
+    val method: String,
+    val url: String,
+    val headers: List<Pair<String, String>> = emptyList(),
+    val body: String? = null,
+)
