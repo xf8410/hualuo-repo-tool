@@ -21,6 +21,13 @@ import java.io.File
  * 构造期从此零业务代码，崩溃观察器（attachBaseContext 最早挂）能罩住
  * 之后的一切 Java 异常；modelSettings 本就是 lazy，首次使用自然挂上，
  * 行为与预热版一字不差（RootScreen 取 uiState 时才真正触达）。
+ *
+ * 【2026-10-03 修】上面那句「挪到 onCreate」当时只改了注释、没落地代码：
+ * 构造器里的预热删了，onCreate 里也没补，于是 `install()` 只在那个 lazy 被
+ * **谁**首次触达时才发生——而没有任何人触达它（uiState 的构造里也不碰它）。
+ * 结果 `ModelSettingsRuntime.current()` 长期为 null，设置里的「提供商」「模型」
+ * 两页各自 `?: return`，整页空白（机主实报：「选择 API、已经选择模型，里面也是空的」）。
+ * 现在 onCreate 里显式预热一次，并且失败就把原因记进 ModelSettingsRuntime，界面照实出声。
  */
 class HualuoApplication : Application() {
 
@@ -103,6 +110,19 @@ class HualuoApplication : Application() {
         super.onCreate()
         // 幂等：attachBaseContext 已装过就跳过；这行只是双保险
         CrashObserver.install(this)
+        warmUpModelSettings()
+    }
+
+    /**
+     * 模型设置句柄预热：在崩溃观察器装好之后显式触达一次，别再指望「谁先用到谁触达」。
+     *
+     * 建不起来也不吞：原因记进 [ModelSettingsRuntime]，设置页照实摆出来，
+     * 不摆「整页什么也没有」这种最难查的形态。
+     */
+    private fun warmUpModelSettings() {
+        runCatching { modelSettings }.onFailure { e ->
+            ModelSettingsRuntime.recordFailure(e.message?.takeIf { it.isNotBlank() } ?: e::class.java.simpleName)
+        }
     }
 }
 
