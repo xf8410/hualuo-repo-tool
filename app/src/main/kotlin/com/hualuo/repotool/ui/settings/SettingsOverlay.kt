@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import kotlin.math.roundToInt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
@@ -115,6 +117,8 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.Sec -> Text(f.text, fontSize = 13.sp, color = Accent, modifier = Modifier.padding(6.dp))
                 is SubField.PersistedText -> PersistedTextField(state, f)
                 is SubField.PersistedSwitch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = state.flag(f.key, f.defaultOn); SwitchPill(on) { state.setFlag(f.key, !on) } }
+                is SubField.PersistedSlider -> PersistedSliderField(state, f)
+                is SubField.PersistedSeg -> PersistedSegField(state, f)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.GithubLogin -> GithubLoginCard(state)
                 SubField.ProviderSettings -> ProviderSettingsPanel(state)
@@ -122,6 +126,64 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.Note -> Text(f.text, fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(6.dp))
                 is SubField.Button -> Text(f.text, color = Accent, modifier = Modifier.fillMaxWidth().clickable { f.actionKey?.let(state::requestDataAction) ?: state.toast("已提交（演示，接线后生效）") }.padding(14.dp))
                 else -> Text(f.toString(), fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(8.dp))
+            }
+        }
+    }
+}
+
+/** 落盘滑块：拖动写 [SubField.PersistedSlider.key]，显示值带位数格式化。 */
+@Composable
+private fun PersistedSliderField(state: AppUiState, f: SubField.PersistedSlider) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth()) {
+            Text(f.label, fontSize = 13.sp, color = SubInk)
+            Spacer(Modifier.weight(1f))
+            Text("%.${f.digits}f".format(persistedSliderValue(state, f)), fontSize = 13.sp, color = Ink)
+        }
+        val value = persistedSliderValue(state, f)
+        androidx.compose.material3.Slider(
+            value = value.toFloat(),
+            onValueChange = { raw ->
+                // 步进对齐：拖到最近格点，避免存出 0.7333 这种既不步进也难读的值
+                val stepped = (raw / f.step).roundToInt() * f.step
+                val clamped = stepped.coerceIn(f.min, f.max)
+                state.setText(f.key, "%.${f.digits}f".format(clamped))
+            },
+            valueRange = f.min.toFloat()..f.max.toFloat(),
+        )
+        Row(Modifier.fillMaxWidth()) {
+            Text("%.${f.digits}f".format(f.min), fontSize = 11.sp, color = SubInk)
+            Spacer(Modifier.weight(1f))
+            Text("%.${f.digits}f".format(f.max), fontSize = 11.sp, color = SubInk)
+        }
+    }
+}
+
+private fun persistedSliderValue(state: AppUiState, f: SubField.PersistedSlider): Double {
+    val stored = state.text(f.key).toDoubleOrNull() ?: f.default
+    return stored.coerceIn(f.min, f.max)
+}
+
+/** 落盘选项组：点选写 [SubField.PersistedSeg.key]（存 value 不存显示名）。 */
+@Composable
+private fun PersistedSegField(state: AppUiState, f: SubField.PersistedSeg) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text(f.label, fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth()) {
+            f.options.forEach { choice ->
+                val selected = state.text(f.key, f.default) == choice.value
+                Text(
+                    choice.name,
+                    fontSize = 13.sp,
+                    color = if (selected) Accent else SubInk,
+                    modifier = Modifier
+                        .padding(end = 6.dp, bottom = 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .then(if (selected) Modifier.border(1.dp, Accent, RoundedCornerShape(12.dp)) else Modifier)
+                        .clickable { state.setText(f.key, choice.value) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
             }
         }
     }

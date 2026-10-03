@@ -37,13 +37,13 @@ class OpenAiCompatClient(
     private val sleeper: (Long) -> Unit = ::napQuietly,
 ) {
     // route 放在 onText 前，保证旧的 chatTurns(..., tools) { chunk -> } 尾随 lambda 仍绑定 onText。
-    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, maxTokens: Int? = null, route: Boolean = true, onText: (String) -> Unit): ChatOutcome {
+    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, route: Boolean = true, onText: (String) -> Unit): ChatOutcome {
         val routed = if (route) ProviderRouting.sessionFor(profile.model) else null
         if (routed != null && routed.protocol != ProviderProtocol.OPENAI_COMPAT) return ProviderClient(transport, slot, watchdog).chatTurns(routed, history, tools, onText)
         val active = routed?.profile ?: profile
         if (active.baseUrl.isBlank()) return ChatOutcome.Failed(GenerationError.Configuration("「${active.name}」没填 base URL，没东西可发"))
         if (history.none { it.content.isNotBlank() || it.toolCalls.isNotEmpty() || it.role == "tool" }) return ChatOutcome.Failed(GenerationError.Configuration("这条对话是空的，不花这个钱"))
-        val request = WireRequest(url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(active.baseUrl), CHAT_SUFFIX), method = "POST", headers = headersFor(active, true), body = chatBody(active, history, temperature, maxTokens, tools))
+        val request = WireRequest(url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(active.baseUrl), CHAT_SUFFIX), method = "POST", headers = headersFor(active, true), body = chatBody(active, history, temperature, topP, maxTokens, tools))
         val runner = ChatWireRunner(transport, slot, policy, watchdog, providerLabel = active.name, sleeper = sleeper)
         return when (val result = runner.run(request, RequestCost.Costly, onText)) {
             is ChatRunResult.Ok -> ChatOutcome.Text
@@ -52,7 +52,7 @@ class OpenAiCompatClient(
         }
     }
 
-    fun chat(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit): GenerationError? = when (val outcome = chatTurns(profile, history, emptyList(), temperature, maxTokens, onText = onText)) {
+    fun chat(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit): GenerationError? = when (val outcome = chatTurns(profile, history, emptyList(), temperature, topP, maxTokens, onText = onText)) {
         ChatOutcome.Text -> null
         is ChatOutcome.Calls -> GenerationError.Configuration("模型回了工具调用，但这轮请求没带工具清单（形状异常）：按错误报，别装没看见")
         is ChatOutcome.Failed -> outcome.error
@@ -86,8 +86,8 @@ class OpenAiCompatClient(
 
     private fun headersFor(profile: ProviderProfile, acceptSse: Boolean): List<Pair<String, String>> = buildList { add("content-type" to "application/json; charset=utf-8"); if (acceptSse) add("accept" to "text/event-stream"); if (profile.apiKey.isNotBlank()) add("authorization" to "Bearer ${profile.apiKey}") }
 
-    private fun chatBody(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double?, maxTokens: Int?, tools: List<ToolSpec>): String = buildJsonObject {
-        put("model", profile.model); put("stream", true); temperature?.let { put("temperature", it) }; maxTokens?.let { put("max_tokens", it) }
+    private fun chatBody(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double?, topP: Double?, maxTokens: Int?, tools: List<ToolSpec>): String = buildJsonObject {
+        put("model", profile.model); put("stream", true); temperature?.let { put("temperature", it) }; topP?.let { put("top_p", it) }; maxTokens?.let { put("max_tokens", it) }
         putJsonArray("messages") { history.forEach { turn -> addJsonObject {
             put("role", turn.role)
             if (turn.role == "tool") { put("tool_call_id", turn.toolCallId ?: ""); put("content", turn.content) }
