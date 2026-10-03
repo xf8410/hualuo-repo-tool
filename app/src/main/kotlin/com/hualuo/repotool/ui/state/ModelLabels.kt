@@ -16,7 +16,7 @@ import com.hualuo.engine.api.ModelRef
  *  3. 还要缩：超过上限就截断加省略号，界面上再做一次 ellipsis，双保险。
  */
 
-/** 一个模型都没选（或选的那个没启用）时屏上摆这句，不许摆空白格。 */
+/** 一个模型都没选时屏上摆这句，不许摆空白格（空白会被当成没这回事）。 */
 const val MODEL_UNPICKED = "未选择"
 
 /** 输入区那排胶囊里的上限（旧仓同款：胶囊宽有上限，名字放不下就缩）。 */
@@ -67,23 +67,27 @@ private fun aliasAndProvider(modelId: String): Pair<String?, String?> {
 
 /**
  * 当前模型在设置卡片与切换列表里的那一句（不缩，留给有横向空间的地方）。
- * 选中的模型没在已启用清单里就说「未选择」——那才是真话（旧仓同款口径）。
+ *
+ * 「已启用清单里没有它」这件事只在**清单非空**时才改口成「未选择」：
+ * 清单空着的时候说「未选择」是撒谎（屏上明明摆着一个 id，而且发送照它走），
+ * 那种场合照实摆名字，让「去勾模型」的话由设置页自己说。
  */
 fun currentModelLabel(state: AppUiState): String {
-    val models = ModelSettingsRuntime.current()
-    if (models != null && models.selectedModels().none { it.id == state.currentModel }) {
-        return MODEL_UNPICKED
-    }
     val (alias, provider) = aliasAndProvider(state.currentModel)
+    if (isUnpicked(state)) return MODEL_UNPICKED
     return modelLabelWithProvider(state.currentModel, alias, provider)
 }
 
 /** 当前模型在输入区胶囊上的那一句：按 [MODEL_CHIP_MAX_CHARS] 截断，胶囊宽度因此有上限。 */
 fun currentModelChipText(state: AppUiState): String {
-    val models = ModelSettingsRuntime.current()
-    if (models != null && models.selectedModels().none { it.id == state.currentModel }) {
-        return MODEL_UNPICKED
-    }
     val (alias, provider) = aliasAndProvider(state.currentModel)
+    if (isUnpicked(state)) return MODEL_UNPICKED
     return modelChipText(state.currentModel, alias, provider, MODEL_CHIP_MAX_CHARS)
+}
+
+/** 清单非空、而当前这个不在里面 = 摆着一个用不了的模型名，那才是真话。 */
+private fun isUnpicked(state: AppUiState): Boolean {
+    val models = ModelSettingsRuntime.current() ?: return false
+    val enabled = models.selectedModels()
+    return enabled.isNotEmpty() && enabled.none { it.id == state.currentModel }
 }
