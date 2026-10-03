@@ -1,14 +1,15 @@
 package com.hualuo.engine.search
 
 /**
- * 搜索引擎件：五家提供商的静态事实表与搜索配置。
+ * 搜索提供商的静态事实表（五家，与旧 Agora 内置那五家逐字对齐）。
  *
- * 这张表是**唯一事实源**：设置页摆哪几行、工具页标题写谁的名字、引擎发请求时选哪条路，
- * 全从这里读，不允许别处再抄一份 id 列表（旧仓那种「界面写一份、执行写一份」的漂移）。
+ * 这张表是**唯一事实源**：设置页摆哪几行、工具页标题写谁的名字、引擎发请求时选哪条路、
+ * 旧备份兑换时认哪几个 id，全从这里读，不允许别处再抄一份 id 列表
+ * （旧仓那种「界面写一份、执行写一份」的漂移就是从这儿开始的）。
  *
  * 三条纪律：
  *  - **认不出的 id 一律回默认那家**（设置文件是手可编辑的文本，脏值不许把网页工具打死）；
- *  - 要不要密钥、要不要实例地址是**静态事实**，界面按它决定显不显示密钥框；
+ *  - 要不要密钥、要不要实例地址是**静态事实**，界面按它决定显不显示那一格；
  *  - 免费档（DuckDuckGo）不是 API，是抓 HTML：它走 [WebSearchClient] 那条老路，
  *    不进 [ProviderSearchClient] 的 JSON 分支。
  */
@@ -35,6 +36,10 @@ object SearchProviders {
 
     /** SearXNG 没填地址时走公共实例（旧仓同一条默认；自建实例更稳）。 */
     const val DEFAULT_SEARXNG_BASE = "https://searx.be"
+
+    /** 返回条数的下界与上界（设置里的滑条、模型给的 num_results，两头都按它夹）。 */
+    const val MIN_RESULTS = 1
+    const val MAX_RESULTS = 10
 
     private val TABLE: List<SearchProviderInfo> = listOf(
         SearchProviderInfo(
@@ -108,19 +113,18 @@ data class SearchConfig(
     /** 密钥去空白；空串就是「没配」，界面据此提示。 */
     val cleanedKey: String get() = apiKey.trim()
 
-    /** 实例地址去空白与尾部斜杠；SearXNG 空地址回公共实例。 */
+    /** 实例地址去空白与尾部斜杠。 */
     val cleanedBaseUrl: String get() = baseUrl.trim().trimEnd('/')
 
+    /** 自托管引擎实际要用的地址：没填就走公共实例。 */
     val effectiveBaseUrl: String
         get() = cleanedBaseUrl.ifEmpty { SearchProviders.DEFAULT_SEARXNG_BASE }
 
-    /** 条数夹在 1 到 10（模型给的 num_results 也会再夹一次，两头都收口）。 */
+    /** 条数夹在范围内（模型给的 num_results 也会再夹一次，两头都收口）。 */
     val cappedNumResults: Int
-        get() = numResults.coerceIn(MIN_NUM_RESULTS, MAX_NUM_RESULTS)
+        get() = numResults.coerceIn(SearchProviders.MIN_RESULTS, SearchProviders.MAX_RESULTS)
 
     companion object {
         const val DEFAULT_NUM_RESULTS = 5
-        const val MIN_NUM_RESULTS = 1
-        const val MAX_NUM_RESULTS = 10
     }
 }
