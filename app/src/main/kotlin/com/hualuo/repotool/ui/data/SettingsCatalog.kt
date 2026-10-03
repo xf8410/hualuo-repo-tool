@@ -36,6 +36,13 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("出图存到应用目录 tool_images 下，回执里报路径。"),
         ),
     ),
+    "websearch" to SubPage(
+        "网页搜索",
+        listOf(
+            SubField.WebSearchSettings,
+            SubField.Note("五家沿用内置那五家（移植不重写）：DuckDuckGo 免密钥但可能触发反爬，SearXNG 建议自建实例。"),
+        ),
+    ),
     "retry" to SubPage(
         "失败与重试",
         listOf(

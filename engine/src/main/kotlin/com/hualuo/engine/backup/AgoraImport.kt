@@ -1,5 +1,7 @@
 package com.hualuo.engine.backup
 
+import com.hualuo.engine.search.SearchProviderInfo
+import com.hualuo.engine.search.SearchProviders
 import com.hualuo.engine.store.SessionHead
 import com.hualuo.engine.store.StoredMsg
 import kotlinx.serialization.json.Json
@@ -58,6 +60,8 @@ data class AgoraSettings(
     val thinkingLevel: String? = null,
     val codeExecutionEnabled: Boolean? = null,
     val webSearchEnabled: Boolean? = null,
+    val webSearchProvider: String? = null,
+    val webSearchBaseUrl: String? = null,
     val shellEnabled: Boolean? = null,
     val activeSystemPromptId: String? = null,
 )
@@ -123,6 +127,12 @@ data class AgoraImportPlan(
     val thinkingLevel: Int? = null,
     val codeExecOn: Boolean? = null,
     val webSearchOn: Boolean? = null,
+    /** 网页搜索提供商（只认五家里的 id，认不出当没这格，另在 notes 里点名）。 */
+    val webSearchProvider: String? = null,
+    /** 各家网页搜索的密钥，按家分开（沿用旧仓那张 webSearchApiKeys 表的语义）。 */
+    val webSearchApiKeys: Map<String, String> = emptyMap(),
+    /** SearXNG 实例地址（旧仓叫 webSearchBaseUrl；只对自托管那家有意义）。 */
+    val webSearchBaseUrl: String? = null,
     val shellOn: Boolean? = null,
     val systemPrompt: String? = null,
     val sessions: List<AgoraSessionPlan> = emptyList(),
@@ -133,6 +143,9 @@ data class AgoraImportPlan(
 const val MAX_AGORA_CONVERSATION_CHARS = 48 * 1024 * 1024
 
 private const val MAX_SMALL_ENTRY_CHARS = 2 * 1024 * 1024
+
+/** 旧仓 SecretCrypto 的密文前缀（见 docs/DECISIONS.md 的 D-10 第 4 条：本仓解不开）。 */
+const val AGORA_LEGACY_CIPHER_PREFIX = "enc:v1:"
 
 /**
  * 读旧 Agora 备份：单趟 zip 流（不整包进内存），五个条目各有界收进，
@@ -183,6 +196,32 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
     val apiKey = keyEntry?.key?.takeIf { it.isNotBlank() }
     if (keys.apiKeys.isNotEmpty() && apiKey == null) {
         notes.add("密钥没兑出来：激活记录对不上钥匙清单（旧包里 key 列表可能是空的）")
+    }
+
+    // ── 网页搜索：提供商 + 各家密钥 + 自托管实例地址 ────────────────────────
+    val searchRaw = settings.webSearchProvider?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+    val searchInfo: SearchProviderInfo? = searchRaw?.let { SearchProviders.byId(it) }
+    if (searchRaw != null && searchInfo == null) {
+        notes.add("旧包里选的网页搜索提供商「$searchRaw」本版本没有：没换提供商，仍用默认那家")
+    }
+    val searchKeys = LinkedHashMap<String, String>()
+    var staleSearchKeys = 0
+    for ((rawId, rawValue) in keys.webSearchApiKeys) {
+        val info = SearchProviders.byId(rawId) ?: continue
+        val value = rawValue.trim()
+        if (value.isEmpty()) continue
+        if (value.startsWith(AGORA_LEGACY_CIPHER_PREFIX)) {
+            staleSearchKeys++
+            continue
+        }
+        searchKeys[info.id] = value
+    }
+    if (staleSearchKeys > 0) {
+        notes.add("网页搜索密钥 $staleSearchKeys 把是旧版加密（$AGORA_LEGACY_CIPHER_PREFIX 开头），本机解不开：没有导入，请重新填一次")
+    }
+    val droppedProviders = keys.webSearchApiKeys.keys.filter { SearchProviders.byId(it) == null }
+    if (droppedProviders.isNotEmpty()) {
+        notes.add("网页搜索密钥里有 ${droppedProviders.size} 家本版本不认（${droppedProviders.joinToString("、")}）：没导")
     }
 
     // ── 开关与模型 ─────────────────────────────────────────────────────────
@@ -273,7 +312,7 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
         var id = "agora-" + sanitizeId(c.id.ifBlank { "conv" })
         var n = 2
         while (!usedIds.add(id)) {
-            id = "agora-" + sanitizeId(c.id.ifBlank { "conv" }) + "-" + n
+            id = "agora-" + sanitizeId(c.id.ifBlank { "conv" }) + "-$n"
             n++
         }
         sessions.add(AgoraSessionPlan(id, SessionHead(c.title, c.modelId ?: "", c.lastUpdated), mapped))
@@ -298,6 +337,9 @@ fun readAgoraBackup(input: InputStream): AgoraImportPlan {
         thinkingLevel = thinkingLevel,
         codeExecOn = settings.codeExecutionEnabled,
         webSearchOn = settings.webSearchEnabled,
+        webSearchProvider = searchInfo?.id,
+        webSearchApiKeys = searchKeys,
+        webSearchBaseUrl = settings.webSearchBaseUrl?.trim()?.takeIf { it.isNotEmpty() && searchInfo?.usesBaseUrl == true },
         shellOn = settings.shellEnabled,
         systemPrompt = systemPrompt,
         sessions = sessions,
@@ -388,6 +430,8 @@ private fun parseSettings(text: String): AgoraSettings? {
         thinkingLevel = strOf(o["thinkingLevel"]),
         codeExecutionEnabled = boolOf(o["codeExecutionEnabled"]),
         webSearchEnabled = boolOf(o["webSearchEnabled"]),
+        webSearchProvider = strOf(o["webSearchProvider"]),
+        webSearchBaseUrl = strOf(o["webSearchBaseUrl"]),
         shellEnabled = boolOf(o["shellEnabled"]),
         activeSystemPromptId = strOf(o["activeSystemPromptId"]),
     )

@@ -121,4 +121,16 @@ object UiKeys {
 
     /** SO 观测桥地址（560 清单 361-400 域）。空 = 默认 127.0.0.1:18765。 */
     const val OBSERVE_BASE = "observe.base"
+
+    // ── 网页搜索（2026-10-03 补齐五家提供商） ──────────────────────────────
+    // 三格 + 每家一把钥匙：提供商 id、SearXNG 实例地址、默认条数。
+    // 钥匙按家分格存（websearch.key.brave / .serper / .tavily），换一家不丢上一家的；
+    // 沿用旧仓 webSearchApiKeys 那张表的语义，只把「一张 JSON 表」拆成按键存——
+    // 键值文件里嵌 JSON 字符串是旧仓那套加密+JSON 双层坑的起点，本仓不学。
+    const val WEB_SEARCH_PROVIDER = "websearch.provider"
+    const val WEB_SEARCH_BASE_URL = "websearch.base_url"
+    const val WEB_SEARCH_NUM_RESULTS = "websearch.num_results"
+
+    /** 某家搜索提供商的密钥键（引擎件只收一个字符串，这里负责拼键名）。 */
+    fun webSearchKey(providerId: String): String = "websearch.key.$providerId"
 }

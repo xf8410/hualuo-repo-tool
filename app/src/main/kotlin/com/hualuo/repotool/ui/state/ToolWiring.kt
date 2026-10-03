@@ -2,6 +2,8 @@ package com.hualuo.repotool.ui.state
 
 import com.hualuo.engine.sandbox.ProotSession
 import com.hualuo.engine.sandbox.SandboxManager
+import com.hualuo.engine.search.ProviderSearchClient
+import com.hualuo.engine.search.SearchConfig
 import com.hualuo.engine.toolcalls.GitHubToolFamily
 import com.hualuo.engine.toolcalls.GitHubWriteTool
 import com.hualuo.engine.toolcalls.SandboxConfirmer
@@ -25,6 +27,10 @@ import java.io.File
  * （对齐 560 功能目录 414「Shell 命令审批」——不给闸门，模型在对话里就碰不到执行）。
  * 沙盒引擎实例随构建创建：rootfs 与缓存都在应用私有目录，装过一次终身覆盖升级。
  *
+ * **网页族**：搜索走 [ProviderSearchClient]，配置（哪家、密钥、实例地址、条数）在
+ * **每一次调用那一刻**从设置现场读（[webSearchConfig] 那个 lambda），改了下一句就生效；
+ * 设置开关关掉 = 工具从清单里消失（不是「看得见但点不动」）。
+ *
  * 令牌与默认仓库都在**执行那一刻**从设置现场读（两个 lambda 进引擎件，不缓存、不复制）：
  * 设置页改了令牌，下一句就生效，不用重启。令牌只进请求头（引擎件老规矩），
  * 绝不进任何结果文本与报错。
@@ -38,6 +44,7 @@ fun buildGithubToolRegistry(
     memoryStore: com.hualuo.engine.memory.MemoryStore? = null,
     sessionStore: com.hualuo.engine.store.SessionStore? = null,
     webSearchEnabled: (() -> Boolean)? = null,
+    webSearchConfig: (() -> SearchConfig)? = null,
     skillStore: com.hualuo.engine.memory.MemoryStore? = null,
     imageGenConfig: (() -> com.hualuo.engine.toolcalls.ImageGenConfig?)? = null,
     imageGenPersist: ((ByteArray, String) -> String)? = null,
@@ -74,12 +81,13 @@ fun buildGithubToolRegistry(
     // 对话检索族（M4 第三刀）：吃会话仓本体——会话库没建成（store=null）检索工具就不存在，
     // 「搜不到」比「工具在但永远空手」诚实
     com.hualuo.engine.toolcalls.RagTool.register(registry, sessionStore)
-    // 网页族（M4 第五刀）：设置开关关掉=清单里消失（运行时可见性，翻回立刻回来）
+    // 网页族（M4 第五刀）：配置现问现答（换一家、改密钥、填实例地址，下一句就生效）；
+    // 设置开关关掉=清单里消失（运行时可见性，翻回立刻回来）
     com.hualuo.engine.toolcalls.WebTool.register(
         registry,
-        com.hualuo.engine.search.WebSearchClient(),
-        fetcher = { url -> com.hualuo.engine.search.WebSearchClient.defaultFetcher(url) },
+        ProviderSearchClient(config = { webSearchConfig?.invoke() ?: SearchConfig() }),
         visibleIf = webSearchEnabled,
+        defaultNumResults = { webSearchConfig?.invoke()?.cappedNumResults ?: 5 },
     )
     // 技能族（M4 第六刀）：复用 MemoryStore（skill_db，无活动记忆文件）；不注入不注册
     com.hualuo.engine.toolcalls.SkillTool.register(registry, skillStore)
