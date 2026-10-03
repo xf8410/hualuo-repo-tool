@@ -1,5 +1,6 @@
 package com.hualuo.repotool.ui.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,7 +49,7 @@ import com.hualuo.repotool.ui.theme.SubInk
 
 @Composable
 fun SettingsOverlay(state: AppUiState) {
-    BackHandlerCompat(enabled = state.settingsOpen) {
+    BackHandler(enabled = state.settingsOpen) {
         state.backFromSettings()
     }
     val top = state.subStack.lastOrNull()
@@ -88,6 +89,7 @@ private fun SettingsHome(state: AppUiState, modifier: Modifier) {
                         val value = when (item.subKey) {
                             "provider" -> runtime?.settings?.providers?.count { it.custom || runtime.isConfigured(it.id) }?.toString() ?: item.value
                             "model" -> runtime?.settings?.enabledModels?.size?.let { "启用 $it" } ?: item.value
+                            // 网页搜索那行现报「现在会用谁」：换一家立刻看得见，不是一句写死的文案
                             "websearch" -> state.webSearch.providerLabel()
                             else -> item.value
                         }
@@ -104,7 +106,7 @@ private fun SettingsHome(state: AppUiState, modifier: Modifier) {
 
 @Composable
 private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
-    BackHandlerCompat(enabled = state.settingsOpen) {
+    BackHandler(enabled = state.settingsOpen) {
         state.backFromSettings()
     }
     val page = subPage(key) ?: return
