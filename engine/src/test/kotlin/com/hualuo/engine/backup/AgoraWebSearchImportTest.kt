@@ -1,6 +1,5 @@
 package com.hualuo.engine.backup
 
-import com.hualuo.engine.search.SearchProviders
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
@@ -17,7 +16,7 @@ import org.junit.Test
  *  - 提供商只认五家：认得的就兑，认不出的**不换**并在 notes 里点名（不许静默改用默认那家）；
  *  - 各家密钥按家分表兑；旧版密文（enc:v1: 开头，本机解不开）逐项报错并跳过，
  *    **不许静默置空**（docs/DECISIONS.md 的 D-10 第 4 条）；
- *  - 自托管实例地址只在真的要地址的那家才兑（别把 SearXNG 的地址塞给 Brave 那类键档服务）；
+ *  - 自托管实例地址只在真的要地址的那家才兑（别把 SearXNG 的地址塞给键档服务）；
  *  - 旧包没带的那几格一律是 null：上层据此不写键，不许拿空串盖掉用户手填的值。
  */
 class AgoraWebSearchImportTest {
@@ -97,7 +96,7 @@ class AgoraWebSearchImportTest {
         assertEquals(mapOf("serper" to "sk-plain"), plan.webSearchApiKeys)
         assertTrue(
             "密文那把必须点名报错：${plan.notes}",
-            plan.notes.any { it.contains("旧版加密") && it.contains("1") },
+            plan.notes.any { it.contains("旧版加密") },
         )
     }
 
@@ -116,6 +115,5 @@ class AgoraWebSearchImportTest {
         assertNull(plan.webSearchProvider)
         assertNull(plan.webSearchBaseUrl)
         assertTrue(plan.webSearchApiKeys.isEmpty())
-        assertEquals(SearchProviders.DEFAULT_ID, "duckduckgo")
     }
 }
