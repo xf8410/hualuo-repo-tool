@@ -1,5 +1,8 @@
 package com.hualuo.engine.toolcalls
 
+import com.hualuo.engine.search.ProviderSearchClient
+import com.hualuo.engine.search.SearchOutcome
+import com.hualuo.engine.search.SearchRequest
 import com.hualuo.engine.search.SearchRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -9,7 +12,7 @@ import kotlinx.serialization.json.contentOrNull
 /**
  * 网页工具族（M4 第五刀，语义对齐旧 Agora WebSearchToolProvider）：两件——
  *  - web_search：搜索（吃 [SearchRunner]，底下是哪家由设置说话：免费档 DuckDuckGo 抓 HTML，
- *    键档三家 + SearXNG 走 JSON API；num_results 1-10，默认取设置里的条数）；
+ *    键档三家 + SearXNG 走 JSON API；num_results 1-10，省略则用设置里的默认条数）；
  *  - web_fetch：取网页转正文（HTML 净化后按**文本**截断，不是砍 HTML——
  *    maxChars 默认 8000、封顶 10 万；回执带 truncated + totalChars，模型可加量再取）。
  *
@@ -28,9 +31,7 @@ object WebTool {
         registry: ToolRegistry,
         searchRunner: SearchRunner,
         fetcher: (String) -> String = { url ->
-            com.hualuo.engine.search.ProviderSearchClient.defaultFetch(
-                com.hualuo.engine.search.SearchRequest("GET", url),
-            )
+            ProviderSearchClient.defaultFetch(SearchRequest("GET", url))
         },
         visibleIf: (() -> Boolean)? = null,
         defaultNumResults: () -> Int = { 5 },
@@ -68,13 +69,13 @@ object WebTool {
         val requested = (args["num_results"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull()
         val num = (requested ?: runCatching { defaultNumResults() }.getOrDefault(5)).coerceIn(1, 10)
         return when (val outcome = runner.search(query)) {
-            is SearchOutcomeAlias.Ok -> {
+            is SearchOutcome.Ok -> {
                 val rows = outcome.results.take(num).joinToString(",") { r ->
                     """{"title":${JsonPrimitive(r.title)},"url":${JsonPrimitive(r.url)},"description":${JsonPrimitive(r.snippet)}}"""
                 }
                 """{"type":"web_search","query":${JsonPrimitive(query)},"count":${minOf(num, outcome.results.size)},"results":[$rows]}"""
             }
-            is SearchOutcomeAlias.Failed ->
+            is SearchOutcome.Failed ->
                 """{"type":"web_search","query":${JsonPrimitive(query)},"error":"search_error","message":${JsonPrimitive(outcome.reason)}}"""
         }
     }
