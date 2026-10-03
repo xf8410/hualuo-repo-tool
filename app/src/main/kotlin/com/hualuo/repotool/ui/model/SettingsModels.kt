@@ -15,6 +15,13 @@ data class SettingsSection(val id: String, val title: String, val items: List<Se
 
 data class SubPage(val title: String, val fields: List<SubField>)
 
+/**
+ * 一家可选的搜索提供商（名称与说明）。
+ *
+ * 只留给**演示表**里的选择控件用；真设置页那五家由引擎件的事实表
+ * （com.hualuo.engine.search.SearchProviders）说话，界面照那份渲染——
+ * 两份 id 列表迟早漂移，所以真页不读这里。
+ */
 data class RadioChoice(
     val id: String,
     val name: String,
@@ -32,6 +39,10 @@ sealed class SubField {
         val placeholder: String = "",
         val secret: Boolean = false,
     ) : SubField()
+
+    /** 网页搜索那格真面板（开关、五家选择框、密钥、实例地址、条数都在里面）。 */
+    object WebSearchSettings : SubField()
+
     object GithubLogin : SubField()
     object ProviderSettings : SubField()
     object ModelSettings : SubField()

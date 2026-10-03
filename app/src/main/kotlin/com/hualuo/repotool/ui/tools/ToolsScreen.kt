@@ -43,11 +43,11 @@ import com.hualuo.repotool.ui.theme.WarnAmber
 /**
  * 工具页（v13 #p-tool）。
  *
- * **网页搜索已接真电（0.7.0）**：免费档 DuckDuckGo，输入、按钮、结果列表都是真数据；
- * 失败出声不冒充（引擎件说「没有搜到结果」就是没有，屏上照实摆失败理由，不装成功）。
+ * **网页搜索已接真电（0.7.0，2026-10-03 补齐五家提供商）**：用哪家、密钥、实例地址、条数
+ * 都在设置「网页搜索」里，卡片标题现报当前那家（换一家立刻看得见）；输入、按钮、结果列表
+ * 都是真数据，失败出声不冒充（引擎件说「没有搜到结果」就是没有，屏上照实摆失败理由，不装成功）。
  * 点一条结果用系统浏览器打开（设备上没有能接的 App 就出声，不静默）。
- * 四态分列仍是演示板——逐工具真电等「模型可调用工具」那刀（tool_calls 协议）一起进，
- * 到时这张卡换成从真实工具注册表读，别提前画饼。
+ * 四态分列仍是演示板——等那几族真电接完，这张卡换成从真实工具注册表读，别提前画饼。
  */
 @Composable
 fun ToolsScreen(state: AppUiState) {
@@ -74,7 +74,7 @@ fun ToolsScreen(state: AppUiState) {
         Spacer(Modifier.height(10.dp))
 
         HCard {
-            CardTitle("网页搜索（免费档 DuckDuckGo）")
+            CardTitle("网页搜索（当前：${state.webSearch.providerLabel()}）")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -133,6 +133,13 @@ fun ToolsScreen(state: AppUiState) {
                     }
                 }
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "换一家搜索、去设置「网页搜索」",
+                fontSize = 11.5.sp,
+                color = SubInk,
+                modifier = Modifier.clickable { state.openSettings("websearch") },
+            )
         }
 
         Spacer(Modifier.height(10.dp))

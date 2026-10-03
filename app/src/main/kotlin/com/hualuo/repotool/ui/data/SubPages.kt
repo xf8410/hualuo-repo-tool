@@ -5,7 +5,11 @@ import com.hualuo.repotool.ui.model.SubField
 import com.hualuo.repotool.ui.model.SubPage
 
 // 设置页二级字段表：照抄 ui/v13.html 的 SUB 表（原型逐行翻译，演示数据）。
-// 真设置项（写进设置文件的那种）在 SettingsCatalog.kt，别混到这里。
+// 真设置项（写进设置文件的那种）在 SettingsCatalog.kt 的 RealSubPages 里，同 key 时真表优先
+// （见 subPage()），别把真项往这里搬——两份表同时存在正是「界面上写着能改、实际没接线」的病根。
+//
+// 网页搜索已经在 RealSubPages 里接真电（面板 + 五家选择 + 密钥 + 实例地址 + 条数），
+// 所以这一张演示表里**不再有**它：留着就是同一页两份字段表。
 //
 // 家规：图标只写 IconKey 键名，图形字符不进源码（闸门 NoEmojiInSourceTest 连注释一起扫，
 // 所以下面提到旧写法时用「对勾」「警告三角」「箭头」这些词，不贴字符本身）。
@@ -86,11 +90,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Seg("服务商", listOf("OpenAI", "ComfyUI 本地", "Pollinations 免费"), 0),
         SubField.Seg("尺寸", listOf("1:1", "16:9", "9:16"), 0),
         SubField.Switch("生成结果自动作为附件登记", true),
-    )),
-    "websearch" to SubPage("网页搜索", listOf(
-        SubField.Radio("选择搜索提供商", WebSearchProviders, DefaultSearchProviderId),
-        SubField.Input("API 密钥（Brave/Serper/Tavily 需要）"),
-        SubField.Note("沿用本应用内置的五家搜索提供商（移植不重写）；DuckDuckGo 免密钥但可能触发反爬，SearXNG 建议自建实例"),
     )),
     "chatsearch" to SubPage("对话搜索", listOf(
         SubField.Switch("启用", true),

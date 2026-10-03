@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.data.DemoAttachMenu
@@ -34,6 +36,7 @@ import com.hualuo.repotool.ui.data.DemoQueueBar
 import com.hualuo.repotool.ui.data.DemoQueueIcon
 import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.state.AppUiState
+import com.hualuo.repotool.ui.state.currentModelChipText
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
@@ -54,6 +57,13 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  * 真发（空文出声、单条上限、清草稿都在那一处管，纯 JVM 可测），
  * 生成中变红方块、按下掐这条自己的连接；忙灯从 state.busy 读，而 busy 就是 runtime 的事实。
  *
+ * **模型胶囊不许吃掉整行**（2026-10-03 真机实报：「对话模型按钮没有缩写，导致发送按键没办法用了」）：
+ * 以前这里直接把整条模型 id（`openrouter:stealth/space-bunny-alpha`）摆进去，
+ * 胶囊无限宽，于是后面的发送钮被挤出屏幕、点不到。现在两处收口：
+ *  - 文字走 [currentModelChipText]（别名优先、剥 provider: 前缀、按上限截断）；
+ *  - 胶囊自己 `widthIn(max = ...)` 加单行省略号（旧仓同款：胶囊宽上限 160dp 上下）。
+ * 这两条是配套的：只截字不设上限，字短时胶囊仍可能撑；只设上限不截字，短屏上照样省略。
+ *
  * 图形字符一律走资源（`stringResource(IconKey.X.resId)`）—— 家规，闸门 NoEmojiInSourceTest。
  * 缩略列表存的是 IconKey 键名字符串，解不出键就照原样显示并染成警告色，不许悄悄换成别的图标。
  */
@@ -68,7 +78,6 @@ fun Composer(state: AppUiState) {
     val dotGlyph = stringResource(IconKey.Dot.resId)
     val micGlyph = stringResource(IconKey.Mic.resId)
     val sendGlyph = stringResource(IconKey.SendArrow.resId)
-    val observeGlyph = stringResource(IconKey.ActionObserve.resId)
     val caretDownGlyph = stringResource(IconKey.CaretDown.resId)
     val expandScreenGlyph = stringResource(IconKey.ExpandScreen.resId)
 
@@ -233,8 +242,11 @@ fun Composer(state: AppUiState) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Pill("$plusGlyph 附件") { state.addMenuOpen = !state.addMenuOpen }
+            // 模型胶囊：宽度有上限 + 单行省略，发送钮因此永远留在屏上（见文件头那两条）
             Box(
                 modifier = Modifier
+                    .weight(1f, fill = false)
+                    .widthIn(max = 168.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(Color(0xFFE3ECFF))
                     .clickable {
@@ -246,10 +258,12 @@ fun Composer(state: AppUiState) {
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    "$observeGlyph " + state.currentModel + " $caretDownGlyph",
+                    currentModelChipText(state) + " " + caretDownGlyph,
                     fontSize = 12.5.sp,
                     color = Accent,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Pill("$dotsGlyph 工具") {

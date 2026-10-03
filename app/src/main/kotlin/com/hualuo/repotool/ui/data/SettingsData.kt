@@ -1,7 +1,6 @@
 package com.hualuo.repotool.ui.data
 
 import com.hualuo.repotool.ui.model.IconKey
-import com.hualuo.repotool.ui.model.RadioChoice
 import com.hualuo.repotool.ui.model.SettingsItem
 import com.hualuo.repotool.ui.model.SettingsSection
 
@@ -13,20 +12,9 @@ import com.hualuo.repotool.ui.model.SettingsSection
 //
 // 家规：图标只写 IconKey 键名。图形字符（含转义写法）不进源码，唯一的住处是 res/values/icons.xml，
 // 闸门是 engine 的 NoEmojiInSourceTest。
-
-/**
- * 网页搜索提供商 = 移植 Agora 内置那五家（用户截图「选择搜索提供商」对话框原文），
- * 描述逐字照抄；默认 DuckDuckGo（免 Key）。原型 v13 里的四选简化列表不作数。
- */
-val WebSearchProviders: List<RadioChoice> = listOf(
-    RadioChoice("brave", "Brave", "注重隐私的搜索 API。提供免费套餐。", needsKey = true),
-    RadioChoice("serper", "Serper", "快速 Google 搜索 API。每月 2,500 次免费查询。", needsKey = true),
-    RadioChoice("tavily", "Tavily", "面向 AI 优化的搜索 API。专为 LLM 代理构建。", needsKey = true),
-    RadioChoice("searxng", "SearXNG", "自托管元搜索引擎。建议使用自己的实例。", needsKey = false),
-    RadioChoice("duckduckgo", "DuckDuckGo", "免费，无需 API Key。抓取 lite.duckduckgo.com。可能不稳定并触发反爬保护。", needsKey = false),
-)
-
-const val DefaultSearchProviderId = "duckduckgo"
+//
+// 网页搜索那五家提供商不在这里：唯一事实表是引擎件的 SearchProviders，
+// 真页面在 SettingsCatalog 的 RealSubPages 里（原型 v13 那份四选简化列表早已作数）。
 
 val SettingsSections: List<SettingsSection> = listOf(
     SettingsSection("s-service", "AI 服务", listOf(
