@@ -7,8 +7,7 @@ import androidx.compose.runtime.setValue
 import com.hualuo.engine.github.GitHubCiClient
 import com.hualuo.engine.github.GitHubRun
 import com.hualuo.engine.github.normalizeGitHubRepo
-import com.hualuo.engine.search.ProviderSearchClient
-import com.hualuo.engine.search.SearchOutcome
+import com.hualuo.engine.search.SearchConfig
 import com.hualuo.engine.search.WebSearchResult
 import com.hualuo.engine.store.SessionStore
 import com.hualuo.repotool.backup.BackupGateway
@@ -54,8 +53,8 @@ data class CourierPick(
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
  *  - **仓库工作台（浏览 + 改码）**：整体住 [repo]（[RepoWorkbenchState] 状态舱，
  *    999 行红线拆出来的：清单/浏览/分支/提交历史/文件预览与改码提交）。
- *  - **工具页真电（网页搜索）**：走 [webSearch] 设置舱挑的那家（默认免费档 DuckDuckGo，
- *    也可换 Brave/Serper/Tavily/SearXNG，配置在执行那一刻现读）；结果真数据、失败出声不冒充。
+ *  - **工具页真电（网页搜索）**：瞬时态住 [webSearchRun]，用哪家由 [webSearch] 设置舱
+ *    现读（默认免费档 DuckDuckGo，也可换 Brave/Serper/Tavily/SearXNG）；真结果、失败出声不冒充。
  *  - **长任务页真电（文件投递）**：选文件/选目录只发动作请求（[pendingDataAction] 桥上走），
  *    收集与分卷投递在根界面的后台线程（CourierDelivery）；目标仓/分支/令牌在设置「文件投递」。
  *  - **工具族（0.7.0 刀②）**：GitHub 读类十件注册进 [chat]（列仓、看别人的仓、浏览目录、
@@ -108,6 +107,13 @@ class AppUiState(
     val webSearch = WebSearchState(
         load = { key -> text(key) },
         save = { key, value -> setText(key, value) },
+    )
+
+    /** 工具页那张卡的瞬时态（搜索词/忙灯/结果/收场话）；用哪家现场问 [webSearch]。 */
+    val webSearchRun = WebSearchRunState(
+        configProvider = { webSearch.config() },
+        providerLabel = { webSearch.providerLabel() },
+        toast = { msg -> toast(msg) },
     )
 
     /** 底栏停在第几页。存枚举名，读不懂就回回合流页。 */
@@ -307,54 +313,30 @@ class AppUiState(
         input = ""
     }
 
-    // ── 工具页真电：网页搜索（走设置里挑的那家，默认免费档 DuckDuckGo） ───────
+    // ── 工具页真电：网页搜索（瞬时态在 [webSearchRun]，用哪家由 [webSearch] 现读） ──
 
-    /** 工具页搜索框里的词。演示壳转真电的第一格输入。 */
-    var searchQuery by mutableStateOf("")
+    /** 工具页搜索框里的词（委托给瞬时态件，界面读写的还是这个字段名）。 */
+    var searchQuery: String
+        get() = webSearchRun.query
+        set(value) {
+            webSearchRun.query = value
+        }
 
     /** 正在搜：按钮与提示行都看它。 */
-    var searchBusy by mutableStateOf(false)
-        private set
+    val searchBusy: Boolean get() = webSearchRun.busy
 
     /** 最近一次的搜索结果（真数据，引擎件清净过）。 */
-    var searchResults by mutableStateOf(emptyList<WebSearchResult>())
-        private set
+    val searchResults: List<WebSearchResult> get() = webSearchRun.results
 
-    /** 最近一次搜索的收场话（成功报条数，失败给理由）；null = 还没搜过。 */
-    var searchNote by mutableStateOf<String?>(null)
-        private set
+    /** 最近一次搜索的收场话（成功报条数与走了哪家，失败给理由）；null = 还没搜过。 */
+    val searchNote: String? get() = webSearchRun.note
 
     /**
      * 工具页「搜一下」：真网络、真结果、失败出声不冒充（家规）。
-     * 后台线程跑（大会计 IO 不进主线程，ANR 病根的老规矩）；收场一律写回
-     * [searchResults] 与 [searchNote]，成功的旧结果不偷偷留着顶数——失败就明示失败。
-     *
-     * 用哪家由 [webSearch] 设置舱现读：换一家、填密钥、填实例地址，下一句就生效。
+     * 收场一律写回 [searchResults] 与 [searchNote]，成功的旧结果不偷偷留着顶数——
+     * 失败就明示失败。用哪家现问 [webSearch]：换一家、填密钥、填实例地址，下一句就生效。
      */
-    fun runWebSearch() {
-        if (searchBusy) return
-        val query = searchQuery.trim()
-        if (query.isEmpty()) {
-            toast("先在框里写要搜什么")
-            return
-        }
-        searchBusy = true
-        searchNote = null
-        Thread({
-            val outcome = ProviderSearchClient(config = { webSearch.config() }).search(query)
-            searchBusy = false
-            when (outcome) {
-                is SearchOutcome.Ok -> {
-                    searchResults = outcome.results
-                    searchNote = "搜到 ${outcome.results.size} 条（${outcome.query}，走 ${webSearch.providerLabel()}）"
-                }
-                is SearchOutcome.Failed -> {
-                    searchResults = emptyList()
-                    searchNote = outcome.reason
-                }
-            }
-        }, "hualuo-web-search").start()
-    }
+    fun runWebSearch() = webSearchRun.run()
 
     /** 视频库状态舱（编排细节在 VideoUnderstandingState，红线三拆件）。 */
     val video = VideoUnderstandingState(watchInboxDir = watchInboxDir)
