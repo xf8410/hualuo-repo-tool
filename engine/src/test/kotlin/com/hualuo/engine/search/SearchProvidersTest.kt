@@ -1,9 +1,9 @@
 package com.hualuo.engine.search
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 /**
@@ -25,12 +25,16 @@ class SearchProvidersTest {
     }
 
     @Test
-    fun onlyDuckDuckGoAndSearxngNeedNoKey() {
+    fun onlyTheThreeKeyProvidersNeedKeys() {
         assertEquals(
             listOf("brave", "serper", "tavily"),
             SearchProviders.ALL.filter { it.needsKey }.map { it.id },
         )
-        assertTrue("只有 SearXNG 要实例地址", SearchProviders.ALL.filter { it.usesBaseUrl }.map { it.id } == listOf("searxng"))
+        assertEquals(
+            "只有 SearXNG 要实例地址",
+            listOf("searxng"),
+            SearchProviders.ALL.filter { it.usesBaseUrl }.map { it.id },
+        )
     }
 
     @Test
@@ -38,7 +42,7 @@ class SearchProvidersTest {
         assertEquals(SearchProviders.DEFAULT_ID, SearchProviders.normalize("bing").id)
         assertEquals(SearchProviders.DEFAULT_ID, SearchProviders.normalize(null).id)
         assertEquals(SearchProviders.DEFAULT_ID, SearchProviders.normalize("   ").id)
-        assertEquals(SearchProviders.DEFAULT_ID, SearchProviders.normalize("BRAVE ")?.let { "brave" })
+        assertEquals("大小写与空白都收", "brave", SearchProviders.normalize(" BRAVE ").id)
         assertNull(SearchProviders.byId("bing"))
         assertEquals("DuckDuckGo", SearchProviders.labelOf("不存在"))
     }
@@ -55,8 +59,8 @@ class SearchProvidersTest {
         assertEquals("key", cfg.cleanedKey)
         assertEquals("https://searx.my.example", cfg.cleanedBaseUrl)
         assertEquals(SearchProviders.MAX_RESULTS, cfg.cappedNumResults)
-        assertEquals(0, SearchConfig(numResults = 0).cappedNumResults.coerceAtLeast(SearchProviders.MIN_RESULTS))
         assertEquals(SearchProviders.MIN_RESULTS, SearchConfig(numResults = -5).cappedNumResults)
+        assertEquals(5, SearchConfig(numResults = 5).cappedNumResults)
     }
 
     @Test
