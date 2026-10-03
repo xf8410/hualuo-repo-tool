@@ -17,10 +17,10 @@ sealed class SearchOutcome {
 }
 
 /**
- * 网页搜索（免费档：DuckDuckGo 的 HTML 端点，无密钥、无账号）。
+ * 免费档搜索：抓 DuckDuckGo 的 HTML 端点（无密钥、无账号）。
  *
- * 范围诚实说清：**免费档起步**这一刀只做 DDG 一家；可配 base URL/key 的付费档
- * （各家返回形状不一，得逐家适配）缓一步再接，不虚账。
+ * 范围诚实说清：这一件**只做 DDG 一家**；带密钥的四家（键档三家 + SearXNG）
+ * 走 [ProviderSearchClient]，两家分工在 [SearchProviders] 里钉死，不重写彼此的活。
  *
  * 设计要点：
  *  - 取网动作经 [fetch] 缝隙注入：纯 JVM 测试喂假页，绝不碰真网；真网由
@@ -33,10 +33,10 @@ sealed class SearchOutcome {
 class WebSearchClient(
     private val fetch: (String) -> String = { url -> defaultFetcher(url) },
     private val maxResults: Int = 8,
-) {
+) : SearchRunner {
 
     /** 搜一把。任何收场都不抛异常——失败也在 [SearchOutcome] 里说清。 */
-    fun search(query: String): SearchOutcome {
+    override fun search(query: String): SearchOutcome {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return SearchOutcome.Failed("没给搜索词")
         val body = try {
@@ -124,23 +124,22 @@ class WebSearchClient(
 
         /**
          * 真网取页：超时齐备（连接 10s、读 15s），正文有界（52 万字符封顶，一页 HTML
- * 远够不到）。非 2xx 抛 IOException 带状态码，由 [search] 翻成人话。
+         * 远够不到）。非 2xx 抛 IOException 带状态码，由 [search] 翻成人话。
          * 默认 java UA 会被不少站拒，报个普通浏览器的。
          */
         fun defaultFetcher(url: String): String {
             val conn = URL(url).openConnection() as HttpURLConnection
             conn.connectTimeout = 10_000
             conn.readTimeout = 15_000
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36")
+            conn.setRequestProperty("User-Agent", ProviderSearchClient.BROWSER_UA)
             try {
                 val code = conn.responseCode
                 if (code !in 200..299) throw IOException("HTTP $code")
-                val stream = if (code in 300..399 || code in 200..299) conn.inputStream else conn.errorStream
-                val reader = InputStreamReader(stream, Charsets.UTF_8)
+                val reader = InputStreamReader(conn.inputStream, Charsets.UTF_8)
                 val out = StringBuilder()
                 val buf = CharArray(8 * 1024)
-                while (out.length < FETCH_CHAR_CAP) {
-                    val n = reader.read(buf, 0, minOf(buf.size, FETCH_CHAR_CAP - out.length))
+                while (out.length < ProviderSearchClient.FETCH_CHAR_CAP) {
+                    val n = reader.read(buf, 0, minOf(buf.size, ProviderSearchClient.FETCH_CHAR_CAP - out.length))
                     if (n < 0) break
                     out.append(buf, 0, n)
                 }
@@ -149,8 +148,5 @@ class WebSearchClient(
                 conn.disconnect()
             }
         }
-
-        /** 正文封顶：52 万字符，防一页巨 HTML 撑爆内存（有界读取是全仓纪律）。 */
-        const val FETCH_CHAR_CAP = 512_000
     }
 }
