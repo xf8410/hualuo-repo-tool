@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -39,7 +41,7 @@ import com.hualuo.repotool.ui.theme.SubInk
  *
  * **切换模型按旧仓那张下拉改的**（用户 2026-10-03 拍板「对话这里的切换模型也照着 Agora 改 UI」）：
  *  - 每条摆 `显示名 (提供商)`（显示名走 [modelLabelWithProvider]：别名优先、剥掉 provider: 前缀），
- *    选中那条加粗并染主色，一眼看得见现在用的是谁；
+ *    选中那条加粗、染主色、左侧亮一个点，一眼看得见现在用的是谁；
  *  - 显示名单行省略，长模型名不撑破弹层；
  *  - 一条也没启用时说清去哪儿开，不摆空白。
  *
@@ -77,10 +79,10 @@ fun SheetsLayer(state: AppUiState) {
                     ) {
                         Box(
                             Modifier
-                                .width(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(if (picked) Accent else Hairline)
-                                .padding(vertical = 0.dp),
+                                .width(8.dp)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(if (picked) Accent else Hairline),
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
@@ -97,7 +99,7 @@ fun SheetsLayer(state: AppUiState) {
                         if (picked) Text("在用", fontSize = 11.sp, color = Accent)
                     }
                 }
-                Spacer(Modifier.padding(bottom = 6.dp))
+                Spacer(Modifier.height(6.dp))
             }
         }
         state.toolSheetOpen -> SheetScaffold("本回合工具", onDismiss = { state.toolSheetOpen = false }) { Text("工具开关在设置里保存", color = SubInk) }
