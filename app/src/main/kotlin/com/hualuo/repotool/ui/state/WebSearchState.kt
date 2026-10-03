@@ -5,18 +5,15 @@ import com.hualuo.engine.search.SearchProviderInfo
 import com.hualuo.engine.search.SearchProviders
 
 /**
- * 网页搜索设置舱：选哪家、那家的密钥、SearXNG 实例地址、默认条数。
+ * 网页搜索设置舱：选哪家、那家的密钥、自托管实例地址、默认条数。
  *
  * **收口靠界面那条活通道**：取值与存值都由 [AppUiState] 的 `text` / `setText` 进来，
- * 于是本舱天然跟着自动保存与重组走（不用另存一份影子状态，那正是「两份事实」的老病）。
+ * 于是本舱天然跟着自动保存与重组走（不另存一份影子状态，那正是「两份事实」的老病）。
  *
  * **执行那一刻现读**：[config] 每次重新拼一份，不缓存 —— 设置页改完下一句对话就生效。
  *
- * 读侧的收口规矩（都在这里做，别散在界面里）：
- *  - 认不出的提供商 id 回默认那家（[SearchProviders.normalize]）：设置文件是手可编辑的，
- *    手输错字不许把网页工具打死；
- *  - 密钥去空白，空串就是「没配」：界面据此显出提示，不假装有钥匙；
- *  - 条数读不懂回 5、越界夹到 1..10（模型给的 num_results 之外还有这一道收口）。
+ * 收口细节（认不出的 id 回默认、密钥去空白、条数夹范围）委托给 [searchConfigFrom] 等
+ * 纯函数，界面舱与纯 JVM 测试共用一份，不各写一套。
  */
 class WebSearchState(
     private val load: (String) -> String,
@@ -24,8 +21,7 @@ class WebSearchState(
 ) {
 
     /** 当前那家（认过 id 的，脏值已回默认）。 */
-    val provider: SearchProviderInfo
-        get() = SearchProviders.normalize(load(UiKeys.WEB_SEARCH_PROVIDER))
+    val provider: SearchProviderInfo get() = searchProviderFrom(load)
 
     /** 这家要不要密钥（决定显不显密钥框）。 */
     val needsKey: Boolean get() = provider.needsKey
@@ -40,10 +36,7 @@ class WebSearchState(
     fun baseUrl(): String = load(UiKeys.WEB_SEARCH_BASE_URL).trim().trimEnd('/')
 
     /** 默认返回条数（1..10，读不懂回 5）。 */
-    fun numResults(): Int =
-        load(UiKeys.WEB_SEARCH_NUM_RESULTS).trim().toIntOrNull()
-            ?.coerceIn(SearchConfig.MIN_NUM_RESULTS, SearchConfig.MAX_NUM_RESULTS)
-            ?: SearchConfig.DEFAULT_NUM_RESULTS
+    fun numResults(): Int = searchNumResultsFrom(load)
 
     /** 换一家：id 落设置；**不动其它家的密钥**（换一家不丢上一家的钥匙）。 */
     fun setProvider(id: String) {
@@ -62,15 +55,7 @@ class WebSearchState(
     }
 
     /** 引擎件要的配置快照（现读现拼，不缓存）。 */
-    fun config(): SearchConfig {
-        val info = provider
-        return SearchConfig(
-            providerId = info.id,
-            apiKey = apiKey(),
-            baseUrl = baseUrl(),
-            numResults = numResults(),
-        )
-    }
+    fun config(): SearchConfig = searchConfigFrom(load)
 
     /** 界面上那一句「现在会用谁」：认过 id 的名字，不是手输的原始串。 */
     fun providerLabel(): String = provider.name
