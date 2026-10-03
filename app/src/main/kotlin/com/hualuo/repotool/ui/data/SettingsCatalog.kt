@@ -21,7 +21,6 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
-<<<<<<< HEAD
     "gen" to SubPage(
         "生成参数",
         listOf(
@@ -38,7 +37,8 @@ val RealSubPages: Map<String, SubPage> = mapOf(
                 default = "40",
             ),
             SubField.Note("温度/top_p 拖动即存，下一条消息生效；历史条数超了砍最旧的，砍数当场出声。"),
-=======
+        ),
+    ),
     "appearance" to SubPage(
         "外观",
         listOf(
@@ -54,7 +54,6 @@ val RealSubPages: Map<String, SubPage> = mapOf(
                 default = "blue",
             ),
             SubField.Note("点选即存、全界面立刻换色（不重启）。亮色单一主题——用户拍板不要黑底；语义色（成功绿/错误红）与气泡浅底不随主色变，防花。"),
->>>>>>> 47f8652 (实装「外观」页主色切换（修摆设刀②）：Accent 改响应式变量（58 处引用零改动自动换色）+ 主色四档落盘即切（SideEffect 幂等应用）+ 亮色单主题钉死（用户拍板不提供暗色）；派生浅色与语义色不随主色)
         ),
     ),
     "vision" to SubPage(
