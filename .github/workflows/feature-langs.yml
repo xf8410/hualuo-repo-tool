@@ -1,19 +1,13 @@
 name: 功能·语言高亮批次
 on:
   workflow_dispatch:
-    inputs:
-      lang:
-        description: "留空=整批五个语言；填 c / cpp / csharp / javascript / typescript 只跑那一个"
-        required: false
-        default: ""
 
 jobs:
   lang_highlight:
     name: "语法高亮与查看器着色 · ${{ matrix.label }}"
     runs-on: ubuntu-latest
-    # 单个语言失败不许掐掉整批：五个语言互不相干，掐了就白跑
-    if: ${{ inputs.lang == '' || inputs.lang == matrix.lang }}
     strategy:
+      # 单个语言失败不许掐掉整批：五个语言互不相干，掐了就白跑
       fail-fast: false
       matrix:
         include:
