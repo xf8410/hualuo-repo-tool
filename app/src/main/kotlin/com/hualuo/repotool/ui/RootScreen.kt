@@ -60,9 +60,11 @@ import com.hualuo.repotool.ui.observe.ObserveScreen
 import com.hualuo.repotool.ui.repo.RepoScreen
 import com.hualuo.repotool.ui.settings.SettingsOverlay
 import com.hualuo.repotool.ui.state.AppUiState
+import com.hualuo.repotool.ui.state.UiKeys
 import com.hualuo.repotool.ui.state.CourierPick
 import com.hualuo.repotool.ui.tasks.TasksScreen
 import com.hualuo.repotool.ui.theme.Accent
+import com.hualuo.repotool.ui.theme.AccentPalette
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
 import com.hualuo.repotool.ui.theme.Ink
@@ -146,6 +148,11 @@ fun HualuoApp(versionLabel: String) {
     val kernel = remember(context) { context.applicationContext as HualuoApplication }
     val state = remember(kernel) { kernel.uiState }
     state.versionLabel = versionLabel
+
+    // 主色随设置（外观页实装刀）：修订号一动就重读档名，SideEffect 里应用（幂等）
+    val accentRevision = state.settingsRevision
+    val accentChoice = remember(accentRevision) { state.text(UiKeys.ACCENT, "blue") }
+    androidx.compose.runtime.SideEffect { AccentPalette.apply(accentChoice) }
 
     // 数据控制的三个系统选择器（导出=建文档、导入=选文件、旧包=选文件）；结果一律出声，不静默
     val exportBackup = rememberLauncherForActivityResult(

@@ -6,6 +6,10 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -20,7 +24,24 @@ val CardBg = Color(0xFFFFFFFF)
 val Ink = Color(0xFF17181A)
 val SubInk = Color(0xFF7D8590)
 val Hairline = Color(0xFFECEEF2)
-val Accent = Color(0xFF0A5CFF)
+/** 主色（响应式）：外观页切换时不重建 Activity，全部 58 处引用自动重画。 */
+var Accent by mutableStateOf(Color(0xFF0A5CFF))
+    private set
+
+/** 外观页的主色档（值进设置存储，名字只是显示）。派生浅色与语义色不跟主色——防花。 */
+object AccentPalette {
+    val choices = listOf(
+        "blue" to Color(0xFF0A5CFF),
+        "teal" to Color(0xFF0E9488),
+        "purple" to Color(0xFF7C5CFF),
+        "orange" to Color(0xFFF76B15),
+    )
+    val names = mapOf("blue" to "蓝", "teal" to "青", "purple" to "紫", "orange" to "橙")
+    fun apply(choice: String?) {
+        val c = choices.firstOrNull { it.first == choice }?.second ?: return
+        if (Accent != c) Accent = c
+    }
+}
 val OkGreen = Color(0xFF16A34A)
 val WarnAmber = Color(0xFFF59E0B)
 val ErrRed = Color(0xFFE5484D)
@@ -80,11 +101,13 @@ private val HualuoType = Typography(
     labelSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 11.sp),
 )
 
-/** 全 App 唯一入口主题：目前只有亮色（用户拍板「不要黑色要亮色」），暗色留给外观页接线后再开。 */
+/** 全 App 唯一入口主题：只有亮色（用户拍板「不要黑色要亮色」，外观页不提供暗色）。 */
 @Composable
 fun HualuoTheme(content: @Composable () -> Unit) {
+    // 主色变了就重拼 scheme（HualuoScheme 是启动期快照，primary/secondary 引用当时值）
+    val scheme = remember(Accent) { HualuoScheme.copy(primary = Accent, secondary = Accent) }
     MaterialTheme(
-        colorScheme = HualuoScheme,
+        colorScheme = scheme,
         shapes = HualuoShapes,
         typography = HualuoType,
         content = content,

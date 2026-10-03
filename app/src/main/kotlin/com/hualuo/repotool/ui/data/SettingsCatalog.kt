@@ -39,6 +39,23 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("温度/top_p 拖动即存，下一条消息生效；历史条数超了砍最旧的，砍数当场出声。"),
         ),
     ),
+    "appearance" to SubPage(
+        "外观",
+        listOf(
+            SubField.PersistedSeg(
+                "主色",
+                UiKeys.ACCENT,
+                listOf(
+                    SubField.SegChoice("蓝", "blue"),
+                    SubField.SegChoice("青", "teal"),
+                    SubField.SegChoice("紫", "purple"),
+                    SubField.SegChoice("橙", "orange"),
+                ),
+                default = "blue",
+            ),
+            SubField.Note("点选即存、全界面立刻换色（不重启）。亮色单一主题——用户拍板不要黑底；语义色（成功绿/错误红）与气泡浅底不随主色变，防花。"),
+        ),
+    ),
     "vision" to SubPage(
         "看视频的眼睛",
         listOf(
