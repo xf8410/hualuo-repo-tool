@@ -39,7 +39,7 @@ fun searchNumResultsFrom(load: (String) -> String): Int =
         ?: SearchConfig.DEFAULT_NUM_RESULTS
 
 /**
- * 旧 Agora 包里的网页搜索设置怎么进新版的键（数据控制 → 导入旧包那条路）。
+ * 旧 Agora 包里的网页搜索设置怎么进新版的键（数据控制里「导入旧包」那条路）。
  *
  * 摆在独立文件而不是塞进 AppUiState：那件本来就已经近千行（红线三），每多一行都在借债。
  * 本函数只做一件事：把兑换单里的网页搜索三样（提供商、各家密钥、自托管实例地址）
