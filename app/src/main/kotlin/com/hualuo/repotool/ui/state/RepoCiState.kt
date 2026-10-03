@@ -5,15 +5,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hualuo.engine.github.GitHubCiClient
 import com.hualuo.engine.github.GitHubRun
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * 仓库 CI 那块瞬时态：最近的 workflow runs、坏条目数、拉取忙灯、错误话、更新检查结论。
  *
  * 独立成件的原因与 [WebSearchRunState] 同款：它天生是**瞬时**的（不落盘，重开从空开始），
- * 而且 [AppUiState] 已经贴着红线三（单文件不许过 999 行），这类旁支不该再往里塞。
+ * 而 [AppUiState] 已经贴着红线三（单文件不许过 999 行），这类旁支不该再往里塞。
+ * 字段名对上层保持原样（AppUiState 里的 ciBusy / ciRuns / ciError 等只是转发），
+ * 界面层一行都不用改。
  *
  * 仓库与令牌在设置「GitHub 工作台」里配，令牌只进请求头（引擎件老规矩）。
  * 拉取在后台线程跑（大会计 IO 不进主线程）；失败与坏条目都摆在明面上，不冒充成功。
@@ -22,7 +21,6 @@ class RepoCiState(
     private val loadToken: () -> String?,
     private val loadRepo: () -> String,
     private val versionLabel: () -> String,
-    private val toast: (String) -> Unit,
 ) {
 
     private val client = GitHubCiClient()
@@ -91,17 +89,5 @@ class RepoCiState(
                 }
             }
         }, "hualuo-update").start()
-    }
-
-    /** 仓库标签的显示形态（列表页顶上那一行用）。 */
-    fun repoDisplayLabel(): String = repoLabel.ifBlank { loadRepo() }
-
-    /** 当前时间标签：给列表项算「多久前」用（纯格式化，不碰网络）。 */
-    fun stampOf(ms: Long): String =
-        SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
-
-    /** 一句话提醒：只在有失败要说时才出声（界面层决定要不要弹）。 */
-    fun notifyFailureOnce(message: String) {
-        if (message.isNotBlank()) toast(message)
     }
 }
