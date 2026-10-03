@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "storage" to SubPage(
+        "存储占用",
+        listOf(
+            SubField.StorageStats,
+            SubField.Note("统计走后台线程不卡界面；清理只动缓存类目录（视频帧/生成图/崩溃留档），会话与收件箱的清除走数据控制页（先导出再清，防手滑）。"),
+        ),
+    ),
     "gen" to SubPage(
         "生成参数",
         listOf(
