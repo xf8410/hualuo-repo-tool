@@ -81,6 +81,10 @@ class ChatRuntime(
     private val store: SessionStore? = null,
     /** 一次喂模型的历史上限（条）；现场读设置，砍最旧的，砍数进 [lastTrimmed]。 */
     val maxHistoryTurns: () -> Int = { MAX_HISTORY_TURNS },
+    /** 采样温度；null = 不带该字段（用端点默认）。「生成参数」页实装刀接线。 */
+    val temperature: () -> Double? = { null },
+    /** 核采样 top_p；null = 不带该字段。 */
+    val topP: () -> Double? = { null },
     /** 系统指令；空串就不发这条（不多塞一个空消息占位）。 */
     val systemPrompt: () -> String = { "" },
     /** 模型可调用的工具表；空表 = 不带 tools 字段（行为与接线前逐字一致）。 */
@@ -314,14 +318,14 @@ class ChatRuntime(
             if (toolRegistry.isEmpty()) {
                 // 表空：走老形状（不带 tools 字段）。模型回了工具调用按形状异常报错——
                 // 没带清单却回调用，当成功或当文本都说不通（这层的语义在客户端那侧钉过）。
-                val error = client.chat(profile, history) { chunk ->
+                val error = client.chat(profile, history, temperature(), topP()) { chunk ->
                     roundText.append(chunk)
                     appendStreaming(chunk)
                 }
                 if (error == null) RoundOutcome.Text else RoundOutcome.Failed(error)
             } else {
                 when (
-                    val outcome = client.chatTurns(profile, history, tools = toolRegistry.specs()) { chunk ->
+                    val outcome = client.chatTurns(profile, history, tools = toolRegistry.specs(), temperature = temperature(), topP = topP()) { chunk ->
                         roundText.append(chunk)
                         appendStreaming(chunk)
                     }
