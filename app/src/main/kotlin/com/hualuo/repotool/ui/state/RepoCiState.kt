@@ -11,7 +11,7 @@ import com.hualuo.engine.github.GitHubRun
  *
  * 独立成件的原因与 [WebSearchRunState] 同款：它天生是**瞬时**的（不落盘，重开从空开始），
  * 而 [AppUiState] 已经贴着红线三（单文件不许过 999 行），这类旁支不该再往里塞。
- * 字段名对上层保持原样（AppUiState 里的 ciBusy / ciRuns / ciError 等只是转发），
+ * 上层字段名保持原样（AppUiState 里的 ciBusy / ciRuns / ciError 等只是转发），
  * 界面层一行都不用改。
  *
  * 仓库与令牌在设置「GitHub 工作台」里配，令牌只进请求头（引擎件老规矩）。
@@ -34,8 +34,11 @@ class RepoCiState(
         private set
     var error by mutableStateOf<String?>(null)
         private set
-    var repoLabel by mutableStateOf("")
+
+    /** 标题那行现报的仓库：默认就先摆设置里那家（还没拉也看得见在看谁）。 */
+    var repoLabel by mutableStateOf(loadRepo())
         private set
+
     /** 「检查更新」的一句话结论；null = 还没查过。 */
     var updateNote by mutableStateOf<String?>(null)
         private set
