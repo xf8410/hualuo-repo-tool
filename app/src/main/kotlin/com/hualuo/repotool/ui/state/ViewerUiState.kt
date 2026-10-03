@@ -51,9 +51,12 @@ class ViewerUiState(private val persist: UiPersistence) {
     // ── 进制换算卡 ──
     var radixInput by mutableStateOf("255")
     var radixView by mutableStateOf<HexDump.RadixView?>(null)
+    private set
     var radixNote by mutableStateOf<String?>(null)
+        private set
     var floatInput by mutableStateOf("1.5")
     var floatView by mutableStateOf<HexDump.FloatView?>(null)
+        private set
 
     // ── 上传 ──
     var uploadRepo by mutableStateOf(persist.load(UiKeys.GITHUB_REPO) ?: "")
@@ -120,10 +123,10 @@ class ViewerUiState(private val persist: UiPersistence) {
     }
 
     /**
-     * 文件名/扩展名 → 语言显示名。
+     * 文件名/扩展名到语言显示名。
      *
      * 先查长扩展名别名表 [LangExtAliases]（csharp / javascript / typescript 这些长名
-     * 不在 LangRegistry 的扩展名表里，2026-10-03 批次三条红逮住的缺口），
+     * 不在 LangRegistry 的扩展名表里，是 2026-10-03 批次三条红当场逮住的缺口），
      * 命中就用别名指向的语言；没命中照常走 [LangRegistry.byFileName]，
      * 认不得仍然是纯文本兜底——查看器永远不说「不支持」。
      */
