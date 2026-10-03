@@ -31,8 +31,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: 装 Gradle
-        uses: gradle/actions/setup-gradle@v4
+      # 本仓没有 gradle wrapper（仓库根目录里就没有 gradlew），
+      # 第一版直接跑 ./gradlew，五个 job 一起死在 exit 127。
+      # AGP 8.7.3 要求 Gradle 8.9 以上，这里固定 8.10.2。
+      - name: 装 Gradle 8.10.2
+        run: |
+          curl -fsSL --retry 3 -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
 
       - name: 只跑这个语言那一条测试
-        run: ./gradlew :engine:test --tests "com.hualuo.engine.language.LanguageHighlightMatrixTest._${{ matrix.lang }}Case" --stacktrace
+        run: gradle :engine:test --tests "com.hualuo.engine.language.LanguageHighlightMatrixTest._${{ matrix.lang }}Case" --stacktrace
