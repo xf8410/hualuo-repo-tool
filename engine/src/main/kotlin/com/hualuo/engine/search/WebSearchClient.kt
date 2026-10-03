@@ -116,6 +116,9 @@ class WebSearchClient(
         /** 免费档端点：DDG 的 HTML 版（lite/html 两个形状里这个结果标记最稳）。 */
         const val BASE_URL = "https://html.duckduckgo.com/html/?q="
 
+        /** 正文封顶：与带密钥那几家同一个值（[ProviderSearchClient.FETCH_CHAR_CAP]）。 */
+        const val FETCH_CHAR_CAP = ProviderSearchClient.FETCH_CHAR_CAP
+
         private val RESULT_ANCHOR = Regex("<a\\b[^>]*class=\"result__a\"[^>]*>.*?</a>", RegexOption.DOT_MATCHES_ALL)
         private val RESULT_SNIPPET = Regex("<a\\b[^>]*class=\"result__snippet\"[^>]*>.*?</a>", RegexOption.DOT_MATCHES_ALL)
         private val HREF = Regex("href=\"([^\"]*)\"")
@@ -123,7 +126,7 @@ class WebSearchClient(
         private val WHITE = Regex("\\s+")
 
         /**
-         * 真网取页：超时齐备（连接 10s、读 15s），正文有界（52 万字符封顶，一页 HTML
+         * 真网取页：超时齐备（连接 10s、读 15s），正文有界（[FETCH_CHAR_CAP] 封顶，一页 HTML
          * 远够不到）。非 2xx 抛 IOException 带状态码，由 [search] 翻成人话。
          * 默认 java UA 会被不少站拒，报个普通浏览器的。
          */
@@ -138,8 +141,8 @@ class WebSearchClient(
                 val reader = InputStreamReader(conn.inputStream, Charsets.UTF_8)
                 val out = StringBuilder()
                 val buf = CharArray(8 * 1024)
-                while (out.length < ProviderSearchClient.FETCH_CHAR_CAP) {
-                    val n = reader.read(buf, 0, minOf(buf.size, ProviderSearchClient.FETCH_CHAR_CAP - out.length))
+                while (out.length < FETCH_CHAR_CAP) {
+                    val n = reader.read(buf, 0, minOf(buf.size, FETCH_CHAR_CAP - out.length))
                     if (n < 0) break
                     out.append(buf, 0, n)
                 }
