@@ -7,8 +7,8 @@ import androidx.compose.runtime.setValue
 import com.hualuo.engine.github.GitHubCiClient
 import com.hualuo.engine.github.GitHubRun
 import com.hualuo.engine.github.normalizeGitHubRepo
+import com.hualuo.engine.search.ProviderSearchClient
 import com.hualuo.engine.search.SearchOutcome
-import com.hualuo.engine.search.WebSearchClient
 import com.hualuo.engine.search.WebSearchResult
 import com.hualuo.engine.store.SessionStore
 import com.hualuo.repotool.backup.BackupGateway
@@ -54,8 +54,8 @@ data class CourierPick(
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
  *  - **仓库工作台（浏览 + 改码）**：整体住 [repo]（[RepoWorkbenchState] 状态舱，
  *    999 行红线拆出来的：清单/浏览/分支/提交历史/文件预览与改码提交）。
- *  - **工具页真电（网页搜索）**：免费档 DuckDuckGo（引擎件 WebSearchClient，fetch 缝隙
- *    让引擎测试不碰真网，这里给的就是真网）；结果真数据、失败出声不冒充。
+ *  - **工具页真电（网页搜索）**：走 [webSearch] 设置舱挑的那家（默认免费档 DuckDuckGo，
+ *    也可换 Brave/Serper/Tavily/SearXNG，配置在执行那一刻现读）；结果真数据、失败出声不冒充。
  *  - **长任务页真电（文件投递）**：选文件/选目录只发动作请求（[pendingDataAction] 桥上走），
  *    收集与分卷投递在根界面的后台线程（CourierDelivery）；目标仓/分支/令牌在设置「文件投递」。
  *  - **工具族（0.7.0 刀②）**：GitHub 读类十件注册进 [chat]（列仓、看别人的仓、浏览目录、
@@ -98,6 +98,17 @@ class AppUiState(
 
     /** 查看器状态舱（全语言/进制/全格式上传；流式分块，红线三拆件）。 */
     val viewer = ViewerUiState(persist)
+
+    /**
+     * 网页搜索设置舱：选哪家、那家的密钥、自托管实例地址、默认条数。
+     *
+     * 取值存值都走本类的 text/setText（界面那条活通道），所以自动落盘与重组天然跟着走；
+     * 执行那一刻由它现读现拼配置（[WebSearchState.config]），设置改完下一句就生效。
+     */
+    val webSearch = WebSearchState(
+        load = { key -> text(key) },
+        save = { key, value -> setText(key, value) },
+    )
 
     /** 底栏停在第几页。存枚举名，读不懂就回回合流页。 */
     var tab: NavTab by saved(UiKeys.TAB, readTab(), { it.name })
@@ -228,6 +239,7 @@ class AppUiState(
             memoryStore = memoryStore,
             sessionStore = store,
             webSearchEnabled = { webSearchOn },
+            webSearchConfig = { webSearch.config() },
             skillStore = skillStore,
             imageGenConfig = imageGenConfig,
             imageGenPersist = imageGenPersist,
@@ -276,7 +288,7 @@ class AppUiState(
      *  - 超过 [MAX_PROMPT_CHARS] 字符拒发——单条超大粘贴是把上下文窗口顶爆的最快方式。
      *    这道闸按字符管「单条」，历史护栏按条数管「总量」，各补各的盲区；
      *  - 过了闸才交 [chat.send]；**砍了历史必须当场出声**（家规：砍数上屏）；
-     *    发出去草稿清空（清动作本身也记设置文件，防重开冒草稿）。
+     *  - 发出去草稿清空（清动作本身也记设置文件，防重开冒草稿）。
      */
     fun sendCurrentInput() {
         val text = input
@@ -295,7 +307,7 @@ class AppUiState(
         input = ""
     }
 
-    // ── 工具页真电：网页搜索（免费档 DuckDuckGo） ───────────────────────────
+    // ── 工具页真电：网页搜索（走设置里挑的那家，默认免费档 DuckDuckGo） ───────
 
     /** 工具页搜索框里的词。演示壳转真电的第一格输入。 */
     var searchQuery by mutableStateOf("")
@@ -316,6 +328,8 @@ class AppUiState(
      * 工具页「搜一下」：真网络、真结果、失败出声不冒充（家规）。
      * 后台线程跑（大会计 IO 不进主线程，ANR 病根的老规矩）；收场一律写回
      * [searchResults] 与 [searchNote]，成功的旧结果不偷偷留着顶数——失败就明示失败。
+     *
+     * 用哪家由 [webSearch] 设置舱现读：换一家、填密钥、填实例地址，下一句就生效。
      */
     fun runWebSearch() {
         if (searchBusy) return
@@ -327,12 +341,12 @@ class AppUiState(
         searchBusy = true
         searchNote = null
         Thread({
-            val outcome = WebSearchClient().search(query)
+            val outcome = ProviderSearchClient(config = { webSearch.config() }).search(query)
             searchBusy = false
             when (outcome) {
                 is SearchOutcome.Ok -> {
                     searchResults = outcome.results
-                    searchNote = "搜到 ${outcome.results.size} 条（${outcome.query}）"
+                    searchNote = "搜到 ${outcome.results.size} 条（${outcome.query}，走 ${webSearch.providerLabel()}）"
                 }
                 is SearchOutcome.Failed -> {
                     searchResults = emptyList()
@@ -426,7 +440,7 @@ class AppUiState(
 
     /**
      * 已选进投递批的条目。只活在本进程、不落盘：SAF 授权跟着进程走，进程死了
-     * 重新选一遍才靠得住，把 URI 装进设置文件是假安心。想清空点「清空已选」。
+     * 重开一遍才能靠得住，把 URI 装进设置文件是假安心。想清空点「清空已选」。
      */
     var courierPicks by mutableStateOf(emptyList<CourierPick>())
         private set
@@ -439,7 +453,7 @@ class AppUiState(
     var courierNote by mutableStateOf<String?>(null)
         private set
 
-    /** 根界面把选择器的结果交进来（一次选中的可以是一个或多个）。 */
+    /** 根界面把选择器的结果交进来（一次选定的可以是一个或多个）。 */
     fun addCourierPicks(picks: List<CourierPick>) {
         if (picks.isEmpty()) return
         courierPicks = courierPicks + picks
@@ -451,8 +465,8 @@ class AppUiState(
     }
 
     /**
-     * 长任务页「选文件」「选目录」：只发动作请求，系统选择器归 RootScreen 开
-     * （备份同款桥：纯 JVM 状态层不认识 ActivityResult）。
+     * 长任务页「选文件」「选目录」：只发动作请求，系统选择器走跟备份同款桥
+     * （纯 JVM 状态层不认识 ActivityResult）。
      */
     fun requestCourierPick(tree: Boolean) {
         if (courierBusy) {
@@ -574,8 +588,8 @@ class AppUiState(
 
     /**
      * 旧 Agora 包（.agora）的应用：会话已由网关落盘（agora- 前缀、重名跳过），
-     * 这里把兑换单里的设置逐键送进**活通道**，带不动的账（媒体/任务/模板变量）原样报出来。
-     * 返回一句话给 toast；修订号推一格 + 立即落盘。
+     * 这里把兑换单里的设置逐键送进**活通道**，带不动的账（媒体/任务/模板变量/解不开的旧密文）
+     * 原样报出来。返回一句话给 toast；修订号推一格 + 立即落盘。
      */
     fun applyAgoraImport(outcome: BackupGateway.AgoraImportOutcome): String {
         if (!outcome.recognized || outcome.plan == null) {
@@ -598,6 +612,8 @@ class AppUiState(
         plan.thinkingLevel?.let { put(UiKeys.THINK_LEVEL, it.toString()) }
         plan.codeExecOn?.let { put(UiKeys.CODE_EXEC_ON, it.toString()) }
         plan.webSearchOn?.let { put(UiKeys.WEB_SEARCH_ON, it.toString()) }
+        // 网页搜索四格（提供商 / 各家密钥 / 自托管实例地址）同走活通道，旧包没带的不写
+        applied += applyWebSearchFromAgora(persist, plan)
         plan.shellOn?.let { put(UiKeys.SHELL_ON, it.toString()) }
         settingsRevision += 1
         val issues = persistenceMessages()
@@ -806,8 +822,8 @@ class AppUiState(
         SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
 
     /**
-     * 会话库接线（启动，全同步）。刻意写成嵌套 if 而不是 init 里 return：
-     * init 块里的 return 语义各版本 Kotlin 有分歧，不值得赌；嵌套清楚照样读得懂。
+     * 会话库接线（启动，全同步）。刻意写成嵌套 if 而不是 init 里 return：init 块里的 return
+     * 语义各版本 Kotlin 有分歧，不值得赌；嵌套清楚照样读得懂。
      * 放在类尾：convs 等属性的委托都已初始化，「先用后声明」的初始化顺序坑不存在。
      * 接成功了不出声（信任靠「字还在」建立，不靠开场白）；失败必须出声。
      */
@@ -856,11 +872,7 @@ class AppUiState(
         const val ACTION_COURIER_PICK_TREE = "courier_pick_tree"
         const val ACTION_COURIER_DELIVER = "courier_deliver"
 
-        /**
-         * 投递目标前缀：courier/时间戳/，斜杠结尾（引擎件的规矩，前缀由调用方给）。
-         * 一批一个目录：重投同批是原地覆盖（引擎件的「重投 = 原地修复」），
-         * 换一批自动换新目录，不同批互不打架。
-         */
+        /** 投递目标前缀：courier/时间戳/，斜杠结尾（引擎件的规矩，前缀由调用方给）。 */
         fun buildCourierPrefix(nowMs: Long): String =
             "courier/" + SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date(nowMs)) + "/"
     }
