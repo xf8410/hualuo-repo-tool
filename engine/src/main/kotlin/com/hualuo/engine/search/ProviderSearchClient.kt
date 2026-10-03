@@ -105,8 +105,8 @@ class ProviderSearchClient(
                 method = "POST",
                 url = "https://api.tavily.com/search",
                 headers = listOf("Content-Type" to "application/json"),
-                body = """{"api_key":"$key","query":"$query","max_results":$count,""" +
-                    """"search_depth":"advanced","include_answer":false}""",
+                // Tavily 这家钥匙只认请求体（不进头），所以体里带 api_key
+                body = """{"api_key":"$key","query":"$query","max_results":$count,"search_depth":"advanced","include_answer":false}""",
             )
             SearchProviders.SEARXNG -> SearchRequest(
                 method = "GET",
