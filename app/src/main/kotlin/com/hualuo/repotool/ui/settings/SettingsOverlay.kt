@@ -1,6 +1,5 @@
 package com.hualuo.repotool.ui.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,7 +48,7 @@ import com.hualuo.repotool.ui.theme.SubInk
 
 @Composable
 fun SettingsOverlay(state: AppUiState) {
-    BackHandler(enabled = state.settingsOpen) {
+    BackHandlerCompat(enabled = state.settingsOpen) {
         state.backFromSettings()
     }
     val top = state.subStack.lastOrNull()
@@ -89,6 +88,7 @@ private fun SettingsHome(state: AppUiState, modifier: Modifier) {
                         val value = when (item.subKey) {
                             "provider" -> runtime?.settings?.providers?.count { it.custom || runtime.isConfigured(it.id) }?.toString() ?: item.value
                             "model" -> runtime?.settings?.enabledModels?.size?.let { "启用 $it" } ?: item.value
+                            "websearch" -> state.webSearch.providerLabel()
                             else -> item.value
                         }
                         Row(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(18.dp)).background(CardBg).clickable { state.subStack = state.subStack + item.subKey }.padding(14.dp)) {
@@ -104,7 +104,7 @@ private fun SettingsHome(state: AppUiState, modifier: Modifier) {
 
 @Composable
 private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
-    BackHandler(enabled = state.settingsOpen) {
+    BackHandlerCompat(enabled = state.settingsOpen) {
         state.backFromSettings()
     }
     val page = subPage(key) ?: return
@@ -116,6 +116,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.PersistedText -> PersistedTextField(state, f)
                 is SubField.PersistedSwitch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = state.flag(f.key, f.defaultOn); SwitchPill(on) { state.setFlag(f.key, !on) } }
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
+                SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
                 SubField.ProviderSettings -> ProviderSettingsPanel(state)
                 SubField.ModelSettings -> ModelSettingsPanel(state)
