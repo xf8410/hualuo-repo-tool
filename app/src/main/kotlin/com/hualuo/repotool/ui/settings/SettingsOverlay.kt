@@ -22,6 +22,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import kotlin.math.roundToInt
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -121,6 +123,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.PersistedSwitch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = state.flag(f.key, f.defaultOn); SwitchPill(on) { state.setFlag(f.key, !on) } }
                 is SubField.PersistedSlider -> PersistedSliderField(state, f)
                 is SubField.PersistedSeg -> PersistedSegField(state, f)
+                SubField.StorageStats -> StorageStatsCard(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -132,6 +135,82 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
             }
         }
     }
+}
+
+/** 存储占用卡：真统计 + 缓存真清理（清完重算；会话仓与收件箱只报大小不给一键删——防手滑丢历史）。 */
+@Composable
+private fun StorageStatsCard(state: AppUiState) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var stats by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Pair<String, Long>>?>(null) }
+    var scanning by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        scanning = true
+        stats = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { storageStats(ctx) }
+        scanning = false
+    }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text("存储占用（应用私有目录，按需刷新）", fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(6.dp))
+        val list = stats
+        when {
+            list == null -> Text(if (scanning) "统计中……" else "点下方刷新", fontSize = 13.sp, color = SubInk)
+            list.isEmpty() -> Text("目录都是空的", fontSize = 13.sp, color = SubInk)
+            else -> list.forEach { (name, bytes) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    Text(name, fontSize = 13.sp, color = Ink)
+                    Spacer(Modifier.weight(1f))
+                    Text(fmtStorage(bytes), fontSize = 13.sp, color = if (bytes > 256L * 1024 * 1024) Ink else SubInk)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth()) {
+            Text("刷新统计", fontSize = 13.sp, color = Accent, modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
+                scanning = true
+                Thread {
+                    val fresh = storageStats(ctx)
+                    stats = fresh
+                    scanning = false
+                }.apply { name = "hualuo-storage-scan" }.start()
+            }.padding(horizontal = 8.dp, vertical = 6.dp))
+            Spacer(Modifier.weight(1f))
+            Text("清缓存（帧/崩溃/生成图）", fontSize = 13.sp, color = Accent, modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
+                Thread {
+                    clearCacheDirs(ctx)
+                    val fresh = storageStats(ctx)
+                    stats = fresh
+                }.apply { name = "hualuo-storage-clear" }.start()
+            }.padding(horizontal = 8.dp, vertical = 6.dp))
+        }
+        Text("会话历史（sessions）与录屏收件箱（watch_inbox）只报大小：删它们会丢数据，要去数据控制页做导出再清。", fontSize = 11.sp, color = SubInk)
+    }
+}
+
+private fun storageStats(ctx: android.content.Context): List<Pair<String, Long>> {
+    val files = ctx.filesDir
+    val entries = listOf(
+        "会话历史 sessions" to java.io.File(files, "sessions"),
+        "录屏收件箱 watch_inbox" to java.io.File(files, "watch_inbox"),
+        "视频帧缓存 watch_frames" to java.io.File(files, "watch_frames"),
+        "生成图 tool_images" to java.io.File(files, "tool_images"),
+        "崩溃留档 crash" to java.io.File(files, "crash"),
+        "设置 settings" to java.io.File(files, "settings"),
+    )
+    return entries.map { (label, dir) -> label to dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() } } +
+        listOf("合计（含其他）" to files.walkBottomUp().filter { it.isFile }.sumOf { it.length() })
+}
+
+private fun clearCacheDirs(ctx: android.content.Context) {
+    listOf("watch_frames", "tool_images", "crash").forEach { name ->
+        java.io.File(ctx.filesDir, name).takeIf { it.isDirectory }?.listFiles()?.forEach { it.deleteRecursively() }
+    }
+}
+
+private fun fmtStorage(bytes: Long): String = when {
+    bytes >= 1L shl 30 -> "%.2f GB".format(bytes / 1073741824.0)
+    bytes >= 1L shl 20 -> "%.1f MB".format(bytes / 1048576.0)
+    bytes >= 1024 -> "%.1f KB".format(bytes / 1024.0)
+    else -> "$bytes B"
 }
 
 /** 落盘滑块：拖动写 [SubField.PersistedSlider.key]，显示值带位数格式化。 */
