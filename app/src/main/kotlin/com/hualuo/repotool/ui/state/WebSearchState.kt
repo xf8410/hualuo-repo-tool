@@ -35,10 +35,10 @@ class WebSearchState(
     /** 自托管实例地址（没填就是空串，执行侧会回退到公共实例）。 */
     fun baseUrl(): String = load(UiKeys.WEB_SEARCH_BASE_URL).trim().trimEnd('/')
 
-    /** 默认返回条数（1..10，读不懂回 5）。 */
+    /** 默认返回条数（读不懂回 5，越界夹到范围里）。 */
     fun numResults(): Int = searchNumResultsFrom(load)
 
-    /** 换一家：id 落设置；**不动其它家的密钥**（换一家不丢上一家的钥匙）。 */
+    /** 换一家：id 落设置；**不动别家的密钥**（换一家不丢上一家的钥匙）。 */
     fun setProvider(id: String) {
         save(UiKeys.WEB_SEARCH_PROVIDER, SearchProviders.normalize(id).id)
     }
@@ -50,7 +50,7 @@ class WebSearchState(
     fun setNumResults(value: Int) {
         save(
             UiKeys.WEB_SEARCH_NUM_RESULTS,
-            value.coerceIn(SearchConfig.MIN_NUM_RESULTS, SearchConfig.MAX_NUM_RESULTS).toString(),
+            value.coerceIn(SearchProviders.MIN_RESULTS, SearchProviders.MAX_RESULTS).toString(),
         )
     }
 
