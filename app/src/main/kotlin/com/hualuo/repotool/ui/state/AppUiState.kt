@@ -4,10 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.hualuo.engine.github.GitHubCiClient
 import com.hualuo.engine.github.GitHubRun
 import com.hualuo.engine.github.normalizeGitHubRepo
-import com.hualuo.engine.search.SearchConfig
 import com.hualuo.engine.search.WebSearchResult
 import com.hualuo.engine.store.SessionStore
 import com.hualuo.repotool.backup.BackupGateway
@@ -47,12 +45,12 @@ data class CourierPick(
  *  - **会话库（M2 接线）**：store 不为 null 时，启动**同步**接上最近一次会话（没有异步首读，
  *    白屏和「多进几次才出来」没有土壤）、抽屉列表来自真库、新建/删除都动真文件；
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
- *  - **仓库CI（GitHub 只读）**：runs 与最新发布版现场拉，失败/坏条目出声不冒充；
- *    仓库与令牌在设置「GitHub 工作台」里配，令牌只进请求头。
  *  - **GitHub 登录（2026-09-22 补）**：整体住 [githubLogin]（[GithubLoginState]，进程级）；
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
  *  - **仓库工作台（浏览 + 改码）**：整体住 [repo]（[RepoWorkbenchState] 状态舱，
  *    999 行红线拆出来的：清单/浏览/分支/提交历史/文件预览与改码提交）。
+ *  - **仓库CI（只读）**：runs 与最新发布版现场拉，失败/坏条目出声不冒充；
+ *    瞬时态住 [ci]（[RepoCiState]），仓库与令牌在设置「GitHub 工作台」里配，令牌只进请求头。
  *  - **工具页真电（网页搜索）**：瞬时态住 [webSearchRun]，用哪家由 [webSearch] 设置舱
  *    现读（默认免费档 DuckDuckGo，也可换 Brave/Serper/Tavily/SearXNG）；真结果、失败出声不冒充。
  *  - **长任务页真电（文件投递）**：选文件/选目录只发动作请求（[pendingDataAction] 桥上走），
@@ -114,6 +112,13 @@ class AppUiState(
         configProvider = { webSearch.config() },
         providerLabel = { webSearch.providerLabel() },
         toast = { msg -> toast(msg) },
+    )
+
+    /** 仓库CI瞬时态（runs/忙灯/错误/更新检查结论）；仓库与令牌现读设置。 */
+    val ci = RepoCiState(
+        loadToken = { githubToken() },
+        loadRepo = { defaultGitHubRepo() },
+        versionLabel = { versionLabel },
     )
 
     /** 底栏停在第几页。存枚举名，读不懂就回回合流页。 */
@@ -341,82 +346,32 @@ class AppUiState(
     /** 视频库状态舱（编排细节在 VideoUnderstandingState，红线三拆件）。 */
     val video = VideoUnderstandingState(watchInboxDir = watchInboxDir)
 
-
     // ── APK 检查（560 清单 121-160 域；引擎全测，这里只存文本收场） ──
 
     var apkChecking by mutableStateOf(false)
     var apkReport by mutableStateOf<String?>(null)
 
-    // ── 仓库CI（GitHub 只读） ───────────────────────────────────────────────
+    // ── 仓库CI（只读；瞬时态在 [ci]，界面层字段名保持原样） ────────────────
 
-    private val ciClient = GitHubCiClient()
+    val ciBusy: Boolean get() = ci.busy
+    val ciRuns: List<GitHubRun> get() = ci.runs
+    val ciBadEntries: Int get() = ci.badEntries
+    val ciError: String? get() = ci.error
+    val ciRepoLabel: String get() = ci.repoLabel
+    val updateNote: String? get() = ci.updateNote
 
-    var ciBusy by mutableStateOf(false)
-        private set
-    var ciRuns by mutableStateOf(emptyList<GitHubRun>())
-        private set
-    var ciBadEntries by mutableStateOf(0)
-        private set
-    var ciError by mutableStateOf<String?>(null)
-        private set
-    var ciRepoLabel by mutableStateOf(DEFAULT_GITHUB_REPO)
-        private set
-    /** 「检查更新」的一句话结论；null = 还没查过。 */
-    var updateNote by mutableStateOf<String?>(null)
-        private set
+    /** 进页时才拉；已有数据或正在拉就不重复。 */
+    fun refreshRepoCiIfStale() = ci.refreshIfStale()
+
+    fun refreshRepoCi() = ci.refresh()
+
+    fun checkUpdate() = ci.checkUpdate()
 
     private fun githubToken(): String? =
         persist.load(UiKeys.GITHUB_TOKEN)?.trim()?.takeIf { it.isNotEmpty() }
 
-    /** 拉默认分支最近的 workflow runs。失败/坏条目都摆在明面上，不冒充成功。 */
-    fun refreshRepoCi() {
-        if (ciBusy) return
-        val repo = persist.load(UiKeys.GITHUB_REPO)?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_GITHUB_REPO
-        val token = githubToken()
-        ciBusy = true
-        ciError = null
-        ciRepoLabel = repo
-        Thread({
-            val snapshot = runCatching { ciClient.latestRuns(repo, token) }.getOrElse {
-                ciBusy = false
-                ciError = "拉不动 GitHub（${it.message ?: "出错了"}）"
-                return@Thread
-            }
-            ciRuns = snapshot.runs
-            ciBadEntries = snapshot.badEntries
-            ciError = snapshot.error
-            ciBusy = false
-        }, "hualuo-ci").start()
-    }
-
-    /** 进页时才拉；已有数据或正在拉就不重复。 */
-    fun refreshRepoCiIfStale() {
-        if (ciRuns.isEmpty() && !ciBusy) refreshRepoCi()
-    }
-
-    /** 拿当前版本对 GitHub 最新发布版：有新版/已最新/没发布过/查不到，四态各说各话。 */
-    fun checkUpdate() {
-        if (ciBusy) return
-        val repo = persist.load(UiKeys.GITHUB_REPO)?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_GITHUB_REPO
-        val token = githubToken()
-        ciBusy = true
-        Thread({
-            val result = runCatching { ciClient.latestRelease(repo, token) }.getOrElse {
-                ciBusy = false
-                updateNote = "查不动（${it.message ?: "出错了"}）"
-                return@Thread
-            }
-            ciBusy = false
-            updateNote = when {
-                result.error != null -> "查不到：${result.error}"
-                result.notFound -> "GitHub 上还没有发布版，跳过对比"
-                else -> {
-                    val tag = result.release?.tag ?: "?"
-                    if (tag == versionLabel.trim()) "已是最新（$tag）" else "有新版：$tag（当前 ${versionLabel}）"
-                }
-            }
-        }, "hualuo-update").start()
-    }
+    private fun defaultGitHubRepo(): String =
+        persist.load(UiKeys.GITHUB_REPO)?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_GITHUB_REPO
 
     // ── 长任务页真电：文件投递（courier；SAF 与投递执行在 RootScreen/CourierDelivery） ──
 
