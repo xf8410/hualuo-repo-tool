@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import com.hualuo.engine.github.GitHubCommitWritten
 import com.hualuo.engine.github.GitHubRepoClient
 import com.hualuo.engine.language.HexDump
+import com.hualuo.engine.language.LangExtAliases
 import com.hualuo.engine.language.LangRegistry
 
 /**
@@ -106,7 +107,7 @@ class ViewerUiState(private val persist: UiPersistence) {
                     hasMoreText = false
                     loadHexPage(0L)
                 } else {
-                    langName = LangRegistry.byFileName(name).name
+                    langName = resolveLangName(name)
                     hexRows = emptyList()
                     loadTextFrom(open)
                 }
@@ -116,6 +117,25 @@ class ViewerUiState(private val persist: UiPersistence) {
                 busy = false
             }
         }.start()
+    }
+
+    /**
+     * 文件名/扩展名 → 语言显示名。
+     *
+     * 先查长扩展名别名表 [LangExtAliases]（csharp / javascript / typescript 这些长名
+     * 不在 LangRegistry 的扩展名表里，2026-10-03 批次三条红逮住的缺口），
+     * 命中就用别名指向的语言；没命中照常走 [LangRegistry.byFileName]，
+     * 认不得仍然是纯文本兜底——查看器永远不说「不支持」。
+     */
+    private fun resolveLangName(fileName: String): String {
+        val dot = fileName.lastIndexOf('.')
+        if (dot >= 0 && dot < fileName.length - 1) {
+            val aliasId = LangExtAliases.resolveId(fileName.substring(dot + 1))
+            if (aliasId != null) {
+                LangRegistry.allLangs().firstOrNull { it.id == aliasId }?.let { return it.name }
+            }
+        }
+        return LangRegistry.byFileName(fileName).name
     }
 
     /** 文本加载：从流头按行读一个块（「加载更多」再读下一块）。 */
