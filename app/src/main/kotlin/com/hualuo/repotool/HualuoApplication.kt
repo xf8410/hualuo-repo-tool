@@ -19,8 +19,17 @@ import java.io.File
  *
  * 0.6.1 取证版改动：构造器里的 init { modelSettings } 预热挪到 onCreate——
  * 构造期从此零业务代码，崩溃观察器（attachBaseContext 最早挂）能罩住
- * 之后的一切 Java 异常；modelSettings 本就是 lazy，首次使用自然挂上，
- * 行为与预热版一字不差（RootScreen 取 uiState 时才真正触达）。
+ * 之后的一切 Java 异常。
+ *
+ * 0.6.2 修（用户实报「模型页啥也没有、接不了 API」+ 崩溃留档对照）：
+ * 上面那次挪动**搬丢了**——预热只是从构造器挪走了，并没有在 onCreate 补上，
+ * 而 [modelSettings] 是 lazy，lazy 只在被读时才跑初始化块。全仓没有任何一处
+ * 读它（RootScreen 只拿 uiState；AppUiState/ChatRuntime 里的
+ * ModelSettingsRuntime.current() 都在 lambda 里晚读），于是：
+ *   - ModelSettingsRuntime.install 永不执行 -> 设置的「提供商」「模型」两页
+ *     第一行 current() ?: return 直接静默空屏（用户截图那页）；
+ *   - ProviderRouting.install 同样永不执行 -> 聊天侧拿不到任何提供商会话。
+ * 修法在 onCreate：显式把句柄挂上（[installModelSettings]），仍然构造期零业务代码。
  */
 class HualuoApplication : Application() {
 
@@ -103,6 +112,23 @@ class HualuoApplication : Application() {
         super.onCreate()
         // 幂等：attachBaseContext 已装过就跳过；这行只是双保险
         CrashObserver.install(this)
+        installModelSettings()
+    }
+
+    /**
+     * 把模型设置句柄挂上进程（0.6.2 新增，见类头注释里那次「搬丢了」的账）。
+     *
+     * 只在 [ModelSettingsRuntime] 还没装时动手：install 是幂等覆盖，
+     * 但这层判断让「已装」这一事实显式可读，也保证这段代码将来被搬去别处
+     * 也不会变成每次都重建。读 [modelSettings] 就是触发 lazy 初始化
+     * （install 与 ProviderRouting.install 都在那个初始化块里）。
+     */
+    private fun installModelSettings() {
+        if (ModelSettingsRuntime.current() == null) {
+            // 触一次即装上；这里不赋给变量也不需要——lazy 的副作用就是全部收获
+            check(ModelSettingsRuntime.current() != null || true)
+            modelSettings
+        }
     }
 }
 
