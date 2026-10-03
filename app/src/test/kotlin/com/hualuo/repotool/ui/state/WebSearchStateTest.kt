@@ -4,7 +4,6 @@ import com.hualuo.engine.backup.AgoraImportPlan
 import com.hualuo.engine.search.SearchProviders
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -27,25 +26,14 @@ class WebSearchStateTest {
         override fun drainMessages(): List<String> = emptyList()
     }
 
-    private fun stateOf(
-        persist: MemPersist,
-        bump: () -> Unit = {},
-    ): Pair<WebSearchState, () -> Unit> {
-        val bumps = arrayOf(0)
-        val state = WebSearchState(
-            load = { key -> persist.load(key).orEmpty() },
-            save = { key, value ->
-                persist.save(key, value)
-                bumps[0] += 1
-                bump()
-            },
-        )
-        return state to { bumps[0] += 0 }
-    }
+    private fun stateOf(persist: MemPersist): WebSearchState = WebSearchState(
+        load = { key -> persist.load(key).orEmpty() },
+        save = { key, value -> persist.save(key, value) },
+    )
 
     @Test
     fun freshInstallUsesTheFreeTier() {
-        val (state, _) = stateOf(MemPersist())
+        val state = stateOf(MemPersist())
         assertEquals(SearchProviders.DEFAULT_ID, state.provider.id)
         assertEquals("DuckDuckGo", state.providerLabel())
         assertFalse("默认那家不要密钥", state.needsKey)
@@ -57,7 +45,7 @@ class WebSearchStateTest {
     @Test
     fun switchingProviderKeepsOtherProvidersKeys() {
         val persist = MemPersist()
-        val (state, _) = stateOf(persist)
+        val state = stateOf(persist)
         state.setProvider("brave")
         state.setApiKey("BSA-1")
         state.setProvider("tavily")
@@ -73,18 +61,18 @@ class WebSearchStateTest {
 
     @Test
     fun missingKeyIsSaidOutLoudInsteadOfPretendingReady() {
-        val (state, _) = stateOf(MemPersist(mapOf(UiKeys.WEB_SEARCH_PROVIDER to "serper")))
+        val state = stateOf(MemPersist(mapOf(UiKeys.WEB_SEARCH_PROVIDER to "serper")))
         assertTrue(state.needsKey)
         assertTrue("要显红字说清：${state.statusLine()}", state.statusLine().contains("还没填密钥"))
 
         state.setApiKey("  sk-1  ")
         assertEquals("sk-1", state.apiKey())
-        assertTrue("填了就不该再报错缺：${state.statusLine()}", !state.statusLine().contains("还没填密钥"))
+        assertTrue("填了就不该再报缺：${state.statusLine()}", !state.statusLine().contains("还没填密钥"))
     }
 
     @Test
-    fun searxngShowsTheInstanceFieldAndClampsIt() {
-        val (state, _) = stateOf(MemPersist(mapOf(UiKeys.WEB_SEARCH_PROVIDER to "searxng")))
+    fun searxngShowsTheInstanceFieldAndTrimsIt() {
+        val state = stateOf(MemPersist(mapOf(UiKeys.WEB_SEARCH_PROVIDER to "searxng")))
         assertTrue(state.usesBaseUrl)
         state.setBaseUrl("https://searx.my.example/")
         assertEquals("https://searx.my.example", state.baseUrl())
@@ -93,7 +81,7 @@ class WebSearchStateTest {
 
     @Test
     fun numResultsIsClampedOnBothEnds() {
-        val (state, _) = stateOf(MemPersist())
+        val state = stateOf(MemPersist())
         state.setNumResults(99)
         assertEquals("10", state.numResults().toString())
         state.setNumResults(0)
@@ -104,13 +92,14 @@ class WebSearchStateTest {
 
     @Test
     fun garbageInSettingsFallsBackInsteadOfBreakingSearch() {
-        val persist = MemPersist(
-            mapOf(
-                UiKeys.WEB_SEARCH_PROVIDER to "bing",
-                UiKeys.WEB_SEARCH_NUM_RESULTS to "不是数字",
+        val state = stateOf(
+            MemPersist(
+                mapOf(
+                    UiKeys.WEB_SEARCH_PROVIDER to "bing",
+                    UiKeys.WEB_SEARCH_NUM_RESULTS to "不是数字",
+                ),
             ),
         )
-        val (state, _) = stateOf(persist)
         assertEquals(SearchProviders.DEFAULT_ID, state.provider.id)
         assertEquals(5, state.numResults())
         assertEquals("duckduckgo", state.config().providerId)
@@ -119,7 +108,7 @@ class WebSearchStateTest {
     @Test
     fun configIsReadFreshEveryTimeSoSettingsTakeEffectImmediately() {
         val persist = MemPersist()
-        val (state, _) = stateOf(persist)
+        val state = stateOf(persist)
         assertEquals("duckduckgo", state.config().providerId)
         persist.save(UiKeys.WEB_SEARCH_PROVIDER, "tavily")
         persist.save(UiKeys.webSearchKey("tavily"), "tvly-9")
