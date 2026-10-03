@@ -39,14 +39,6 @@ fun searchNumResultsFrom(load: (String) -> String): Int =
         ?: SearchConfig.DEFAULT_NUM_RESULTS
 
 /**
- * 工具族用的搜索配置（现读设置，不缓存）：设置页改完下一句对话就生效。
- *
- * 认不出的提供商 id 在 [searchConfigFrom] 里就回默认了，这儿不做第二份判断。
- */
-fun webSearchConfig(persist: UiPersistence): SearchConfig =
-    searchConfigFrom { key -> persist.load(key).orEmpty() }
-
-/**
  * 旧 Agora 包里的网页搜索设置怎么进新版的键（数据控制 → 导入旧包那条路）。
  *
  * 摆在独立文件而不是塞进 AppUiState：那件本来就已经近千行（红线三），每多一行都在借债。
