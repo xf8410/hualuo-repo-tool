@@ -1,7 +1,6 @@
 package com.hualuo.engine.toolcalls
 
-import com.hualuo.engine.search.SearchOutcome
-import com.hualuo.engine.search.WebSearchClient
+import com.hualuo.engine.search.SearchRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -9,35 +8,42 @@ import kotlinx.serialization.json.contentOrNull
 
 /**
  * 网页工具族（M4 第五刀，语义对齐旧 Agora WebSearchToolProvider）：两件——
- *  - web_search：搜索（吃 [WebSearchClient]，免费档 DDG；num_results 1-10 默认 5）；
+ *  - web_search：搜索（吃 [SearchRunner]，底下是哪家由设置说话：免费档 DuckDuckGo 抓 HTML，
+ *    键档三家 + SearXNG 走 JSON API；num_results 1-10，默认取设置里的条数）；
  *  - web_fetch：取网页转正文（HTML 净化后按**文本**截断，不是砍 HTML——
  *    maxChars 默认 8000、封顶 10 万；回执带 truncated + totalChars，模型可加量再取）。
  *
  * 可见性走 [ToolRegistry.register] 的 visibleIf（设置开关关掉=清单里消失），
  * 不是「看得见但点不动」——对齐旧仓 definitions(ctx) 按开关返空。
  *
- * 取网动作全部缝隙注入（[searchClient] 的 fetch、本件的 [fetcher]）：纯 JVM 测试不碰真网。
- * 零脱敏：抓到什么转什么，正文原文进出。
+ * 取网动作全部缝隙注入（[SearchRunner] 背后的 fetch、web_fetch 的 [fetcher]）：纯 JVM 测试不碰真网。
+ * 零脱敏：抓到什么转什么，正文原文进出；密钥只进请求头，压根不经过这里。
  */
 object WebTool {
 
     private const val DEFAULT_MAX_CHARS = 8_000
     private const val CAP_MAX_CHARS = 100_000
-    private const val DEFAULT_RESULTS = 5
 
     fun register(
         registry: ToolRegistry,
-        searchClient: WebSearchClient,
-        fetcher: (String) -> String = { url -> WebSearchClient.defaultFetcher(url) },
+        searchRunner: SearchRunner,
+        fetcher: (String) -> String = { url ->
+            com.hualuo.engine.search.ProviderSearchClient.defaultFetch(
+                com.hualuo.engine.search.SearchRequest("GET", url),
+            )
+        },
         visibleIf: (() -> Boolean)? = null,
+        defaultNumResults: () -> Int = { 5 },
     ) {
         // 注意不写 register(spec) { ... } 尾随 lambda：会绑到 registerGated 的 visibleIf 上（仓里注释警告过的坑）
         val searchSpec = ToolSpec(
             name = "web_search",
             description = "搜索网页查实时资料（新闻、版本号、文档——训练集里没有的都搜这里）。",
-            parametersJson = """{"type":"object","properties":{"query":{"type":"string","description":"搜索词"},"num_results":{"type":"integer","description":"返回条数 1-10，默认 5"}},"required":["query"]}""",
+            parametersJson = """{"type":"object","properties":{"query":{"type":"string","description":"搜索词"},"num_results":{"type":"integer","description":"返回条数 1-10，省略则用设置里的默认条数"}},"required":["query"]}""",
         )
-        val searchHandler = ToolHandler { argumentsJson -> doSearch(searchClient, argumentsJson) }
+        val searchHandler = ToolHandler { argumentsJson ->
+            doSearch(searchRunner, defaultNumResults, argumentsJson)
+        }
         val fetchSpec = ToolSpec(
             name = "web_fetch",
             description = "取一个网页并转成可读正文（搜索结果想看全文时用）。maxChars 默认 8000，截断会在回执里说明。",
@@ -55,20 +61,20 @@ object WebTool {
 
     // ---------- web_search ----------
 
-    private fun doSearch(client: WebSearchClient, argumentsJson: String): String {
+    private fun doSearch(runner: SearchRunner, defaultNumResults: () -> Int, argumentsJson: String): String {
         val args = argsOf(argumentsJson)
         val query = (args["query"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
         if (query.isEmpty()) return """{"type":"web_search","error":"no_query"}"""
-        val num = ((args["num_results"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: DEFAULT_RESULTS)
-            .coerceIn(1, 10)
-        return when (val outcome = client.search(query)) {
-            is SearchOutcome.Ok -> {
+        val requested = (args["num_results"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull()
+        val num = (requested ?: runCatching { defaultNumResults() }.getOrDefault(5)).coerceIn(1, 10)
+        return when (val outcome = runner.search(query)) {
+            is SearchOutcomeAlias.Ok -> {
                 val rows = outcome.results.take(num).joinToString(",") { r ->
                     """{"title":${JsonPrimitive(r.title)},"url":${JsonPrimitive(r.url)},"description":${JsonPrimitive(r.snippet)}}"""
                 }
                 """{"type":"web_search","query":${JsonPrimitive(query)},"count":${minOf(num, outcome.results.size)},"results":[$rows]}"""
             }
-            is SearchOutcome.Failed ->
+            is SearchOutcomeAlias.Failed ->
                 """{"type":"web_search","query":${JsonPrimitive(query)},"error":"search_error","message":${JsonPrimitive(outcome.reason)}}"""
         }
     }
