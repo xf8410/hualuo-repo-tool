@@ -7,23 +7,25 @@ import org.junit.Test
 /**
  * 纵向滚动嵌套闸门（2026-10-03 真机连崩八次立的红线之一）。
  *
- * 事故事实：手机上 hualuo-crash-20261003-104733 / 104950 两份现场同一指纹——
- * `IllegalStateException: Vertically scrollable component was measured with an infinity
- * maximum height constraints`。根因不是玄学，是层级：工具页 ToolsScreen 整页
- * `Column(verticalScroll)`，里面的查看器卡 ViewerCard 又自带一层
- * `fillMaxSize().verticalScroll()`，卡里还坐着两个 `LazyColumn`——纵向滚动容器套
+ * 事故事实：手机上 hualuo-crash-20261003-104733 / 104950 两份现场同一指纹，
+ * IllegalStateException: Vertically scrollable component was measured with an infinity
+ * maximum height constraints。根因不是玄学，是层级：工具页 ToolsScreen 整页
+ * Column(verticalScroll)，里面的查看器卡 ViewerCard 又自带一层
+ * fillMaxSize().verticalScroll()，卡里还坐着两个 LazyColumn。纵向滚动容器套
  * 纵向滚动容器，内层必然拿到无限高约束，Android 16 当场崩，一分钟八次。
  * 本闸门上线第一轮就又逮住第二个现场：观测页 ObserveScreen 事件流那条 LazyColumn。
  *
  * 本闸门的口径（机器判，不采信任何说词）：
  *   - 同一个 .kt 文件里不许同时出现「纵向滚动容器」与「纵向惰性列表」；
- *   - 惰性列表两种写法都算：`LazyColumn(...)` 与尾随 lambda 的 `LazyColumn { ... }`；
+ *   - 惰性列表两种写法都算：LazyColumn(...) 与尾随 lambda 的 LazyColumn { ... }；
+ *   - 点与名字之间允许有空格（Modifier . verticalScroll (s) 这种写法也得算）；
  *   - 注释与字符串里的字样不算（先剥掉再匹配，免得注释里提一嘴就误伤）；
  *   - 横向滚动、横向惰性列表不在管辖内（横向滚进纵向滚是合法的）。
  *
- * 配套纪律：detectorBitesOnKnownBadSamples 是变异自测——闸门若不会咬已知坏样本，
- * 它对全仓的「通过」就一文不值。首轮自测就咬出了自己（只认 `LazyColumn(`，
- * 不认尾随 lambda 的 `LazyColumn {`），这正是自测存在的意义。
+ * 配套纪律：detectorBitesOnKnownBadSamples 是变异自测，闸门若不会咬已知坏样本，
+ * 它对全仓的「通过」就一文不值。这条纪律两轮就咬了它自己两次：
+ * 第一轮只认 LazyColumn( 不认尾随 lambda，第二轮只认 .verticalScroll 不认
+ * 「点与名字之间有空格」。
  */
 class NestedScrollGateTest {
 
@@ -48,11 +50,11 @@ class NestedScrollGateTest {
     /** 变异自测：坏样本必须被咬住，好样本（含注释里提一嘴）必须放行。 */
     @Test
     fun detectorBitesOnKnownBadSamples() {
-        // 尾随 lambda 写法（首轮自测漏的就是它）
+        // 尾随 lambda 写法（第一轮自测漏的就是它）
         expectProblem("@Composable fun A() { Column(Modifier.verticalScroll(s)) { LazyColumn { } } }")
         // 带参写法
         expectProblem("@Composable fun B() { Column(Modifier.verticalScroll(s)) { LazyColumn(mod) { } } }")
-        // 空格变体
+        // 点与名字之间有空格（第二轮自测漏的就是它）
         expectProblem("@Composable fun C() { Column(Modifier . verticalScroll (s)) { LazyColumn { } } }")
         // 网格与瀑布流也算纵向惰性列表
         expectProblem("@Composable fun D() { Column(Modifier.verticalScroll(s)) { LazyVerticalGrid { } } }")
@@ -64,7 +66,7 @@ class NestedScrollGateTest {
         // 横向滚 + 横向惰性列表：合法
         expectClean("@Composable fun H() { Row(Modifier.horizontalScroll(s)) { LazyRow { } } }")
         // 名字相近但不是列表：合法
-        expectClean("@Composable fun I() { val st = rememberLazyListState()\n LazyColumn(state = st) { } }")
+        expectClean("@Composable fun I() {\n val st = rememberLazyListState()\n LazyColumn(state = st) { }\n}")
         // 注释里提到不算违规（剥掉后再判）
         expectClean(
             """
@@ -87,12 +89,12 @@ class NestedScrollGateTest {
 
     internal fun violations(code: String): List<String> {
         val out = mutableListOf<String>()
-        val scroll = Regex("""\.verticalScroll\s*\(""").findAll(code).count()
+        val scroll = Regex("""\.\s*verticalScroll\s*\(""").findAll(code).count()
         val lazyVertical = Regex("""\b(LazyColumn|LazyVerticalGrid|LazyVerticalStaggeredGrid)\s*[({]""")
             .findAll(code).count()
         if (scroll > 0 && lazyVertical > 0) {
             out.add(
-                "同一文件里既有 verticalScroll( 又有纵向惰性列表（$lazyVertical 处）：" +
+                "同一文件里既有 verticalScroll 又有纵向惰性列表（$lazyVertical 处）：" +
                     "纵向滚动容器被外层以无限高约束测量就会崩（2026-10-03 真机现场），" +
                     "整页只留一个纵向滚动容器，纵向列表改成分段",
             )
