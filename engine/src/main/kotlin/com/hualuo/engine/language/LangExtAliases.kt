@@ -9,11 +9,9 @@ package com.hualuo.engine.language
  * javascript / typescript 没登记，按长后缀命名的文件一律掉进纯文本兜底，
  * 等于没高亮。
  *
- * 为什么单独一张表而不是直接改 EXT_TABLE：那张表与关键词组在一个 19KB 文件里，
- * 改它要整文件重写，手抄风险太高（本轮就撞过一次工具侧的大文件写入失败）。
- * 这张表小、可单测、纯数据，改错了也只是这三条别名。
- *
- * 口径：查表前先 trim、转小写、去点号（与 LangRegistry.byExtension 同口径）。
+ * 这张表**只管长名**：短名由注册表管，两边不重复登记同一事实
+ * （重复登记就是两份真相，将来必打架）。查表前先 trim、转小写、去点号，
+ * 与 [LangRegistry.byExtension] 同口径。
  */
 object LangExtAliases {
 
@@ -21,8 +19,6 @@ object LangExtAliases {
         "csharp" to "csharp",
         "javascript" to "javascript",
         "typescript" to "typescript",
-        "cplusplus" to "cpp",
-        "py" to "python",
     )
 
     /** 别名表登记的全部扩展名（给测试与设置页对账用）。 */
