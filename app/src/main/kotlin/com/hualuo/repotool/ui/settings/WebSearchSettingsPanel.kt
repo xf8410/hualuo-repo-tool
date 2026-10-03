@@ -1,14 +1,12 @@
 package com.hualuo.repotool.ui.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,19 +35,18 @@ import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.CardBg
 import com.hualuo.repotool.ui.theme.ChevGray
 import com.hualuo.repotool.ui.theme.ErrRed
-import com.hualuo.repotool.ui.theme.Hairline
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 
 /**
  * 设置「网页搜索」子页：开关、挑一家、那家的密钥、自托管实例地址、每次几条。
  *
- * 版式照旧仓那张设置页（先开关，再一行「搜索提供商 ›」点开选择框，选中那家加粗），
+ * 版式照旧仓那张设置页（一行「搜索提供商 ›」点开选择框，选中那家加粗），
  * 行为按本仓纪律收紧：
  *  - 要不要密钥框、要不要实例地址框，由事实表说话（[SearchProviderInfo.needsKey] /
- *    [SearchProviderInfo.usesBaseUrl]），不写死「显示全部字段再让人自己看哪格有用」；
- *  - 缺密钥当场说红字（能搜不能搜一眼看见），不去等搜一次才报；
- *  - 换一家**不动**那家的密钥格内容（各家钥匙分别存，见 UiKeys.webSearchKey）。
+ *    [SearchProviderInfo.usesBaseUrl]），不写死「全摆出来再让人自己看哪格有用」；
+ *  - 缺密钥当场说红字（能不能搜一眼看见），不去等搜一次才报；
+ *  - 换一家**不动**别家的密钥格（各家钥匙分别存，见 [com.hualuo.repotool.ui.state.UiKeys.webSearchKey]）。
  */
 @Composable
 fun WebSearchSettingsPanel(state: AppUiState) {
@@ -97,7 +93,7 @@ fun WebSearchSettingsPanel(state: AppUiState) {
                 Text(provider.name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
                 Text(provider.desc, fontSize = 12.sp, color = SubInk)
             }
-            Text(CHEVRON, fontSize = 14.sp, color = ChevGray)
+            Text(ROW_CHEVRON, fontSize = 14.sp, color = ChevGray)
         }
 
         if (search.needsKey) {
@@ -135,7 +131,7 @@ fun WebSearchSettingsPanel(state: AppUiState) {
 
         SectionLabel("每次搜几条")
         SliderRow(
-            label = search.numResults().toString(),
+            label = "返回条数",
             min = SearchProviders.MIN_RESULTS.toFloat(),
             max = SearchProviders.MAX_RESULTS.toFloat(),
             value = search.numResults().toFloat(),
@@ -148,7 +144,7 @@ fun WebSearchSettingsPanel(state: AppUiState) {
             modifier = Modifier.padding(start = 6.dp, bottom = 4.dp),
         )
         Text(
-            "密钥只进请求头，不进报错与界面；工具页搜一下与对话里的网页搜索工具都用这一份配置。",
+            "密钥只进请求头，不进报错与界面；工具页那一次搜索与对话里的网页搜索工具共用这一份配置。",
             fontSize = 12.sp,
             color = SubInk,
             modifier = Modifier.padding(start = 6.dp, bottom = 6.dp),
@@ -167,7 +163,7 @@ fun WebSearchSettingsPanel(state: AppUiState) {
     }
 }
 
-/** 选择框：五家逐条列出，选中那家加粗（旧仓那张对话框的形状，一个字不差地抄行为）。 */
+/** 选择框：五家逐条列出，选中那家加粗（旧仓那张对话框的形状，行为照抄）。 */
 @Composable
 private fun ProviderPickerDialog(
     current: SearchProviderInfo,
@@ -207,5 +203,5 @@ private fun ProviderPickerDialog(
     )
 }
 
-/** 行尾那个「点我」的小尖角（图形字符不许进源码，取自家规那批排版符常量）。 */
-private const val CHEVRON = "›"
+/** 行尾那个「点我」的小尖角：排版符（U+203A），不在源码禁用的图形号段里。 */
+private const val ROW_CHEVRON = "›"
