@@ -11,6 +11,10 @@ import com.hualuo.engine.store.SessionStore
 import com.hualuo.repotool.backup.BackupGateway
 import com.hualuo.repotool.ui.data.DemoComposerThumbs
 import com.hualuo.repotool.ui.data.DemoConversations
+import com.hualuo.repotool.ui.data.GEN_TEMPERATURE_DEFAULT
+import com.hualuo.repotool.ui.data.GEN_TEMPERATURE_KEY
+import com.hualuo.repotool.ui.data.GEN_TOP_P_DEFAULT
+import com.hualuo.repotool.ui.data.GEN_TOP_P_KEY
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_DEFAULT
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_KEY
 import com.hualuo.repotool.ui.model.Conv
@@ -233,6 +237,8 @@ class AppUiState(
         autoRetryCostly = { flag(RETRY_COSTLY_KEY, RETRY_COSTLY_DEFAULT) },
         store = store,
         maxHistoryTurns = { readInt(UiKeys.MAX_HISTORY, ChatRuntime.MAX_HISTORY_TURNS).coerceIn(1, 500) },
+        temperature = { readDouble(GEN_TEMPERATURE_KEY, GEN_TEMPERATURE_DEFAULT)?.coerceIn(0.0, 2.0) },
+        topP = { readDouble(GEN_TOP_P_KEY, GEN_TOP_P_DEFAULT)?.coerceIn(0.0, 1.0) },
         systemPrompt = {
             val base = persist.load(ChatRuntime.KEY_SYSTEM_PROMPT)?.trim().orEmpty()
             // 技能目录拼在系统提示词后（对齐旧仓 GenerationRequestBuilder 的 available_skills
@@ -754,6 +760,10 @@ class AppUiState(
 
     private fun readInt(key: String, default: Int): Int =
         persist.load(key)?.trim()?.toIntOrNull() ?: default
+
+    /** 生成参数读数：存过用存值，没存过用默认——滑块显示什么请求就带什么（与 Agora 一致）。 */
+    private fun readDouble(key: String, default: Double): Double? =
+        persist.load(key)?.trim()?.toDoubleOrNull() ?: default
 
     private fun fmtConvMeta(ms: Long): String =
         SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))

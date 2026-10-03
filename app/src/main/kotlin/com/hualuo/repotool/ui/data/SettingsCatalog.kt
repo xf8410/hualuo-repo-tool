@@ -14,7 +14,31 @@ import com.hualuo.repotool.ui.state.UiKeys
 const val RETRY_COSTLY_KEY = "ui.retry_costly_on_gateway"
 const val RETRY_COSTLY_DEFAULT = false
 
+/** 生成参数：温度/top_p 进请求体（0.7.0 实装刀），历史条数沿用既有键。 */
+const val GEN_TEMPERATURE_KEY = "chat.temperature"
+const val GEN_TOP_P_KEY = "chat.top_p"
+const val GEN_TEMPERATURE_DEFAULT = 0.7
+const val GEN_TOP_P_DEFAULT = 0.95
+
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "gen" to SubPage(
+        "生成参数",
+        listOf(
+            SubField.PersistedSlider("温度", GEN_TEMPERATURE_KEY, min = 0.0, max = 2.0, step = 0.1, default = GEN_TEMPERATURE_DEFAULT, digits = 1),
+            SubField.PersistedSlider("top_p", GEN_TOP_P_KEY, min = 0.0, max = 1.0, step = 0.05, default = GEN_TOP_P_DEFAULT, digits = 2),
+            SubField.PersistedSeg(
+                "带多少历史",
+                UiKeys.MAX_HISTORY,
+                listOf(
+                    SubField.SegChoice("20 条", "20"),
+                    SubField.SegChoice("50 条", "50"),
+                    SubField.SegChoice("100 条", "100"),
+                ),
+                default = "40",
+            ),
+            SubField.Note("温度/top_p 拖动即存，下一条消息生效；历史条数超了砍最旧的，砍数当场出声。"),
+        ),
+    ),
     "vision" to SubPage(
         "看视频的眼睛",
         listOf(

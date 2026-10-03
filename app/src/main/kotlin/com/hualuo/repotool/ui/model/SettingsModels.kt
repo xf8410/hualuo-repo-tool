@@ -48,6 +48,33 @@ sealed class SubField {
     object ModelSettings : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
+
+    /**
+     * 落盘滑块（2026-10-04 实装刀）：拖动即写 [key]，值格式化到 [digits] 位小数存文本。
+     * 旧 [Slider] 是原型演示数据（值写死、不落盘），只保留给还没实装的页面占位。
+     */
+    data class PersistedSlider(
+        val label: String,
+        val key: String,
+        val min: Double,
+        val max: Double,
+        val step: Double,
+        val default: Double,
+        val digits: Int = 2,
+    ) : SubField()
+
+    /**
+     * 落盘选项组（同刀）：点选即写 [key]，存 [SegChoice.value]（不是显示名）。
+     * 选项用 value 存盘、name 显示，跟 Radio 的既有形态对齐。
+     */
+    data class SegChoice(val name: String, val value: String)
+    data class PersistedSeg(
+        val label: String,
+        val key: String,
+        val options: List<SegChoice>,
+        val default: String,
+    ) : SubField()
+
     data class Slider(
         val label: String,
         val min: Double,
