@@ -36,12 +36,12 @@ import com.hualuo.repotool.ui.state.AppUiState
  * 观测页（v13 #p-obs）：SO 观测桥真连接（560 清单 361-400 域）。
  * 状态徽章（六态）+ 地址（可改，持久化）+ 探测（health 到 status）+ 探测原文卡。
  *
- * 红线：全只读——本页只发 GET；18767 端口冻结不碰；写类端点
+ * 红线：全只读，本页只发 GET；18767 端口冻结不碰；写类端点
  * （sniff toggle/clear、update、il2cpp/call）在工具族与本页都不存在。
  *
  * 【事件流为什么不滚】本页整页在 Column(verticalScroll) 里滚，里面再放纵向惰性列表
- * 就是同一场事故（内层拿无限高约束 → IllegalStateException）。事件流改成**分段**：
- * 最新的一段摆在最上，往上翻点「更旧」，每段 EV_PAGE 行。
+ * 就是同一场事故：内层拿到无限高约束，当场 IllegalStateException。
+ * 事件流改成分段：最新的一段摆在最上，往上翻点「更旧」，每段 EV_PAGE 行。
  */
 private const val EV_PAGE = 40
 
@@ -130,7 +130,7 @@ fun ObserveScreen(state: AppUiState) {
                 val end = total - page * EV_PAGE
                 val start = maxOf(0, end - EV_PAGE)
                 Text(
-                    "第 ${page + 1}/$pageCount 段 · 摆的是第 ${start + 1}-$end 条（共 $total 条，最新在上）",
+                    "第 ${page + 1}/$pageCount 段，摆的是第 ${start + 1}-$end 条（共 $total 条，最新在上）",
                     fontSize = 11.5.sp,
                     color = com.hualuo.repotool.ui.theme.SubInk,
                 )
