@@ -37,41 +37,41 @@ import androidx.compose.ui.unit.sp
 import com.hualuo.engine.api.ModelRef
 import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.state.AppUiState
-import com.hualuo.repotool.ui.state.MODEL_UNPICKED
+import com.hualuo.repotool.ui.state.AvailableModel
 import com.hualuo.repotool.ui.state.ModelSettingsRuntime
 import com.hualuo.repotool.ui.state.currentModelLabel
 import com.hualuo.repotool.ui.state.modelDisplayName
 import com.hualuo.repotool.ui.state.modelLabelWithProvider
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.CardBg
+import com.hualuo.repotool.ui.theme.ChevGray
 import com.hualuo.repotool.ui.theme.ErrRed
 import com.hualuo.repotool.ui.theme.Hairline
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 
 /**
- * 设置「模型」子页。版式照旧仓那张模型页改的（用户 10-03 拍板「模型功能按 Agora 的 UI 改」）：
+ * 设置「模型」子页。版式照旧仓那张模型页改的（用户 2026-10-03 拍板「模型功能按 Agora 的 UI 改」）：
  *
- *  1. **默认模型**一张卡：摆当前用的是哪个（名字 + 提供商），点开是一张选择框，
- *     逐条列已启用的模型，选中那条加粗——和旧仓那张「选择默认模型」对话框同款。
- *  2. **可用模型**：同步按钮单独一张卡（永远在最上面，和旧仓一致），
+ *  1. **默认模型**一张卡：摆当前用的是哪个（显示名 + 提供商），点开是一张选择框，
+ *     逐条列已启用的模型，选中那条加粗——旧仓那张「选择默认模型」对话框同款。
+ *  2. **可用模型**：同步按钮单独一张卡（永远在最上面，和旧仓一致）；
  *     底下按提供商分组，组头可展开收起（名字 + 条数 + 上下尖角），
- *     展开后逐条是 勾选框 + 显示名 + 别名输入（自加的模型另有删除）。
+ *     展开后逐条是 勾选框 + 显示名 + 原名 + 改名，自加的模型另有删除。
  *
  * 三条纪律：
  *  - 屏上显示名一律走 `modelDisplayName`（别名优先、剥掉 provider: 前缀），
- *    不许在这里直接摆整条 id —— 整条 id 会把卡片撑破（旧仓那排胶囊就是这么炸的）；
- *  - 没有可用模型时说人话，不摆空白；
+ *    不许在这里直接摆整条 id —— 整条 id 会把行撑破（旧仓那排胶囊就是这么炸的，
+ *    2026-10-03 机主实报「对话模型按钮没有缩写，导致发送按键没办法用了」）；
+ *  - 模型清单没挂上时不摆空白，把原因写出来（空白是最难查的形态）；
  *  - 纵向滚动只有整页那一个（NestedScrollGateTest 红线），组内展开用普通列，不塞惰性列表。
  */
 @Composable
 fun ModelSettingsPanel(state: AppUiState) {
     val models = ModelSettingsRuntime.current()
     if (models == null) {
-        // 空白是最难查的形态：以前这里直接 return，屏上一个字都没有。
-        // 现在照实说一句原因（原因由应用层记，见 ModelSettingsRuntime.recordFailure）。
         Text(
-            "模型清单还没挂上：${com.hualuo.repotool.ui.state.ModelSettingsRuntime.failureReason() ?: "还没初始化"}。重启应用一般就好；一直这样就是启动链出事了。",
+            "模型清单还没挂上：${ModelSettingsRuntime.failureReason() ?: "还没初始化"}。重启应用一般就好；一直这样就是启动链出事了。",
             fontSize = 12.5.sp,
             color = ErrRed,
             modifier = Modifier.padding(6.dp),
@@ -87,6 +87,7 @@ fun ModelSettingsPanel(state: AppUiState) {
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
     val caretUp = stringResource(IconKey.CaretUp.resId)
     val caretDown = stringResource(IconKey.CaretDown.resId)
+    val enabledRows = models.selectedModels()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         // ── 默认模型（旧仓第一张卡） ──
@@ -97,7 +98,7 @@ fun ModelSettingsPanel(state: AppUiState) {
                 .padding(bottom = 9.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(CardBg)
-                .clickable { if (models.selectedModels().isNotEmpty()) pickerOpen = true }
+                .clickable { if (enabledRows.isNotEmpty()) pickerOpen = true }
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -111,14 +112,14 @@ fun ModelSettingsPanel(state: AppUiState) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    providerLine(current, models.displayProviderName(ModelRef.parse(current).providerId)),
+                    providerLine(models.displayProviderName(ModelRef.parse(current).providerId)),
                     fontSize = 12.sp,
                     color = SubInk,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(ROW_CHEVRON, fontSize = 14.sp, color = com.hualuo.repotool.ui.theme.ChevGray)
+            Text(ROW_CHEVRON, fontSize = 14.sp, color = ChevGray)
         }
         Text(
             "聊天输入区那排胶囊用的就是它；发送时按这个 id 走对应提供商的地址与密钥。",
@@ -171,9 +172,9 @@ fun ModelSettingsPanel(state: AppUiState) {
             ProviderGroupHeader(
                 providerName = providerName,
                 count = rows.size,
-                open = open,
                 caret = if (open) caretUp else caretDown,
-            ) { expanded[providerName] = !open }
+                onToggle = { expanded[providerName] = !open },
+            )
             if (open) {
                 Column(
                     modifier = Modifier
@@ -184,10 +185,7 @@ fun ModelSettingsPanel(state: AppUiState) {
                 ) {
                     rows.forEach { model ->
                         ModelRow(
-                            displayName = modelLabelWithProvider(model.id, model.alias, model.providerName),
-                            rawName = modelDisplayName(model.id, model.alias),
-                            custom = model.custom,
-                            enabled = model.enabled,
+                            model = model,
                             isCurrent = model.id == current,
                             onToggle = { models.setModelEnabled(model.id, it) },
                             onPick = {
@@ -227,7 +225,7 @@ fun ModelSettingsPanel(state: AppUiState) {
 
     if (pickerOpen) {
         DefaultModelDialog(
-            rows = models.selectedModels(),
+            rows = enabledRows,
             current = current,
             onPick = {
                 state.currentModel = it
@@ -250,20 +248,20 @@ fun ModelSettingsPanel(state: AppUiState) {
     }
 }
 
-/** 副标题那一句：没配提供商就说「尚未配置」，别拿空串凑一行。 */
-private fun providerLine(modelId: String, providerDisplayName: String): String =
+/** 副标题那一句：提供商名取不到就说「尚未配置提供商」，不拿空串凑一行。 */
+private fun providerLine(providerDisplayName: String): String =
     if (providerDisplayName.isBlank()) "尚未配置提供商" else providerDisplayName
 
 /** 组头：提供商名 + 条数 + 尖角，点一下展开收起（旧仓同款的可折叠分组）。 */
 @Composable
-private fun ProviderGroupHeader(providerName: String, count: Int, open: Boolean, caret: String, onToggle: () -> Unit) {
+private fun ProviderGroupHeader(providerName: String, count: Int, caret: String, onToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 6.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(CardBg)
-            .border(1.dp, if (open) Accent else Hairline, RoundedCornerShape(16.dp))
+            .border(1.dp, Hairline, RoundedCornerShape(16.dp))
             .clickable(onClick = onToggle)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -275,13 +273,10 @@ private fun ProviderGroupHeader(providerName: String, count: Int, open: Boolean,
     }
 }
 
-/** 组里的一条模型：勾选框 + 显示名 + 别名行（自加的另有删除）。点一下名字即设为默认。 */
+/** 组里的一条模型：勾选框 + 显示名 + 原名 + 改名，自加的另有删除。点整条即设为默认。 */
 @Composable
 private fun ModelRow(
-    displayName: String,
-    rawName: String,
-    custom: Boolean,
-    enabled: Boolean,
+    model: AvailableModel,
     isCurrent: Boolean,
     onToggle: (Boolean) -> Unit,
     onPick: () -> Unit,
@@ -296,10 +291,10 @@ private fun ModelRow(
             .padding(start = 4.dp, end = 12.dp, top = 7.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = enabled, onCheckedChange = onToggle, colors = CheckboxDefaults.colors(checkedColor = Accent))
+        Checkbox(checked = model.enabled, onCheckedChange = onToggle, colors = CheckboxDefaults.colors(checkedColor = Accent))
         Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
             Text(
-                displayName + if (custom) "（自加）" else "",
+                modelLabelWithProvider(model.id, model.alias, model.providerName) + if (model.custom) "（自加）" else "",
                 fontSize = 14.sp,
                 color = Ink,
                 fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
@@ -307,15 +302,17 @@ private fun ModelRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                BasicTextField(
-                    value = rawName,
-                    readOnly = true,
-                    textStyle = TextStyle(fontSize = 11.sp, color = SubInk),
+                Text(
+                    modelDisplayName(model.id, null),
+                    fontSize = 11.sp,
+                    color = SubInk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 Text("改名", fontSize = 11.sp, color = Accent, modifier = Modifier.clickable(onClick = onRename))
             }
-            if (custom) {
+            if (model.custom) {
                 Text("删除", fontSize = 11.sp, color = ErrRed, modifier = Modifier.clickable(onClick = onDelete))
             }
         }
@@ -325,7 +322,7 @@ private fun ModelRow(
 /** 默认模型选择框（旧仓「选择默认模型」那张对话框的形状）。 */
 @Composable
 private fun DefaultModelDialog(
-    rows: List<com.hualuo.repotool.ui.state.AvailableModel>,
+    rows: List<AvailableModel>,
     current: String,
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -339,7 +336,6 @@ private fun DefaultModelDialog(
             } else {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     rows.forEach { model ->
-                        val name = modelLabelWithProvider(model.id, model.alias, model.providerName)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -350,7 +346,7 @@ private fun DefaultModelDialog(
                             RadioButton(selected = model.id == current, onClick = { onPick(model.id) })
                             Column(Modifier.weight(1f)) {
                                 Text(
-                                    name,
+                                    modelLabelWithProvider(model.id, model.alias, model.providerName),
                                     fontSize = 14.sp,
                                     fontWeight = if (model.id == current) FontWeight.SemiBold else FontWeight.Normal,
                                     color = Ink,
@@ -403,6 +399,3 @@ private fun ModelAliasDialog(
 
 /** 行尾那个「点我」的小尖角：排版符（U+203A），不在源码禁用的图形号段里。 */
 private const val ROW_CHEVRON = "›"
-
-/** 占位引用，避免 MODEL_UNPICKED 未被引用时看不出这文件在管显示名（真用到的是 modelDisplayName）。 */
-private val UNUSED_LABEL_HINT = MODEL_UNPICKED
