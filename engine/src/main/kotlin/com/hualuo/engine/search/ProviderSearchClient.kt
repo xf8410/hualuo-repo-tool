@@ -12,6 +12,16 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 /**
+ * 一次搜索请求：方法、网址、头、请求体（GET 留 null）。传输细节全部封在取网缝隙里。
+ */
+data class SearchRequest(
+    val method: String,
+    val url: String,
+    val headers: List<Pair<String, String>> = emptyList(),
+    val body: String? = null,
+)
+
+/**
  * 五家提供商的发请求与收结果（键档三家 + 自托管一家 + 免费抓取一家）。
  *
  * 移植口径（照旧仓 `WebSearchToolProvider` 与 `DuckDuckGoScraper` 逐条对齐，只搬行为不搬依赖）：
@@ -27,15 +37,15 @@ class ProviderSearchClient(
     /** 现读设置：改完设置下一句就生效，不缓存（老规矩：执行那一刻读现场）。 */
     private val config: () -> SearchConfig,
     private val fetch: (SearchRequest) -> String = { request -> defaultFetch(request) },
-    private val freeTier: WebSearchClient = WebSearchClient(),
-) {
+    private val freeTier: SearchRunner = WebSearchClient(),
+) : SearchRunner {
 
     /**
      * 搜一把。任何收场都不抛异常——失败在 [SearchOutcome.Failed] 里说清。
      *
      * 关键词空、配置不认、密钥没配、连不上、返回形状变了，各给各的话。
      */
-    fun search(query: String): SearchOutcome {
+    override fun search(query: String): SearchOutcome {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return SearchOutcome.Failed("没给搜索词")
         val cfg = config()
@@ -193,11 +203,3 @@ class ProviderSearchClient(
         }
     }
 }
-
-/** 一次搜索请求：方法、网址、头、请求体（GET 留 null）。传输细节全部封在取网缝隙里。 */
-data class SearchRequest(
-    val method: String,
-    val url: String,
-    val headers: List<Pair<String, String>> = emptyList(),
-    val body: String? = null,
-)
