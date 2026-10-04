@@ -29,19 +29,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.components.BadgeChip
-import com.hualuo.repotool.ui.data.DemoMessages
 import com.hualuo.repotool.ui.model.ChatMsg
 import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.theme.ErrRed
 import com.hualuo.repotool.ui.theme.Hairline
-import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.MeBubble
+import com.hualuo.repotool.ui.theme.Accent
+import com.hualuo.repotool.ui.theme.CardBg
+import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 import com.hualuo.repotool.ui.theme.WarnAmber
 
@@ -70,18 +72,46 @@ fun ChatScreen(state: AppUiState) {
             .padding(horizontal = 14.dp),
     ) {
         if (real.isEmpty()) {
+            // 空态只有两种真话：没接模型=指路；接了=干净的空白等第一条消息。
+            // 演示对话（DemoMessages）已删——「装作在聊」比空屏更骗人（用户拍板 2026-10-04）。
             item {
-                Text(
-                    "以下为示例卡（从下面发出去的第一条真消息开始，这里整列换成真对话）",
-                    fontSize = 11.5.sp,
-                    color = SubInk,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                )
-            }
-            items(DemoMessages) { msg ->
-                MessageCard(state, msg)
+                if (state.anyModelReady()) {
+                    Text(
+                        "模型已就绪。第一句话从下面发出去，从这里开始就是真对话。",
+                        fontSize = 13.sp,
+                        color = SubInk,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                    )
+                } else {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CardBg)
+                            .padding(16.dp),
+                    ) {
+                        Text("你还没有接入模型", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "去「设置 · 提供商」填 base URL 和密钥（或用本地 ollama），配好一家就能开聊。",
+                            fontSize = 13.sp,
+                            color = SubInk,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "去设置",
+                            fontSize = 13.sp,
+                            color = Accent,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { state.openSettings() }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
             }
         } else {
             items(real) { msg ->
