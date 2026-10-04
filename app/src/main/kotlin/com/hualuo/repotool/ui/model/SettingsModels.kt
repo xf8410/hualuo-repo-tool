@@ -46,6 +46,8 @@ sealed class SubField {
     object GithubLogin : SubField()
     object ProviderSettings : SubField()
     object ModelSettings : SubField()
+    /** 存储占用卡（实装刀）：真统计各私有目录大小 + 缓存目录真清理。 */
+    object StorageStats : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
 
