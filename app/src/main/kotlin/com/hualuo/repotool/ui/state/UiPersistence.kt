@@ -64,6 +64,9 @@ class SettingsUiPersistence(private val store: SettingsStore) : UiPersistence {
 object UiKeys {
     /** 底栏停在第几页（枚举名，存字符串是为了改名时能出声而不是错位）。 */
     const val TAB = "ui.tab"
+
+    /** 主色档名（外观页实装刀）：blue/teal/purple/orange，见 AccentPalette。 */
+    const val ACCENT = "ui.accent_color"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"

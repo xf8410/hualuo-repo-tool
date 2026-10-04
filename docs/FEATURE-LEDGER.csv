@@ -803,3 +803,5 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 802,engine.api.LineSink#exec error path carries detail,engine·exec错误路径carriesdetail,engine域「LineSink」的独立行为：exec错误路径carriesdetail（源用例 execErrorPathCarriesDetail）,用例,engine/vision,execErrorPathCarriesDetail
 803,engine.api.LineSink#exec ollama fails cleanly,engine·execollamafailscleanly,engine域「LineSink」的独立行为：execollamafailscleanly（源用例 execOllamaFailsCleanly）,用例,engine/vision,execOllamaFailsCleanly
 804,engine.api.LineSink#exec text summary has no image,engine·exectextsummaryhasnoimage,engine域「LineSink」的独立行为：exectextsummaryhasnoimage（源用例 execTextSummaryHasNoImage）,用例,engine/vision,execTextSummaryHasNoImage
+805,生成参数页实装·修摆设,设置「生成参数」页真滑块/真选项组（温度0-2步进0.1、top_p、历史条数），温度/top_p 首次接进聊天请求体；替换 Slider(label=...) 字面量演示,实装,app/settings,PR#78 804后
+806,外观页主色切换·修摆设,主色四档（蓝青紫橙）落盘即切全界面；亮色单主题钉死（用户拍板无暗色）；Accent 响应式改造 58 引用零改动,实装,app/theme,PR#79
