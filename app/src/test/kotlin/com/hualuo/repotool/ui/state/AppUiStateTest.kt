@@ -62,15 +62,17 @@ class AppUiStateTest {
     @Test
     fun confirmActionDeletesSelectedConversationsAndClosesLayers() {
         val s = AppUiState()
-        val before = s.convs.size
-        s.toggleSelect("c1")
-        s.toggleSelect("c2")
+        // 演示数据已撤：先铺两个真会话再测删除（不再依赖 DemoConversations 的 c1/c2）
+        s.newConversation(); s.newConversation()
+        val fresh = s.convs.take(2).map { it.id }
+        s.selecting = true
+        fresh.forEach { s.toggleSelect(it) }
         s.askDeleteSelected()
         assertTrue(s.confirmOpen)
-        assertEquals("删除 2 个会话？", s.confirmText)
+        assertEquals("删除 ${fresh.size} 个会话？", s.confirmText)
         assertNotNull(s.confirmAction)
         s.confirmAction!!.invoke()
-        assertEquals(before - 2, s.convs.size)
+        assertEquals(0, s.convs.size)
         assertTrue(s.selectedIds.isEmpty())
         assertFalse(s.selecting)
         assertFalse(s.confirmOpen)
@@ -93,13 +95,12 @@ class AppUiStateTest {
     @Test
     fun addAndRemoveThumbKeepsOrderAndCount() {
         val s = AppUiState()
-        val base = s.thumbs.size
+        // 演示数据已撤：thumbs 空表起步，先加两个再测增删序
+        s.addThumb("A")
         s.addThumb("X")
-        assertEquals(base + 1, s.thumbs.size)
-        assertEquals("X", s.thumbs.last())
+        assertEquals(listOf("A", "X"), s.thumbs)
         s.removeThumb(0)
-        assertEquals(base, s.thumbs.size)
-        assertEquals("X", s.thumbs.last())
+        assertEquals(listOf("X"), s.thumbs)
     }
 
     @Test
@@ -132,9 +133,8 @@ class AppUiStateTest {
     @Test
     fun visionGateBlocksModelWhenAttachmentsPresent() {
         val s = AppUiState()
-        // 演示态起点：附件行有 3 个缩略，无视觉模型就该被守门（规则在 Sheets.visionBlocked，
-        // 这里盯住数据前提：thumbs 非空 + 存在无视觉模型，两边任一被改坏测试就该红）
-        assertTrue(s.thumbs.isNotEmpty())
-        assertTrue(com.hualuo.repotool.ui.data.DemoModels.any { !it.hasVision })
+        // 演示数据已撤（2026-10-05 撤摆设刀）：thumbs 空表起步，无视觉模型的演示前提不复存在。
+        // 这里盯住的新前提：thumbs 为空（撤干净了没残留）——有人把演示数据加回来这行就红。
+        assertTrue(s.thumbs.isEmpty())
     }
 }
