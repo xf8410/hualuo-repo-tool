@@ -70,6 +70,45 @@ class ToolRegistry {
     fun size(): Int = entries.size
 
     /**
+     * 工具中心面板用的**真账**（2026-10-05 修摆设刀⑤新增）：注册表里**全部**工具，
+     * 一件不落，带各自此刻的可见性与说明。
+     *
+     * 为什么不能拿 [specs] 顶替：specs 是「进得了请求清单的那部分」，
+     * 开关关掉的工具在那里**看不见**——面板要回答的是「这个应用到底有哪些工具、
+     * 现在开着几件」，拿 specs 报数会把「关掉的」说成「没有」，那是另一种撒谎。
+     *
+     * 纪律：
+     *  - [visibleIf] 现问（同一份语义，specs 怎么算这里就怎么算），不缓存快照；
+     *  - 它抛异常时**如实报不可用**并把原因带出去，不猜 true 也不静默吞
+     *    （家里那条开关一般不会抛，但将来有人往里塞远端探测就会——那时面板得先出声）；
+     *  - 一件都不注册时给空表，不是空串、不是一份演示清单（面板据此说真话）。
+     */
+    fun ledger(): List<ToolLedgerRow> = entries.values.map { entry ->
+        val gate = entry.visibleIf
+        val visible: Boolean
+        val gateNote: String?
+        if (gate == null) {
+            visible = true
+            gateNote = null
+        } else {
+            val probe = runCatching { gate() }
+            val error = probe.exceptionOrNull()
+            visible = error == null && probe.getOrDefault(false)
+            gateNote = if (error != null) "开关读取出错：${error.message ?: error::class.java.simpleName}" else null
+        }
+        ToolLedgerRow(
+            name = entry.spec.name,
+            description = entry.spec.description,
+            gated = gate != null,
+            visible = visible,
+            gateNote = gateNote,
+        )
+    }
+
+    /**
+     * 一次工具执行的收场…
+     */
+    /**
      * 执行一次调用：没注册的名字、执行抛异常，都折成 [ToolOutcome.ok]=false 的文本
      * （照样回填给模型，让它自己改口或报错），绝不把异常抛穿到生成循环。
      * 可见性为假的工具按「此刻不可用」回话——开关中途翻掉不该放行迟到的调用。
@@ -95,3 +134,18 @@ class ToolRegistry {
         val NAME_RULE = Regex("[A-Za-z0-9_-]{1,64}")
     }
 }
+
+/**
+ * 工具中心面板的一行账（引擎件出数，界面只负责摆）。
+ *
+ * [gated] = 这件工具带运行时开关（网页搜索、图像生成、观测桥那几族）；不带开关的
+ * 件 [visible] 恒为 true，[gateNote] 恒为 null。开关读取出岔子时 [visible]=false
+ * 且 [gateNote] 有人话——面板据此出声，不拿一个中性灰点糊过去。
+ */
+data class ToolLedgerRow(
+    val name: String,
+    val description: String,
+    val gated: Boolean,
+    val visible: Boolean,
+    val gateNote: String?,
+)
