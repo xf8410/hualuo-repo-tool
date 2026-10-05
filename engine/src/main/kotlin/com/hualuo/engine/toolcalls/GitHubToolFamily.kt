@@ -7,6 +7,7 @@ import com.hualuo.engine.github.GitHubCodeSearchResult
 import com.hualuo.engine.github.GitHubCommitList
 import com.hualuo.engine.github.GitHubFileContent
 import com.hualuo.engine.github.GitHubJobList
+import com.hualuo.engine.github.GitHubPrClient
 import com.hualuo.engine.github.GitHubRepoClient
 import com.hualuo.engine.github.GitHubRepoList
 import com.hualuo.engine.github.GitHubSearchClient
@@ -43,7 +44,9 @@ object GitHubToolFamily {
         loadToken: () -> String?,
         defaultRepo: () -> String? = { null },
         repoClient: GitHubRepoClient = GitHubRepoClient(),
+        refClient: com.hualuo.engine.github.GitHubRefClient = com.hualuo.engine.github.GitHubRefClient(),
         searchClient: GitHubSearchClient = GitHubSearchClient(),
+        prClient: GitHubPrClient = GitHubPrClient(),
     ): ToolRegistry {
         val registry = ToolRegistry()
         val token: () -> String? = { loadToken()?.trim()?.takeIf { it.isNotEmpty() } }
@@ -196,10 +199,169 @@ object GitHubToolFamily {
             "job $jobId 日志（${log.charCount} 字符$cut）：\n$text"
         }
 
+        // ── PR / issue / release / 全站搜仓 读件（2026-10-05 补全刀：读类无闸门直进） ──
+
+        registry.register(
+            ToolSpec(
+                name = "github_list_pull_requests",
+                description = "列出一个仓库的 PR 清单（开着/关着/全部）。要合 PR 或看分支状态前，" +
+                    "先用这个拿 PR 号与当前状态",
+                parametersJson = """{"type":"object","properties":{"repo":{"type":"string","description":"owner/name；缺省用设置里的默认仓库"},"state":{"type":"string","description":"open/closed/all（缺省 open）"},"limit":{"type":"integer","description":"最多列几条，默认 20，范围 1-50"}}}""",
+            ),
+        ) { argumentsJson ->
+            val args = argsOf(argumentsJson)
+            val repo = repoArg(args, defaultRepo)
+            val state = (optStr(args, "state") ?: "open").let { if (it in setOf("open", "closed", "all")) it else "open" }
+            val limit = (optInt(args, "limit") ?: 20).coerceIn(1, 50)
+            formatPullList(prClient.listPullRequests(repo, state, limit, token()), limit)
+        }
+
+        registry.register(
+            ToolSpec(
+                name = "github_read_pull_request",
+                description = "读一个 PR 的详情：标题、状态、head sha、可合性、正文、评论数。" +
+                    "合 PR 之前用这个对账（拿 expected_head_sha）",
+                parametersJson = """{"type":"object","properties":{"repo":{"type":"string","description":"owner/name；缺省用设置里的默认仓库"},"number":{"type":"integer","description":"PR 号"}},"required":["number"]}""",
+            ),
+        ) { argumentsJson ->
+            val args = argsOf(argumentsJson)
+            val repo = repoArg(args, defaultRepo)
+            val number = optLong(args, "number")
+                ?: fail("缺参数 number（PR 号，数字，从 github_list_pull_requests 拿）")
+            formatPullDetail(prClient.readPullRequest(repo, number, token()))
+        }
+
+        registry.register(
+            ToolSpec(
+                name = "github_list_issues",
+                description = "列出一个仓库的 issue 清单（开着/关着/全部；不含 PR）",
+                parametersJson = """{"type":"object","properties":{"repo":{"type":"string","description":"owner/name；缺省用设置里的默认仓库"},"state":{"type":"string","description":"open/closed/all（缺省 open）"},"limit":{"type":"integer","description":"最多列几条，默认 20，范围 1-50"}}}""",
+            ),
+        ) { argumentsJson ->
+            val args = argsOf(argumentsJson)
+            val repo = repoArg(args, defaultRepo)
+            val state = (optStr(args, "state") ?: "open").let { if (it in setOf("open", "closed", "all")) it else "open" }
+            val limit = (optInt(args, "limit") ?: 20).coerceIn(1, 50)
+            formatIssueList(prClient.listIssues(repo, state, limit, token()), limit)
+        }
+
+        registry.register(
+            ToolSpec(
+                name = "github_read_issue",
+                description = "读一个 issue 的详情：标题、状态、正文、最近评论（最多 10 条）",
+                parametersJson = """{"type":"object","properties":{"repo":{"type":"string","description":"owner/name；缺省用设置里的默认仓库"},"number":{"type":"integer","description":"issue 号"}},"required":["number"]}""",
+            ),
+        ) { argumentsJson ->
+            val args = argsOf(argumentsJson)
+            val repo = repoArg(args, defaultRepo)
+            val number = optLong(args, "number")
+                ?: fail("缺参数 number（issue 号，数字，从 github_list_issues 拿）")
+            formatIssueDetail(prClient.readIssue(repo, number, token()))
+        }
+
+        registry.register(
+            ToolSpec(
+                name = "github_search_repositories",
+                description = "搜全 GitHub 的公开仓库（不限自家；按星数排序）。找参考实现、" +
+                    "找同类项目用它",
+                parametersJson = """{"type":"object","properties":{"query":{"type":"string","description":"搜索词：仓库名、主题、语言等"},"limit":{"type":"integer","description":"最多几条命中，默认 10，范围 1-30"}},"required":["query"]}""",
+            ),
+        ) { argumentsJson ->
+            val args = argsOf(argumentsJson)
+            val query = reqStr(args, "query", "搜索词")
+            val limit = (optInt(args, "limit") ?: 10).coerceIn(1, 30)
+            formatRepoSearch(searchClient.searchRepositories(query, limit, token()), query)
+        }
+
+        registry.register(
+            ToolSpec(
+                name = "github_list_releases",
+                description = "列出一个仓库的 release 清单（tag、名字、草稿/预发、附件数）",
+                parametersJson = """{"type":"object","properties":{"repo":{"type":"string","description":"owner/name；缺省用设置里的默认仓库"},"limit":{"type":"integer","description":"最多列几条，默认 10，范围 1-50"}}}""",
+            ),
+        ) { argumentsJson ->
+            val args = argsOf(argumentsJson)
+            val repo = repoArg(args, defaultRepo)
+            val limit = (optInt(args, "limit") ?: 10).coerceIn(1, 50)
+            formatReleaseList(refClient.listReleases(repo, limit, token()), limit)
+        }
+
         return registry
     }
 
     // ── 结果文本的格式化（纯函数，短清单直给、账目出声） ────────────────────
+
+    private fun formatPullList(list: List<GitHubPrClient.PullSummary>, limit: Int): String {
+        if (list.isEmpty()) return "清单是空的：一条 PR 也没列出来"
+        val sb = StringBuilder("共 ${list.size} 条 PR（本页最多 $limit）：")
+        list.take(limit).forEach { p ->
+            sb.append("\n- #").append(p.number).append(' ').append(p.title)
+            sb.append("（").append(p.state).append(if (p.draft) "/草稿" else "").append('）')
+            sb.append(" ").append(p.headRef).append("->").append(p.baseRef)
+            if (p.headSha.isNotEmpty()) sb.append(" head ").append(p.headSha.take(8))
+        }
+        return sb.toString()
+    }
+
+    private fun formatPullDetail(d: GitHubPrClient.PullDetail): String {
+        val s = d.summary
+        val sb = StringBuilder("PR #").append(s.number).append("：").append(s.title).append('\n')
+        sb.append("状态 ").append(s.state).append(if (s.draft) "（草稿）" else "").append("；").append(s.headRef)
+            .append(" -> ").append(s.baseRef).append('\n')
+        sb.append("head sha ").append(s.headSha).append("（合 PR 的 expected_head_sha 用这个）\n")
+        d.mergeable?.let { sb.append("可合性 ").append(if (it) "GitHub 说能合" else "GitHub 说有冲突").append('\n') }
+        if (d.commentsCount > 0) sb.append("评论 ").append(d.commentsCount).append(" 条\n")
+        if (d.body.isNotEmpty()) sb.append("正文：\n").append(d.body.take(800))
+        return sb.toString().trimEnd()
+    }
+
+    private fun formatIssueList(list: List<GitHubPrClient.IssueSummary>, limit: Int): String {
+        if (list.isEmpty()) return "清单是空的：一条 issue 也没列出来"
+        val sb = StringBuilder("共 ${list.size} 条 issue（本页最多 $limit）：")
+        list.take(limit).forEach { i ->
+            sb.append("\n- #").append(i.number).append(' ').append(i.title)
+            sb.append("（").append(i.state).append("）")
+            if (i.commentsCount > 0) sb.append(" 评论 ").append(i.commentsCount)
+        }
+        return sb.toString()
+    }
+
+    private fun formatIssueDetail(d: GitHubPrClient.IssueDetail): String {
+        val s = d.summary
+        val sb = StringBuilder("issue #").append(s.number).append("：").append(s.title).append('\n')
+        sb.append("状态 ").append(s.state).append("；作者 ").append(s.author).append('\n')
+        if (d.body.isNotEmpty()) sb.append("正文：\n").append(d.body.take(800)).append('\n')
+        if (d.comments.isNotEmpty()) {
+            sb.append("最近评论（").append(d.comments.size).append(" 条）：\n")
+            d.comments.forEach { sb.append("- ").append(it.take(300)).append('\n') }
+        }
+        return sb.toString().trimEnd()
+    }
+
+    private fun formatRepoSearch(r: GitHubSearchClient.RepoSearchResult, query: String): String {
+        val error = r.error
+        if (error != null) fail(error)
+        if (r.hits.isEmpty()) return "搜「$query」一个仓库也没命中"
+        val sb = StringBuilder("搜「$query」命中 ${r.hits.size} 条（GitHub 总账 ${r.totalCount}${if (r.incomplete) "，可能不全" else ""}）：")
+        r.hits.forEach { h ->
+            sb.append("\n- ").append(h.fullName).append(" 星标").append(h.stars)
+            if (h.language.isNotEmpty()) sb.append(' ').append(h.language)
+            if (h.description.isNotEmpty()) sb.append("：").append(h.description.take(80))
+        }
+        return sb.toString()
+    }
+
+    private fun formatReleaseList(list: List<com.hualuo.engine.github.GitHubRefClient.ReleaseSummary>, limit: Int): String {
+        if (list.isEmpty()) return "清单是空的：一条 release 也没列出来"
+        val sb = StringBuilder("共 ${list.size} 条 release（本页最多 $limit）：")
+        list.take(limit).forEach { r ->
+            sb.append("\n- ").append(r.tagName)
+            if (r.name.isNotEmpty() && r.name != r.tagName) sb.append("（").append(r.name).append("）")
+            sb.append(if (r.draft) " 草稿" else "").append(if (r.prerelease) " 预发" else "")
+            sb.append(" 附件 ").append(r.assetsCount)
+        }
+        return sb.toString()
+    }
 
     private fun formatRepoList(list: GitHubRepoList, limit: Int): String {
         val error = list.error

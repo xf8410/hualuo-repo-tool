@@ -52,6 +52,8 @@ import com.hualuo.repotool.ui.chat.ChatScreen
 import com.hualuo.repotool.ui.chat.Composer
 import com.hualuo.repotool.ui.chat.SheetsLayer
 import com.hualuo.repotool.ui.components.ConfirmDialog
+import com.hualuo.repotool.ui.components.GitHubActionCard
+import com.hualuo.repotool.ui.components.PrConfirmCard
 import com.hualuo.repotool.ui.components.WriteConfirmCard
 import com.hualuo.repotool.ui.data.DemoCtx
 import com.hualuo.repotool.ui.drawer.DrawerOverlay
@@ -395,6 +397,10 @@ fun HualuoApp(versionLabel: String) {
             // 写仓库确认卡（0.7.0 刀③）压在最上层：写仓库是全 App 最重的动作，
             // 不许被设置层/弹层盖住——模型提议改码时它必须第一个被看见，点头才写。
             WriteConfirmCard(kernel.writeGate)
+            // PR 确认卡（2026-10-05 全套刀）与动作确认卡挂同一层同一规矩：
+            // 都是改仓库状态的重动作，必须压在最上层第一个被看见。
+            PrConfirmCard(kernel.prGate)
+            GitHubActionCard(kernel.actionGate)
         }
     }
 }
