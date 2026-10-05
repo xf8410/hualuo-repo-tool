@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.components.SheetScaffold
-import com.hualuo.repotool.ui.data.DemoTasks
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.state.ModelSettingsRuntime
 import com.hualuo.repotool.ui.state.modelLabelWithProvider
@@ -103,6 +102,6 @@ fun SheetsLayer(state: AppUiState) {
             }
         }
         state.toolSheetOpen -> SheetScaffold("本回合工具", onDismiss = { state.toolSheetOpen = false }) { Text("工具开关在设置里保存", color = SubInk) }
-        state.taskSheetKey != null -> SheetScaffold(state.taskSheetKey ?: "", onDismiss = { state.taskSheetKey = null }) { Text(DemoTasks.firstOrNull { it.name == state.taskSheetKey }?.note.orEmpty(), color = SubInk) }
+        state.taskSheetKey != null -> SheetScaffold(state.taskSheetKey ?: "", onDismiss = { state.taskSheetKey = null }) { Text("这个任务没有详情可看（演示数据已撤）", color = SubInk) }
     }
 }
