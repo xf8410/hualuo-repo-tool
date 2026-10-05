@@ -34,6 +34,13 @@ import java.io.File
  * 令牌与默认仓库都在**执行那一刻**从设置现场读（两个 lambda 进引擎件，不缓存、不复制）：
  * 设置页改了令牌，下一句就生效，不用重启。令牌只进请求头（引擎件老规矩），
  * 绝不进任何结果文本与报错。
+ *
+ * **工具中心面板（2026-10-05 修摆设刀⑤）**：装配好的整表顺手登记进
+ * [ToolRegistryRuntime]（与 [ModelSettingsRuntime] 同一套形状），工具页据此报真账——
+ * 「这个应用到底注册了几件工具、此刻开着几件」直接从这张表问，不再维护第二份
+ * 「族名 → 该族有几件」对照表（那张表迟早漂移，漂了又是「界面上写着能调、实际没有」）。
+ * 登记放在**装配口的出口**而不是 AppUiState 里：装配点与显示点不必互相持有引用，
+ * 工具页也不必知道这张表是谁装配的。
  */
 fun buildGithubToolRegistry(
     persist: UiPersistence,
@@ -138,4 +145,8 @@ fun buildGithubToolRegistry(
             confirmer = sandboxConfirmer,
         )
     }
+}.also { assembled ->
+    // 工具中心面板的取数口（修摆设刀⑤）：整表登记，工具页报数不再另抄一份清单。
+    // 装配失败不在这里兜——构造期抛错由崩溃观察器取到，屏上照实是「还没装配」。
+    ToolRegistryRuntime.install(assembled)
 }
