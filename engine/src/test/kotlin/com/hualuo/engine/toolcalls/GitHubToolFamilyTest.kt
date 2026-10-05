@@ -54,6 +54,13 @@ class GitHubToolFamilyTest {
                 "github_ci_runs",
                 "github_ci_jobs",
                 "github_ci_job_log",
+                // 2026-10-05 全套刀补的读件六件：PR/issue/release/全站搜仓（读类，无闸门）
+                "github_list_pull_requests",
+                "github_read_pull_request",
+                "github_list_issues",
+                "github_read_issue",
+                "github_search_repositories",
+                "github_list_releases",
             ),
             names,
         )
