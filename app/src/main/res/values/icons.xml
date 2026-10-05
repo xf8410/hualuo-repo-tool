@@ -26,6 +26,7 @@
     <string name="icon_back">&#x2190;</string>
     <string name="icon_chevron">&#x203A;</string>
     <string name="icon_search">&#x1F50D;</string>
+    <string name="icon_gear">&#x2699;&#xFE0F;</string>          <!-- 齿轮：设置入口 -->
 
     <!-- 输入区与胶囊上的小图形：全角加号 / 竖三点 / 圆点 / 下尖角 / 上尖角 / 发送箭头 / 全屏方框 / 叉 -->
     <string name="icon_plus">&#xFF0B;</string>

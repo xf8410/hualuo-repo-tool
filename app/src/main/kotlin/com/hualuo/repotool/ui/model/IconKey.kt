@@ -30,6 +30,7 @@ enum class IconKey(@param:StringRes val resId: Int) {
     Back(R.string.icon_back),
     Chevron(R.string.icon_chevron),
     Search(R.string.icon_search),
+    Gear(R.string.icon_gear),
 
     // 输入区与胶囊上的小图形
     Plus(R.string.icon_plus),
