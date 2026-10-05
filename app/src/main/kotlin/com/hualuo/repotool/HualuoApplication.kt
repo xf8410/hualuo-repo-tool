@@ -43,6 +43,12 @@ class HualuoApplication : Application() {
 
     val writeGate = WriteConfirmGate()
 
+    /** PR 闸门（2026-10-05 全套刀）：建 PR / 合 PR 先摆卡，人点头才动。 */
+    val prGate = com.hualuo.repotool.ui.state.PrConfirmGate()
+
+    /** 动作闸门（2026-10-05 全套刀）：建分支/删分支/建 issue/评论/关 PR 六件全过这道门。 */
+    val actionGate = com.hualuo.repotool.ui.state.GitHubActionGate()
+
     /** 记忆库：建不起来就 null，记忆工具不注册，聊天仍照常。 */
     private val memoryStore: com.hualuo.engine.memory.MemoryStore? by lazy {
         try {
@@ -69,6 +75,8 @@ class HualuoApplication : Application() {
             persist = uiBundle.persistence,
             store = uiBundle.store,
             writeGate = writeGate,
+            prGate = prGate,
+            actionGate = actionGate,
             memoryStore = memoryStore,
             skillStore = skillStore,
             modelSettings = modelSettings,

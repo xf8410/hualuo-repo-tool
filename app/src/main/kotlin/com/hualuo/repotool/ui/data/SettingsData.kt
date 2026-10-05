@@ -4,7 +4,8 @@ import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.SettingsItem
 import com.hualuo.repotool.ui.model.SettingsSection
 
-// 设置页信息架构：照抄 ui/v13.html 的 8 组 26 项演示；合并真设置项（SettingsCatalog 追加的
+// 设置页信息架构：源出 ui/v13.html 的 8 组 26 项演示；2026-10-05 竖式改版，前两组分区名
+// 改照 Agora（AI 服务->服务、对话->回复），条目一件没动；合并真设置项（SettingsCatalog 追加的
 // 「失败与重试」「文件投递」）后为 8 组 28 项。二级页字段表在 SubPages.kt。
 // 文案规矩（原型页脚）：每项一句大白话说清「干什么、数据去哪」，不许出现「管理 XX」这种绕话。
 // 命名红线：新界面一律不再出现「Agora」字样（地基红线 10），原型里残留的几处已改为「内置/本应用」。
@@ -17,11 +18,13 @@ import com.hualuo.repotool.ui.model.SettingsSection
 // 真页面在 SettingsCatalog 的 RealSubPages 里（原型 v13 那份四选简化列表早已作数）。
 
 val SettingsSections: List<SettingsSection> = listOf(
-    SettingsSection("s-service", "AI 服务", listOf(
-        SettingsItem(IconKey.SettingsProvider, "提供商", "用哪家 AI、地址和密钥。密钥只存本机，不外发", "3 家", "provider"),
-        SettingsItem(IconKey.SettingsModel, "模型", "勾选哪些能用；上下文上限用模型真实值", "启用 5", "model"),
+    // 分区名照 Agora 设置页（服务/回复/多模态，2026-10-05 用户拍板竖式改版）；
+    // 后面几组（工具/网络/数据/外观/关于）Agora 没有，沿用自家分组不硬造。
+    SettingsSection("s-service", "服务", listOf(
+        SettingsItem(IconKey.SettingsProvider, "提供商", "API 密钥、基础 URL 和提供商选择；密钥只存本机，不外发", "3 家", "provider"),
+        SettingsItem(IconKey.SettingsModel, "模型", "启用、禁用和配置 AI 模型；上下文上限用模型真实值", "启用 5", "model"),
     )),
-    SettingsSection("s-chat", "对话", listOf(
+    SettingsSection("s-chat", "回复", listOf(
         SettingsItem(IconKey.SettingsPrompt, "系统指令", "每次开聊前先交代的家规", "2 条", "prompt"),
         SettingsItem(IconKey.SettingsGen, "生成参数", "温度、top_p、带多少历史", "temp 0.7", "gen"),
         SettingsItem(IconKey.SettingsTitle, "标题生成", "聊完自动给会话起名字", null, "title"),

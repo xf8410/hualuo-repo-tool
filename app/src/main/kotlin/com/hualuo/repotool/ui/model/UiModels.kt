@@ -72,8 +72,6 @@ data class TaskRow(
     val tone: Tone,
 )
 
-/** 工具页四态：注册 / 接线 / 开关 / 可执行（g/y/r/n 四灯）。 */
-data class ToolState(val name: String, val states: List<Tone>)
 
 /** 仓库CI / 观测页的普通行。 */
 data class InfoRow(val label: String, val value: String, val tone: Tone = Tone.Ok)

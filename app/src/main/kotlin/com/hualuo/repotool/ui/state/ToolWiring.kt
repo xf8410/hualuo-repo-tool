@@ -22,6 +22,10 @@ import java.io.File
  * 不给闸门就不存在这个工具（默认拒写，不是默认放行）。给闸门时：模型提议先摆成
  * 确认卡，用户点头才真走 PUT（sha 对账与 409 冲突那条老路照旧）。
  *
+ * **PR 与动作族（2026-10-05 全套刀）**：建 PR / 合 PR / 建分支 / 删分支 / 建 issue /
+ * 评论 issue / 关 PR / 评论 PR，件件过确认闸门——模型提议摆卡，人点头才动。加这批的
+ * 原因：此前模型连「开分支干活」都做不到，任务一卡就是死结（机主原话「避免任务卡住」）。
+ *
  * **沙盒族（0.9.0 刀）**：status / list_packages 两件只读直进；
  * run_command / install / remove 三件执行类只有拿到 [sandboxConfirmer] 才注册
  * （对齐 560 功能目录 414「Shell 命令审批」——不给闸门，模型在对话里就碰不到执行）。
@@ -34,6 +38,13 @@ import java.io.File
  * 令牌与默认仓库都在**执行那一刻**从设置现场读（两个 lambda 进引擎件，不缓存、不复制）：
  * 设置页改了令牌，下一句就生效，不用重启。令牌只进请求头（引擎件老规矩），
  * 绝不进任何结果文本与报错。
+ *
+ * **工具中心面板（2026-10-05 修摆设刀⑤）**：装配好的整表顺手登记进
+ * [ToolRegistryRuntime]（与 [ModelSettingsRuntime] 同一套形状），工具页据此报真账——
+ * 「这个应用到底注册了几件工具、此刻开着几件」直接从这张表问，不再维护第二份
+ * 「族名 -> 该族有几件」对照表（那张表迟早漂移，漂了又是「界面上写着能调、实际没有」）。
+ * 登记放在**装配口的出口**而不是 AppUiState 里：装配点与显示点不必互相持有引用，
+ * 工具页也不必知道这张表是谁装配的。
  */
 fun buildGithubToolRegistry(
     persist: UiPersistence,
@@ -41,6 +52,9 @@ fun buildGithubToolRegistry(
     sandboxConfirmer: SandboxConfirmer? = null,
     sandboxRootDir: File? = null,
     prConfirmer: com.hualuo.engine.toolcalls.PrConfirmer? = null,
+    // GitHub 动作族（建分支/删分支/建 issue/评论/关 PR/评论 PR）的确认闸门；
+    // null = 六件全部不注册（与写件、PR 件同一条纪律：默认拒）
+    actionConfirmer: com.hualuo.engine.toolcalls.ActionConfirmer? = null,
     memoryStore: com.hualuo.engine.memory.MemoryStore? = null,
     sessionStore: com.hualuo.engine.store.SessionStore? = null,
     webSearchEnabled: (() -> Boolean)? = null,
@@ -74,6 +88,20 @@ fun buildGithubToolRegistry(
             defaultRepo = { persist.load(UiKeys.GITHUB_REPO) },
             prClient = com.hualuo.engine.github.GitHubPrClient(),
             confirmer = prConfirmer,
+        )
+    }
+    // GitHub 动作族（2026-10-05 全套刀）：建分支是「任务不卡住」的钥匙件——模型没它连
+    // 干活的分支都开不了；删分支/关 PR 是不好回滚的件。六件全过闸门（confirmer
+    // null = 整族不存在），确认卡是通用键值对卡（GitHubActionCard），模型摆什么人核什么。
+    if (actionConfirmer != null) {
+        com.hualuo.engine.toolcalls.GitHubActionTool.register(
+            registry = registry,
+            loadToken = { persist.load(UiKeys.GITHUB_TOKEN) },
+            defaultRepo = { persist.load(UiKeys.GITHUB_REPO) },
+            repoClient = com.hualuo.engine.github.GitHubRepoClient(),
+            refClient = com.hualuo.engine.github.GitHubRefClient(),
+            prClient = com.hualuo.engine.github.GitHubPrClient(),
+            confirmer = actionConfirmer,
         )
     }
     // 记忆族（M4 第二刀）：不注入 memoryStore 一件不注册（默认拒）
@@ -138,4 +166,8 @@ fun buildGithubToolRegistry(
             confirmer = sandboxConfirmer,
         )
     }
+}.also { assembled ->
+    // 工具中心面板的取数口（修摆设刀⑤）：整表登记，工具页报数不再另抄一份清单。
+    // 装配失败不在这里兜——构造期抛错由崩溃观察器取到，屏上照实是「还没装配」。
+    ToolRegistryRuntime.install(assembled)
 }

@@ -37,16 +37,20 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.stringResource
 import com.hualuo.repotool.ui.components.SwitchPill
 import com.hualuo.repotool.ui.data.mergedSettingsSections
 import com.hualuo.repotool.ui.data.orphanAdditions
 import com.hualuo.repotool.ui.data.subPage
+import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.model.SubField
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.state.ModelSettingsRuntime
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
+import com.hualuo.repotool.ui.theme.ChevGray
 import com.hualuo.repotool.ui.theme.Hairline
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
@@ -59,9 +63,19 @@ fun SettingsOverlay(state: AppUiState) {
     val top = state.subStack.lastOrNull()
     Column(Modifier.fillMaxSize().background(Bg)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.clip(RoundedCornerShape(10.dp)).background(CardBg).border(1.dp, Hairline, RoundedCornerShape(10.dp)).clickable { state.backFromSettings() }.padding(horizontal = 10.dp, vertical = 6.dp)) { Text("返回", fontSize = 13.sp, color = Ink) }
-            Spacer(Modifier.width(12.dp))
-            Text(top?.let { subPage(it)?.title } ?: "设置", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+            // Agora 式圆返回钮：图标字符住 icons.xml（家规），不带文字省地方
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(17.dp))
+                    .background(CardBg)
+                    .border(1.dp, Hairline, RoundedCornerShape(17.dp))
+                    .clickable { state.backFromSettings() },
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(IconKey.Back.resId), fontSize = 16.sp, color = Ink) }
+            Spacer(Modifier.width(14.dp))
+            // 主页「设置」两个大字（Agora 式超大加粗），子页用子页名小一号
+            Text(top?.let { subPage(it)?.title } ?: "设置", fontSize = if (top == null) 26.sp else 20.sp, fontWeight = FontWeight.Bold, color = Ink)
         }
         if (top == null) SettingsHome(state, Modifier.weight(1f)) else SubPageView(state, top, Modifier.weight(1f))
     }
@@ -87,6 +101,7 @@ private fun SettingsHome(state: AppUiState, modifier: Modifier) {
             mergedSettingsSections().forEach { section ->
                 val hit = section.items.filter { q.isEmpty() || it.title.contains(q, true) || it.desc.contains(q, true) }
                 if (hit.isNotEmpty()) {
+                    // 分区小标签（Agora 式：主色小字，跟着分组名走）
                     Text(section.title, fontSize = 13.sp, color = Accent, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp))
                     hit.forEach { item ->
                         val runtime = ModelSettingsRuntime.current()
@@ -97,9 +112,29 @@ private fun SettingsHome(state: AppUiState, modifier: Modifier) {
                             "websearch" -> state.webSearch.providerLabel()
                             else -> item.value
                         }
-                        Row(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(18.dp)).background(CardBg).clickable { state.subStack = state.subStack + item.subKey }.padding(14.dp)) {
+                        // Agora 式行卡：左图标（圆角方底浅主色）+ 标题/副说明 + 行尾右箭头；
+                        // 图标字形住 icons.xml，这里只取键（家规：源码不留图形字符）
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 9.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(CardBg)
+                                .clickable { state.subStack = state.subStack + item.subKey }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFEAF1FF)),
+                                contentAlignment = Alignment.Center,
+                            ) { Text(stringResource(item.iconKey.resId), fontSize = 16.sp) }
+                            Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) { Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink); Text(item.desc, fontSize = 12.sp, color = SubInk) }
                             value?.let { Text(it, fontSize = 11.sp, color = SubInk, textAlign = TextAlign.End) }
+                            Text(stringResource(IconKey.Chevron.resId), fontSize = 14.sp, color = ChevGray, modifier = Modifier.padding(start = 6.dp))
                         }
                     }
                 }
