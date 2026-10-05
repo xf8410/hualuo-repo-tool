@@ -10,7 +10,7 @@ import com.hualuo.engine.toolcalls.ToolRegistry
  * 「族名 → 该族有几件」的对照表，那张表迟早和真注册表漂移——漂了又是「界面上写着能调、
  * 实际没有」的老病。这里直接问注册表要**整本账**（[ToolRegistry.ledger]），报告说几件就是几件。
  *
- * 为什么必须带 [visibleIf]：网页搜索、图像生成、观察桥那几族是按设置开关现问的，
+ * 为什么必须带可见性：网页搜索、图像生成、观察桥那几族是按设置开关现问的，
  * 关掉时模型看不见它们。面板要照实说「注册了但此刻关着」，而不是把它们从名单里抹掉
  * 让人以为不存在（抹掉与「没做」在屏上长得一模一样）。
  *
@@ -57,14 +57,33 @@ object ToolCenterState {
         rows(registry).filter { it.gateNote != null }
 
     /**
-     * 按说明文字首行归族，让一屏二十几行读得下去。
+     * 按说明首句的族名归族，让一屏二十几行读得下去。
      *
-     * 归族只影响**显示分组**，不改变报数（件数一律取 [total]）。分组键取说明里的族名
-     * （各族的 description 都以族名开头）；取不出族名的单独归「未标注」，不硬塞进某一族。
+     * 归族只影响**显示分组**，不改变报数（件数一律取 [total]）。分组键取说明里开头
+     * 那句族名（各族的 description 都以族名起头）；认不出的归「未标注」排在最后，
+     * 不硬塞进某一族——宁可承认分不出来，不假装属于哪儿。
      */
     fun grouped(registry: ToolRegistry?): List<Pair<String, List<ToolLedgerRow>>> =
         rows(registry)
             .groupBy { familyOf(it) }
             .toList()
-            .sortedBy { (family, _) -> if (family == "未标注") "zzz" else family }
+            .sortedBy { (family, _) -> if (family == UNMARKED) "zzz" else family }
+
+    /** 认不出族名的那些行的归类名。 */
+    const val UNMARKED: String = "未标注"
+
+    /**
+     * 取一件工具的族名：说明首句到第一个中文冒号或英文冒号为止。
+     *
+     * 说明为空、或首句没有冒号（认不出边界）时给 [UNMARKED]——宁可归不到族，
+     * 也不切错位置把两族混进一行里。
+     */
+    private fun familyOf(row: ToolLedgerRow): String {
+        val head = row.description.trim().lineSequence().firstOrNull()?.trim().orEmpty()
+        if (head.isEmpty()) return UNMARKED
+        val cut = head.indexOf('：').takeIf { it > 0 } ?: head.indexOf(':').takeIf { it > 0 }
+            ?: return UNMARKED
+        val family = head.substring(0, cut).trim()
+        return family.ifEmpty { UNMARKED }
+    }
 }
