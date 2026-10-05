@@ -56,7 +56,7 @@ class ToolRegistry {
      */
     fun registerGated(spec: ToolSpec, handler: ToolHandler, visibleIf: () -> Boolean) {
         require(spec.name.matches(NAME_RULE)) {
-            "工具名「${spec.name}」不合规：只许字母、数字、下划线、横杠，1 到 64 位（OpenAI 的字符规）"
+            "工具名「${spec.name}」不合规：只许字母、数字、下划线横杠，1 到 64 位（OpenAI 的字符规）"
         }
         entries[spec.name] = Entry(spec, handler, visibleIf)
     }
@@ -78,23 +78,22 @@ class ToolRegistry {
      * 现在开着几件」，拿 specs 报数会把「关掉的」说成「没有」，那是另一种撒谎。
      *
      * 纪律：
-     *  - [visibleIf] 现问（同一份语义，specs 怎么算这里就怎么算），不缓存快照；
+     *  - [visibleIf] 现问（与 specs 同一份语义，不缓存快照）；
      *  - 它抛异常时**如实报不可用**并把原因带出去，不猜 true 也不静默吞
-     *    （家里那条开关一般不会抛，但将来有人往里塞远端探测就会——那时面板得先出声）；
+     *    （家里那几把开关一般不会抛，但将来有人往里塞远端探测就会——那时面板得先出声）；
      *  - 一件都不注册时给空表，不是空串、不是一份演示清单（面板据此说真话）。
      */
     fun ledger(): List<ToolLedgerRow> = entries.values.map { entry ->
         val gate = entry.visibleIf
-        val visible: Boolean
-        val gateNote: String?
-        if (gate == null) {
-            visible = true
-            gateNote = null
-        } else {
+        var visible = true
+        var gateNote: String? = null
+        if (gate != null) {
             val probe = runCatching { gate() }
             val error = probe.exceptionOrNull()
-            visible = error == null && probe.getOrDefault(false)
-            gateNote = if (error != null) "开关读取出错：${error.message ?: error::class.java.simpleName}" else null
+            visible = error == null && (probe.getOrDefault(false) == true)
+            if (error != null) {
+                gateNote = "开关读取出错：" + (error.message ?: error.javaClass.simpleName)
+            }
         }
         ToolLedgerRow(
             name = entry.spec.name,
@@ -105,9 +104,6 @@ class ToolRegistry {
         )
     }
 
-    /**
-     * 一次工具执行的收场…
-     */
     /**
      * 执行一次调用：没注册的名字、执行抛异常，都折成 [ToolOutcome.ok]=false 的文本
      * （照样回填给模型，让它自己改口或报错），绝不把异常抛穿到生成循环。
@@ -138,9 +134,9 @@ class ToolRegistry {
 /**
  * 工具中心面板的一行账（引擎件出数，界面只负责摆）。
  *
- * [gated] = 这件工具带运行时开关（网页搜索、图像生成、观测桥那几族）；不带开关的
- * 件 [visible] 恒为 true，[gateNote] 恒为 null。开关读取出岔子时 [visible]=false
- * 且 [gateNote] 有人话——面板据此出声，不拿一个中性灰点糊过去。
+ * [gated] = 这件工具带运行时开关（网页搜索、图像生成、观测桥那几族）；不带开关的件
+ * [visible] 恒为 true、[gateNote] 恒为 null。开关读取出岔子时 [visible]=false 且
+ * [gateNote] 带人话——面板据此出声，不拿一个中性灰点糊过去。
  */
 data class ToolLedgerRow(
     val name: String,
