@@ -96,6 +96,72 @@ class GitHubSearchClient(
         return if (flat.length <= 160) flat else flat.take(160) + "…（已截断）"
     }
 
+
+    // ── 仓库搜索件（2026-10-05 补全刀：搜全 GitHub 的公开仓，不限自家） ──
+
+    /** 一条仓库命中。 */
+    data class RepoHit(
+        val fullName: String,
+        val description: String,
+        val stars: Int,
+        val language: String,
+        val updatedAt: String,
+    )
+
+    /** 仓库搜索回执：hits + totalCount + incomplete + error（失败绝拿半份名单冒充成功）。 */
+    data class RepoSearchResult(
+        val hits: List<RepoHit>,
+        val totalCount: Int,
+        val incomplete: Boolean,
+        val error: String?,
+    )
+
+    /** 搜全 GitHub 的仓库（不需要令牌；带令牌可提到更高配额）。 */
+    fun searchRepositories(query: String, limit: Int = 10, token: String?): RepoSearchResult {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            return RepoSearchResult(emptyList(), 0, false, "搜索词是空的：先写点什么（仓库名、主题、语言都行）")
+        }
+        val capped = limit.coerceIn(1, 30)
+        val encoded = java.net.URLEncoder.encode(q, "UTF-8").replace("+", "%20")
+        val result = fetch("$GITHUB_API_ROOT/search/repositories?q=$encoded&per_page=$capped&sort=stars", token, null, GITHUB_MAX_BODY_CHARS)
+        if (result.status == 403) {
+            return RepoSearchResult(emptyList(), 0, false, "GitHub 不让搜（403）：搜索配额到了，等一分钟再来")
+        }
+        if (result.status == 422) {
+            return RepoSearchResult(emptyList(), 0, false, "搜索词写法不对（422）：换个写法再试")
+        }
+        if (result.status != 200) {
+            return RepoSearchResult(emptyList(), 0, false, httpIssue(result))
+        }
+        val root = runCatching { json.parseToJsonElement(result.body) }.getOrNull() as? JsonObject
+            ?: return RepoSearchResult(emptyList(), 0, false, "GitHub 回的内容读不懂（200 但不是搜索结果）")
+        val total = (root["total_count"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0
+        val incomplete = (root["incomplete_results"] as? JsonPrimitive)?.contentOrNull?.toBooleanStrictOrNull() ?: false
+        val items = root["items"] as? kotlinx.serialization.json.JsonArray
+            ?: return RepoSearchResult(emptyList(), total, incomplete, "GitHub 回的形状变了（没找到 items）")
+        val hits = ArrayList<RepoHit>()
+        var bad = 0
+        for (element in items) {
+            if (hits.size >= capped) break
+            val obj = element as? JsonObject
+            if (obj == null) { bad += 1; continue }
+            val fullName = (obj["full_name"] as? JsonPrimitive)?.contentOrNull
+            if (fullName.isNullOrEmpty()) { bad += 1; continue }
+            hits.add(
+                RepoHit(
+                    fullName = fullName,
+                    description = (obj["description"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    stars = (obj["stargazers_count"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0,
+                    language = (obj["language"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    updatedAt = (obj["updated_at"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                ),
+            )
+        }
+        // bad 条目只说明 GitHub 回了形状外的行，不算失败；照实给名单
+        return RepoSearchResult(hits, total, incomplete, null)
+    }
+
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
     }
