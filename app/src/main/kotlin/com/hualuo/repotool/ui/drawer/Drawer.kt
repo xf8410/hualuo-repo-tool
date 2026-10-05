@@ -26,13 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hualuo.repotool.ui.components.LRow
 import com.hualuo.repotool.ui.model.Conv
+import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
@@ -45,7 +46,9 @@ import com.hualuo.repotool.ui.theme.SubInk
 
 /**
  * 抽屉（v13 #drawer）：遮罩 + 284dp 左栏。
- * 会话搜索 / 新建 / 管理、多选、删除（带确认框）/ 底部四快捷行直达设置对应分组。
+ * 会话搜索 / 新建 / 管理、多选、删除（带确认框）/ 底部一个设置大按钮（Agora 式：
+ * 2026-10-05 用户拍板「外面只留一个设置」——原底部四快捷行收敛成这一个入口，
+ * 想去模型页、数据控制都从设置主页走，不再在抽屉里摆岔路）。
  * 会话接线后：列表来自真库（AppUiState.convs 由 SessionStore 喂），点行走 openConversation
  * 真切库——读不出就出声，绝不摆空壳（治旧 Agora「白屏/多进几次才出来」那一类）。
  *
@@ -126,11 +129,24 @@ fun DrawerOverlay(state: AppUiState) {
                     ConvRow(state, c)
                 }
 
-            Spacer(Modifier.size(10.dp))
-            LRow("常用网站", chevron = true) { state.openSettings("sites") }
-            LRow("导出备份", chevron = true) { state.openSettings("datactl") }
-            LRow("模型与参数", chevron = true) { state.openSettings("model") }
-            LRow("设置", chevron = true) { state.openSettings(null) }
+            Spacer(Modifier.size(14.dp))
+            // Agora 式唯一设置入口：一个全宽大按钮，不再摆四条岔路
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Bg)
+                    .border(1.dp, Hairline, RoundedCornerShape(14.dp))
+                    .clickable { state.openSettings(null) }
+                    .padding(horizontal = 14.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(IconKey.Gear.resId), fontSize = 17.sp, color = Ink)
+                Spacer(Modifier.width(10.dp))
+                Text("设置", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                Spacer(Modifier.weight(1f))
+                Text(stringResource(IconKey.Chevron.resId), fontSize = 14.sp, color = ChevGray)
+            }
         }
 
         if (state.selecting) {

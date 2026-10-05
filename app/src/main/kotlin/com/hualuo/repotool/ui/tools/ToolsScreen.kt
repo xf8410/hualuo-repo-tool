@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.components.CardTitle
 import com.hualuo.repotool.ui.components.Dot
 import com.hualuo.repotool.ui.components.HCard
-import com.hualuo.repotool.ui.data.DemoToolStates
+import com.hualuo.repotool.ui.model.Tone
 import com.hualuo.repotool.ui.state.AppUiState
+import com.hualuo.repotool.ui.state.ToolCenterState
+import com.hualuo.repotool.ui.state.ToolRegistryRuntime
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.Ink
@@ -47,7 +49,10 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  * 都在设置「网页搜索」里，卡片标题现报当前那家（换一家立刻看得见）；输入、按钮、结果列表
  * 都是真数据，失败出声不冒充（引擎件说「没有搜到结果」就是没有，屏上照实摆失败理由，不装成功）。
  * 点一条结果用系统浏览器打开（设备上没有能接的 App 就出声，不静默）。
- * 四态分列仍是演示板——等那几族真电接完，这张卡换成从真实工具注册表读，别提前画饼。
+ * **真账卡（2026-10-05 修摆设刀）**：底下的工具清单卡不再读演示数据——直接问
+ * [ToolRegistryRuntime] 里装配好的真实注册表，报「注册了几件、此刻开着几件、
+ * 关着哪几件」。任何族接进来多出几行、闸门没接哪件就不在名单里，全在这张卡上现形——
+ * 治的就是「界面上写着能调、实际没有」的老病。
  */
 @Composable
 fun ToolsScreen(state: AppUiState) {
@@ -144,23 +149,76 @@ fun ToolsScreen(state: AppUiState) {
 
         Spacer(Modifier.height(10.dp))
 
-        HCard {
-            CardTitle("四态分列：注册 / 接线 / 开关 / 可执行")
-            DemoToolStates.forEach { t ->
+        ToolLedgerCard()
+    }
+}
+
+/**
+ * 真账卡（2026-10-05 修摆设刀）：这件应用**真实注册**的工具一件不落列出来，
+ * 直接问 [ToolRegistryRuntime]（装配口出口时登记的那张表），不维护第二份清单——
+ * 拆族数对照表迟早漂移，漂了又是「界面上写着能调、实际没有」。
+ *
+ * 每件一行：名字 + 状态点。绿 = 模型此刻能调；黄 = 注册了但设置开关关着
+ * （关掉不是坏了，去设置打开）；红 = 开关读取失败（gateNote 原样出声，不吞）。
+ * 没装配（注册表为空）时照实说「还没装配任何工具」，不摆演示清单顶数。
+ */
+@Composable
+private fun ToolLedgerCard() {
+    val registry = ToolRegistryRuntime.current()
+    val groups = ToolCenterState.grouped(registry)
+
+    HCard {
+        CardTitle("工具真账：${ToolCenterState.summary(registry)}")
+        if (groups.isEmpty()) {
+            Text("还没装配任何工具", fontSize = 13.sp, color = SubInk)
+            return@HCard
+        }
+        val broken = ToolCenterState.gateIssues(registry)
+        if (broken.isNotEmpty()) {
+            Text(
+                "有 ${broken.size} 件工具的开关读取出错：${broken.joinToString("、") { it.name }}",
+                fontSize = 12.sp,
+                color = WarnAmber,
+            )
+            Spacer(Modifier.height(6.dp))
+        }
+        groups.forEach { (family, rows) ->
+            Spacer(Modifier.height(4.dp))
+            Text(family, fontSize = 12.5.sp, color = Ink, fontWeight = FontWeight.SemiBold)
+            rows.forEach { row ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(t.name, fontSize = 14.sp, color = Ink, fontWeight = FontWeight.Normal)
-                    Spacer(Modifier.weight(1f))
-                    t.states.forEachIndexed { i, tone ->
-                        Dot(tone)
-                        if (i != t.states.lastIndex) Spacer(Modifier.width(6.dp))
+                    val tone = when {
+                        row.gateNote != null -> Tone.Err
+                        row.visible -> Tone.Ok
+                        else -> Tone.Warn
                     }
+                    Dot(tone)
+                    Spacer(Modifier.width(8.dp))
+                    Text(row.name, fontSize = 13.sp, color = Ink, modifier = Modifier.weight(1f))
+                    Text(
+                        when {
+                            row.gateNote != null -> "开关读取出错"
+                            row.visible && row.gated -> "开着（受设置开关控制）"
+                            row.visible -> "可调"
+                            row.gated -> "开关关着"
+                            else -> "不可见"
+                        },
+                        fontSize = 11.sp,
+                        color = SubInk,
+                    )
                 }
             }
         }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "写仓库、建/合 PR、建分支、删分支、建 issue、评论、关 PR 都要过确认卡——模型提议，人点头才动。",
+            fontSize = 11.5.sp,
+            color = SubInk,
+        )
     }
 }

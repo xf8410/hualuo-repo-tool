@@ -268,7 +268,7 @@ private fun ProviderGroupHeader(providerName: String, count: Int, caret: String,
     ) {
         Text(providerName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ink)
         Spacer(Modifier.weight(1f))
-        Text("$count 个", fontSize = 12.sp, color = SubInk)
+        Text("$count 个模型可用", fontSize = 12.sp, color = SubInk)
         Text(caret, fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(start = 6.dp))
     }
 }

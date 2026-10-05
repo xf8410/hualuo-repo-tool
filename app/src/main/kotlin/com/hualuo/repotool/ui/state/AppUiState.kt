@@ -77,6 +77,11 @@ class AppUiState(
     val modelSettings: ModelSettingsState? = null,
     /** 写类工具的确认闸门；null = 不注册写工具（默认拒写的另一半）。 */
     private val writeGate: WriteConfirmGate? = null,
+    /** PR 工具（建/合）的确认闸门；null = 不注册 PR 两件（默认拒）。 */
+    private val prGate: PrConfirmGate? = null,
+    /** GitHub 动作族（建分支/删分支/建 issue/评论/关 PR/评论 PR）的确认闸门；
+     *  null = 六件全部不注册（默认拒）。 */
+    private val actionGate: GitHubActionGate? = null,
     /** 记忆库；null = 不注册记忆工具族（同闸门纪律）。 */
     private val memoryStore: com.hualuo.engine.memory.MemoryStore? = null,
     /** 技能库；null = 不注册技能工具族、系统提示词不拼技能目录。 */
@@ -253,6 +258,8 @@ class AppUiState(
         toolRegistry = buildGithubToolRegistry(
             persist,
             writeGate,
+            prConfirmer = prGate,
+            actionConfirmer = actionGate,
             memoryStore = memoryStore,
             sessionStore = store,
             webSearchEnabled = { webSearchOn },
