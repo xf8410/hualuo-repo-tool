@@ -9,8 +9,6 @@ import com.hualuo.engine.github.normalizeGitHubRepo
 import com.hualuo.engine.search.WebSearchResult
 import com.hualuo.engine.store.SessionStore
 import com.hualuo.repotool.backup.BackupGateway
-import com.hualuo.repotool.ui.data.DemoComposerThumbs
-import com.hualuo.repotool.ui.data.DemoConversations
 import com.hualuo.repotool.ui.data.GEN_TEMPERATURE_DEFAULT
 import com.hualuo.repotool.ui.data.GEN_TEMPERATURE_KEY
 import com.hualuo.repotool.ui.data.GEN_TOP_P_DEFAULT
@@ -75,6 +73,8 @@ data class CourierPick(
 class AppUiState(
     private val persist: UiPersistence = UiPersistence.None,
     private val store: SessionStore? = null,
+    /** 模型设置句柄（聊天空态检测用）：null=纯 JVM 测试。 */
+    val modelSettings: ModelSettingsState? = null,
     /** 写类工具的确认闸门；null = 不注册写工具（默认拒写的另一半）。 */
     private val writeGate: WriteConfirmGate? = null,
     /** 记忆库；null = 不注册记忆工具族（同闸门纪律）。 */
@@ -575,12 +575,16 @@ class AppUiState(
     /** 版本串由入口注入（BuildConfig 读自 version.properties 单源），界面里不许写死。 */
     var versionLabel by mutableStateOf("")
 
+    /** 有没有一家能用的模型（聊天空态的引导依据）：提供商配好且至少一个非自定义可用。 */
+    fun anyModelReady(): Boolean = modelSettings
+        ?.settings?.providers?.any { modelSettings.isConfigured(it.id) } == true
+
     // 抽屉（store 接上后这里是真库列表；没接库才落回演示数据）
     var drawerOpen by mutableStateOf(false)
     var convQuery by mutableStateOf("")
     var selecting by mutableStateOf(false)
     var selectedIds by mutableStateOf(setOf<String>())
-    var convs by mutableStateOf(DemoConversations)
+    var convs by mutableStateOf(emptyList<Conv>())  // 空表起步（演示数据已撤）：真库接上后 init 里填
     var confirmOpen by mutableStateOf(false)
     var confirmText by mutableStateOf("")
     var confirmAction: (() -> Unit)? = null
@@ -590,7 +594,7 @@ class AppUiState(
     var addMenuOpen by mutableStateOf(false)
     var loopBarOn by mutableStateOf(true)
     var queueBarOn by mutableStateOf(true)
-    var thumbs by mutableStateOf(DemoComposerThumbs)
+    var thumbs by mutableStateOf(emptyList<String>())  // 输入条缩略位空置（无功能不占位）
 
     // 原位弹层（模型、工具、任务详情互斥，同原型 closeAll）
     var modelSheetOpen by mutableStateOf(false)

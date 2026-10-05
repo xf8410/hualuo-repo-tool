@@ -66,11 +66,12 @@ class HualuoApplication : Application() {
 
     val uiState: AppUiState by lazy {
         AppUiState(
-            uiBundle.persistence,
-            uiBundle.store,
-            writeGate,
-            memoryStore,
-            skillStore,
+            persist = uiBundle.persistence,
+            store = uiBundle.store,
+            writeGate = writeGate,
+            memoryStore = memoryStore,
+            skillStore = skillStore,
+            modelSettings = modelSettings,
             imageGenConfig = {
                 com.hualuo.engine.toolcalls.ImageGenConfig(
                     apiKey = uiBundle.persistence.load(com.hualuo.repotool.ui.state.UiKeys.IMAGE_GEN_KEY).orEmpty(),

@@ -42,9 +42,10 @@ class OldInstallStartupTest {
         ModelSettingsRuntime.install(modelSettings)
         val sessions = SessionStore(File(tmp.root, "sessions"))
         return AppUiState(
-            persist,
-            sessions,
-            WriteConfirmGate(),
+            persist = persist,
+            store = sessions,
+            writeGate = WriteConfirmGate(),
+            modelSettings = modelSettings,
             imageGenConfig = { null },
             imageGenPersist = { _, _ -> "" },
             watchInboxDir = File(tmp.root, "watch_inbox").apply { mkdirs() },

@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.components.CardTitle
 import com.hualuo.repotool.ui.components.HCard
 import com.hualuo.repotool.ui.components.LRow
-import com.hualuo.repotool.ui.data.DemoTasks
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
@@ -108,19 +107,12 @@ fun TasksScreen(state: AppUiState) {
         }
         HCard(modifier = Modifier.padding(top = 11.dp)) {
             CardTitle("定时任务")
-            DemoTasks.forEach { t ->
-                LRow(
-                    label = t.name,
-                    value = t.value,
-                    dot = t.tone,
-                    chevron = true,
-                    onClick = {
-                        state.modelSheetOpen = false
-                        state.toolSheetOpen = false
-                        state.taskSheetKey = t.name
-                    },
-                )
-            }
+            Text(
+                "还没有定时任务功能（演示数据已撤）。CI 状态通知在工作：每 15 分钟后台拍一次，红了发通知。",
+                fontSize = 12.sp,
+                color = SubInk,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
         }
     }
 }
