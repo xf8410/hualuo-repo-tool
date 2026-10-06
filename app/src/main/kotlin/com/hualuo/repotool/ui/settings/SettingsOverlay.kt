@@ -165,6 +165,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 SubField.MemoryCard -> MemoryCardField(state)
                 SubField.CiRunsCard -> CiRunsCardField(state)
                 is SubField.SiteRows -> SiteRowsField(state, f)
+                SubField.SandboxStatusCard -> SandboxStatusCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -206,6 +207,43 @@ private fun SiteRowsField(state: AppUiState, f: SubField.SiteRows) {
                 Text("›", fontSize = 16.sp, color = ChevGray)
             }
         }
+    }
+}
+
+/** 沙盒状态卡：真探目录（rootfs 装没装/多大、shared 路径）；开关没开就明说不注册。 */
+@Composable
+private fun SandboxStatusCardField(state: AppUiState) {
+    var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    val enabled = state.flag(com.hualuo.repotool.ui.state.UiKeys.SHELL_ENABLED, false)
+    val info = androidx.compose.runtime.remember(refresh) {
+        val root = java.io.File(state.sandboxRootPath)
+        val rootfs = java.io.File(root, "rootfs")
+        val shared = java.io.File(root, "shared")
+        Triple(rootfs, shared, root)
+    }
+    val (rootfs, shared, root) = info
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text("沙盒状态（真探目录）", fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(6.dp))
+        Row(Modifier.fillMaxWidth()) {
+            Text("根文件系统 rootfs", fontSize = 13.sp, color = Ink, modifier = Modifier.weight(1f))
+            Text(if (rootfs.exists()) "已装 · " + fmtStorage(rootfs.walkTopDown().filter { it.isFile }.sumOf { it.length() }) else "未装（首次跑命令时下载）", fontSize = 12.sp, color = if (rootfs.exists()) Ink else SubInk)
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp)) {
+            Text("共享目录", fontSize = 13.sp, color = Ink, modifier = Modifier.weight(1f))
+            Text(shared.absolutePath, fontSize = 11.sp, color = SubInk)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            if (enabled) "开关已开：沙盒工具族（status/list/run/install/remove）已注册，命令执行前弹确认卡" else "开关没开：沙盒工具族未注册（模型看不到这些工具）——「终端」页打开",
+            fontSize = 12.sp, color = if (enabled) Ink else SubInk,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "刷新",
+            fontSize = 13.sp, color = Accent,
+            modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { refresh += 1 }.padding(horizontal = 8.dp, vertical = 6.dp),
+        )
     }
 }
 

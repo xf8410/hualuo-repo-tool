@@ -53,6 +53,7 @@ import com.hualuo.repotool.ui.chat.Composer
 import com.hualuo.repotool.ui.chat.SheetsLayer
 import com.hualuo.repotool.ui.components.ConfirmDialog
 import com.hualuo.repotool.ui.components.GitHubActionCard
+import com.hualuo.repotool.ui.components.SandboxCard
 import com.hualuo.repotool.ui.components.PrConfirmCard
 import com.hualuo.repotool.ui.components.WriteConfirmCard
 import com.hualuo.repotool.ui.data.DemoCtx
@@ -401,6 +402,8 @@ fun HualuoApp(versionLabel: String) {
             // 都是改仓库状态的重动作，必须压在最上层第一个被看见。
             PrConfirmCard(kernel.prGate)
             GitHubActionCard(kernel.actionGate)
+            // 沙盒确认卡（终端页实装刀）：命令全文明文核对，点头才跑——与上面两张卡同层同规矩
+            SandboxCard(kernel.sandboxGate)
         }
     }
 }

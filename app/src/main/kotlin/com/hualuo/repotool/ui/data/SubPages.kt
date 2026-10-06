@@ -92,20 +92,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Seg("嵌入模型", listOf("OpenAI", "ollama 本地", "不下载"), 2),
         SubField.Note("语义搜索首次要下嵌入模型（约 80MB），下完离线可用"),
     )),
-    "shell" to SubPage("终端", listOf(
-        SubField.Switch("启用", false),
-        SubField.Seg("后端", listOf("proot 沙盒", "禁用"), 0),
-        SubField.Slider("单命令超时", 10.0, 300.0, 60.0, 5.0),
-        SubField.Row("沙盒详情", "Alpine mini · 已安装 ›", gotoKey = "sandbox"),
-        SubField.Note("命令在沙盒里跑；写操作和危险命令执行前弹确认"),
-    )),
-    "sandbox" to SubPage("沙盒", listOf(
-        SubField.Row("根文件系统", "Alpine mini · 84 MB · 已安装 ›"),
-        SubField.Row("共享目录", "Download/hualuo-sandbox/ ›"),
-        SubField.Switch("允许沙盒联网", false),
-        SubField.Slider("内存上限 MB", 128.0, 2048.0, 512.0, 64.0),
-        SubField.Note("沙盒与系统隔离：写操作只落在根文件系统里，退出可选清空；共享目录是唯一互通口"),
-    )),
     "github" to SubPage("GitHub 工作台", listOf(
         SubField.Row("登录状态", "xf8410 · 令牌有效 ›"),
         SubField.Input("默认仓库", "xf8410/hualuo-repo-tool"),

@@ -48,6 +48,7 @@ class HualuoApplication : Application() {
 
     /** 动作闸门（2026-10-05 全套刀）：建分支/删分支/建 issue/评论/关 PR 六件全过这道门。 */
     val actionGate = com.hualuo.repotool.ui.state.GitHubActionGate()
+    val sandboxGate = com.hualuo.repotool.ui.state.SandboxGate()
 
     /** 记忆库：建不起来就 null，记忆工具不注册，聊天仍照常。 */
     private val memoryStore: com.hualuo.engine.memory.MemoryStore? by lazy {
@@ -80,6 +81,8 @@ class HualuoApplication : Application() {
             memoryStore = memoryStore,
             skillStore = skillStore,
             modelSettings = modelSettings,
+            sandboxGate = sandboxGate,
+            sandboxRootDir = java.io.File(filesDir, "sandbox"),
             imageGenConfig = {
                 com.hualuo.engine.toolcalls.ImageGenConfig(
                     apiKey = uiBundle.persistence.load(com.hualuo.repotool.ui.state.UiKeys.IMAGE_GEN_KEY).orEmpty(),
