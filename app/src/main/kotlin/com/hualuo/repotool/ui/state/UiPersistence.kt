@@ -70,6 +70,12 @@ object UiKeys {
 
     /** 崩溃本地留档开关（关于页）：默认开；写盘回调只读 CrashObserver.keepLocal 内存值。 */
     const val CRASH_KEEP_LOCAL = "ui.crash_keep_local"
+
+    /** 界面语言偏好（语言页实装刀）：system/zh-Hans；English 语言包未实装，不提供假选项。 */
+    const val LANG_UI = "ui.lang"
+
+    /** AI 回复语言跟随界面语言（语言页实装刀）：开了就在系统指令尾部追一行语言要求。 */
+    const val LANG_AI_REPLY = "ui.lang_ai_reply"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"

@@ -255,6 +255,10 @@ class AppUiState(
                 catalog.isEmpty() -> base
                 base.isEmpty() -> catalog
                 else -> base + "\n\n" + catalog
+            }.let { withCatalog ->
+                // 语言页「AI 回复跟随界面语言」：真进系统指令（默认开——中文用户装完即对味）
+                if (persist.load(UiKeys.LANG_AI_REPLY)?.equals("false") == true) withCatalog
+                else if (withCatalog.isEmpty()) "请用简体中文回复。" else withCatalog + "\n请用简体中文回复。"
             }
         },
         toolRegistry = buildGithubToolRegistry(
