@@ -203,7 +203,7 @@ private fun CiRunsCardField(state: AppUiState) {
         val snap = snapshot
         when {
             snap == null -> Text("点右上「刷新」拉最近 5 条（不走缓存，每次都真查）", fontSize = 12.sp, color = SubInk)
-            snap.error != null -> Text(snap.error, fontSize = 12.sp, color = Ink)
+            snap.error != null -> Text(snap.error.orEmpty(), fontSize = 12.sp, color = Ink)
             snap.runs.isEmpty() -> Text("这个仓还没有跑过 Actions", fontSize = 12.sp, color = SubInk)
             else -> snap.runs.forEach { r ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
