@@ -130,12 +130,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Switch("重复导入按 sha256 去重", true),
         SubField.Note("审计库只读；大文件分块读，不进内存"),
     )),
-    "tasks" to SubPage("定时任务", listOf(
-        SubField.Row("夜间备份导出", "02:00 · 启用 ›"),
-        SubField.Row("仓库巡检 CI", "每 6h · 暂停 ›"),
-        SubField.Row("＋ 新建任务", "说清时间、干什么、发到哪"),
-        SubField.Note("每次执行开一个新会话，跑完在列表里留完整现场"),
-    )),
     "loop" to SubPage("会话循环", listOf(
         SubField.Row("当前运行", "重构主线 4/20 · 每 300s ›"),
         SubField.Slider("默认间隔秒", 60.0, 3600.0, 300.0, 30.0),

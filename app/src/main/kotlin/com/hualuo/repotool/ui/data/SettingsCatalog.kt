@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "tasks" to SubPage(
+        "定时任务",
+        listOf(
+            SubField.TasksCard,
+            SubField.Note("执行=到点开新会话发提示词（模型按「模型」页当前选择）；现场留在会话列表点开即看；前台正在生成时跳过本次，下个节拍再试。"),
+        ),
+    ),
     "lang" to SubPage(
         "语言",
         listOf(

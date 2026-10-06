@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -164,6 +165,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 SubField.AboutCard -> AboutCardField(state)
                 SubField.MemoryCard -> MemoryCardField(state)
                 SubField.CiRunsCard -> CiRunsCardField(state)
+                SubField.TasksCard -> TasksCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -172,6 +174,128 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.Note -> Text(f.text, fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(6.dp))
                 is SubField.Button -> Text(f.text, color = Accent, modifier = Modifier.fillMaxWidth().clickable { f.actionKey?.let(state::requestDataAction) ?: state.toast("已提交（演示，接线后生效）") }.padding(14.dp))
                 else -> Text(f.toString(), fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(8.dp))
+            }
+        }
+    }
+}
+
+/** 定时任务卡：真任务表——新建（名称/间隔/提示词）+ 启停 + 删除（确认）+ 执行账；
+ *  执行是后台 Worker 的活（15 分钟节拍到点开新会话发提示词），这页只管账目不装样子。 */
+@Composable
+private fun TasksCardField(state: AppUiState) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val kernel = ctx.applicationContext as com.hualuo.repotool.HualuoApplication
+    var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    val tasks = androidx.compose.runtime.remember(refresh) { kernel.taskStore.list() }
+    val logs = androidx.compose.runtime.remember(refresh) { kernel.taskStore.logs().takeLast(5) }
+    var adding by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var name by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    var interval by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("60") }
+    var prompt by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text("任务（files/tasks.json · 后台 15 分钟节拍）", fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(6.dp))
+        if (tasks.isEmpty()) {
+            Text("还没有任务。下面建第一条——到点自动开新会话把提示词发出去，现场留在会话列表。", fontSize = 12.sp, color = SubInk)
+        } else {
+            tasks.forEach { t ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t.name, fontSize = 13.sp, color = Ink)
+                        Text("每 ${t.intervalMin} 分钟 · " + if (t.enabled) "启用" else "暂停" + " · 上次 " + (if (t.lastRunAt == 0L) "没跑过" else "已跑"), fontSize = 11.sp, color = SubInk)
+                        if (t.lastResult.isNotEmpty()) Text(t.lastResult, fontSize = 11.sp, color = SubInk)
+                    }
+                    Text(
+                        if (t.enabled) "暂停" else "启用",
+                        fontSize = 12.sp, color = Accent,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
+                            kernel.taskStore.upsert(t.copy(enabled = !t.enabled)); refresh += 1
+                        }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "删除",
+                        fontSize = 12.sp, color = Accent,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
+                            state.confirmText = "删任务 ${t.name}？"
+                            state.confirmAction = {
+                                kernel.taskStore.delete(t.id); refresh += 1
+                            }
+                            state.confirmOpen = true
+                        }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        if (adding) {
+            Text("名称", fontSize = 12.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = name, onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFFFAFBFC)).padding(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text("间隔分钟（最少 15，节拍对齐）", fontSize = 12.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = interval, onValueChange = { interval = it },
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFFFAFBFC)).padding(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text("到点要发的提示词（原文进会话，不过滤）", fontSize = 12.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = prompt, onValueChange = { prompt = it },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFFAFBFC)).padding(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+            )
+            Spacer(Modifier.height(6.dp))
+            Row {
+                Text(
+                    "保存",
+                    fontSize = 13.sp, color = Accent,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
+                        val mins = interval.trim().toLongOrNull() ?: 0L
+                        when {
+                            name.isBlank() || prompt.isBlank() -> state.toast("名称和提示词都要填")
+                            mins < 15 -> state.toast("间隔最少 15 分钟（后台节拍对齐），现在是 $mins")
+                            else -> {
+                                kernel.taskStore.upsert(
+                                    com.hualuo.repotool.notify.TaskStore.Task(
+                                        id = "t" + System.currentTimeMillis(),
+                                        name = name.trim(),
+                                        intervalMin = mins,
+                                        prompt = prompt,
+                                        enabled = true,
+                                        lastRunAt = 0L,
+                                        lastResult = "",
+                                    ),
+                                )
+                                adding = false; name = ""; interval = "60"; prompt = ""; refresh += 1
+                                state.toast("任务已存：${name.trim()}（下个节拍到点执行）")
+                            }
+                        }
+                    }.padding(horizontal = 8.dp, vertical = 6.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "取消",
+                    fontSize = 13.sp, color = SubInk,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { adding = false }.padding(horizontal = 8.dp, vertical = 6.dp),
+                )
+            }
+        } else {
+            Text(
+                "＋ 新建任务",
+                fontSize = 13.sp, color = Accent,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { adding = true }.padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        }
+        if (logs.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("最近执行：", fontSize = 12.sp, color = SubInk)
+            logs.reversed().forEach { l ->
+                Text("· " + l.name + "：" + l.result, fontSize = 11.sp, color = SubInk)
             }
         }
     }
