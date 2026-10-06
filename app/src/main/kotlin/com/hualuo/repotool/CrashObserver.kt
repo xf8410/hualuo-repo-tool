@@ -45,6 +45,12 @@ object CrashObserver {
     @Volatile private var installed = false
 
     /**
+     * 崩溃本地留档开关（关于页真开关）：默认 true——崩溃取证是底线，关掉是用户明示的取舍。
+     * 写盘回调里只读这个内存值，绝不碰文件（崩溃瞬间 IO 越少越好）。
+     */
+    @Volatile var keepLocal = true
+
+    /**
      * 挂观察器。幂等：attachBaseContext 与 onCreate 都调也只生效一次。
      * 必须先记下原来的处理器，我们写完盘后原样交回——系统该弹的弹、该记的记。
      */
@@ -53,7 +59,7 @@ object CrashObserver {
         if (installed) return
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            if (busy.compareAndSet(false, true)) {
+            if (busy.compareAndSet(false, true) && keepLocal) {
                 try {
                     writeEverywhere(appContext, thread, throwable)
                 } catch (_: Throwable) {

@@ -67,6 +67,9 @@ object UiKeys {
 
     /** 主色档名（外观页实装刀）：blue/teal/purple/orange，见 AccentPalette。 */
     const val ACCENT = "ui.accent_color"
+
+    /** 崩溃本地留档开关（关于页）：默认开；写盘回调只读 CrashObserver.keepLocal 内存值。 */
+    const val CRASH_KEEP_LOCAL = "ui.crash_keep_local"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"

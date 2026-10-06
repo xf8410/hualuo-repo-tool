@@ -21,6 +21,14 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "about" to SubPage(
+        "关于",
+        listOf(
+            SubField.AboutCard,
+            SubField.PersistedSwitch("崩溃报告：本地留一份（关掉=崩溃不留档，排查闪退会失去坐标）", UiKeys.CRASH_KEEP_LOCAL, true),
+            SubField.Note("检查更新走 GitHub releases/latest 真查；提 issue 跳浏览器；崩溃开关立即生效（崩溃回调只读内存值）。"),
+        ),
+    ),
     "storage" to SubPage(
         "存储占用",
         listOf(
