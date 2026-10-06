@@ -197,8 +197,4 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Switch("跟随壁纸动态取色", false),
         SubField.Note("语义色（成功绿/错误红）不随主色变，防花"),
     )),
-    "lang" to SubPage("语言", listOf(
-        SubField.Seg("界面语言", listOf("跟随系统", "简体中文", "English"), 1),
-        SubField.Note("只换界面文字；AI 回复语言看系统指令"),
-    )),
 )

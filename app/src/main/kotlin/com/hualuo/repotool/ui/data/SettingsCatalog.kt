@@ -21,6 +21,22 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "lang" to SubPage(
+        "语言",
+        listOf(
+            SubField.PersistedSeg(
+                "界面语言",
+                UiKeys.LANG_UI,
+                listOf(
+                    SubField.SegChoice("跟随系统", "system"),
+                    SubField.SegChoice("简体中文", "zh-Hans"),
+                ),
+                default = "system",
+            ),
+            SubField.PersistedSwitch("AI 回复跟随界面语言（简体中文）", UiKeys.LANG_AI_REPLY, true),
+            SubField.Note("English 语言包未实装，不给假选项；开关真生效——开了就在每次请求的系统指令尾部追「请用简体中文回复」。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(
