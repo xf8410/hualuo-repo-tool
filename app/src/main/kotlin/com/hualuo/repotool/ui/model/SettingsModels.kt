@@ -54,6 +54,8 @@ sealed class SubField {
     object MemoryCard : SubField()
     /** CI 监视卡（实装刀）：真调 GitHub Actions API 列最近 run 状态。 */
     object CiRunsCard : SubField()
+    /** 沙盒状态卡（实装刀）：真探 rootfs/work/shared 目录（存在/大小/路径），不抄演示值。 */
+    object SandboxStatusCard : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
 

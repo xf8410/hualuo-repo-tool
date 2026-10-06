@@ -37,6 +37,20 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("English 语言包未实装，不给假选项；开关真生效——开了就在每次请求的系统指令尾部追「请用简体中文回复」。"),
         ),
     ),
+    "shell" to SubPage(
+        "终端",
+        listOf(
+            SubField.PersistedSwitch("启用沙盒终端（默认关：开了模型才能跑命令/装包）", UiKeys.SHELL_ENABLED, false),
+            SubField.Note("命令都在 proot 沙盒里跑（后端唯一实现，不给假选项）；run/install/remove 三件执行前必弹确认卡（明文命令全文核对）；单命令超时收在引擎里，不摆假滑块。改开关后重开会话生效。"),
+        ),
+    ),
+    "sandbox" to SubPage(
+        "沙盒",
+        listOf(
+            SubField.SandboxStatusCard,
+            SubField.Note("联网开关/内存上限是引擎侧策略（SANDBOX-LOGIC 文档），进 UI 前不摆假行；共享目录是唯一互通口。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(
