@@ -584,6 +584,21 @@ class AppUiState(
     /** 版本串由入口注入（BuildConfig 读自 version.properties 单源），界面里不许写死。 */
     var versionLabel by mutableStateOf("")
 
+    /** 记忆库只读口（设置页记忆账卡用）：没有库（未建/降级）返回 null。 */
+    fun memoryFiles(): List<com.hualuo.engine.memory.MemoryStore.MemoryFileInfo>? = memoryStore?.listFiles()
+
+    /** 活动记忆原文（进每次生成的上下文那份）；无库或未写返回空串。 */
+    fun activeMemory(): String = memoryStore?.readActiveMemory().orEmpty()
+
+    /** 删一条记忆（设置页记忆账卡，deleteFile 连 meta 一起清）。结果给人话：成功=null，失败=原因。 */
+    fun deleteMemory(name: String): String? =
+        memoryStore?.let { store ->
+            runCatching { store.deleteFile(name) }.fold(
+                onSuccess = { null },
+                onFailure = { it.message ?: "删除失败（原因不明）" },
+            )
+        } ?: "记忆库没建起来（本机降级态），删不了"
+
     /** 有没有一家能用的模型（聊天空态的引导依据）：提供商配好且至少一个非自定义可用。 */
     fun anyModelReady(): Boolean = modelSettings
         ?.settings?.providers?.any { modelSettings.isConfigured(it.id) } == true

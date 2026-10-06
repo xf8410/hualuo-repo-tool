@@ -50,6 +50,8 @@ sealed class SubField {
     object StorageStats : SubField()
     /** 关于卡（实装刀）：版本真值 + 检查更新真查 + 提 issue 真 intent + 开源许可真弹层。 */
     object AboutCard : SubField()
+    /** 记忆账卡（实装刀）：真记忆库统计 + 活动记忆查看 + 逐条删除（带确认）。 */
+    object MemoryCard : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
 

@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "memory" to SubPage(
+        "记忆",
+        listOf(
+            SubField.MemoryCard,
+            SubField.Note("统计与删除直接动真库（files/memory_db）；活动记忆是模型每次生成都带的那份底稿。技能库在工具页看，不在这。"),
+        ),
+    ),
     "about" to SubPage(
         "关于",
         listOf(
