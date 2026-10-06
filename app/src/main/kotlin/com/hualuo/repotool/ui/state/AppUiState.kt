@@ -584,6 +584,11 @@ class AppUiState(
     /** 版本串由入口注入（BuildConfig 读自 version.properties 单源），界面里不许写死。 */
     var versionLabel by mutableStateOf("")
 
+    /** CI 最近 run（设置页监视卡用）：后台线程调用（内部真联网，别在主线程碰）。
+     *  仓与 token 按既有规则读设置；本仓 Actions 只有 run 没有的字段，界面拿什么显示什么。 */
+    fun latestCiRuns(limit: Int = 5): com.hualuo.engine.github.GitHubCiSnapshot =
+        com.hualuo.engine.github.GitHubCiClient().latestRuns(defaultGitHubRepo(), githubToken(), limit)
+
     /** 记忆库只读口（设置页记忆账卡用）：没有库（未建/降级）返回 null。 */
     fun memoryFiles(): List<com.hualuo.engine.memory.MemoryStore.MemoryFileInfo>? = memoryStore?.listFiles()
 

@@ -118,13 +118,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Row("Actions 监视", "1 个 run 在盯 ›", gotoKey = "ghactions"),
         SubField.Note("写操作只进 workbench/* 分支，main 靠 PR 合"),
     )),
-    "ghactions" to SubPage("Actions 监视", listOf(
-        SubField.Row("run 34723037840", "success · build-workbench ›"),
-        SubField.Row("run 34742845079", "success · bench ›"),
-        SubField.Switch("只在失败时通知", true),
-        SubField.Slider("兜底轮询间隔分", 5.0, 120.0, 15.0, 5.0),
-        SubField.Note("优先 webhook 推送，轮询只是兜底；不重复通知同一条失败"),
-    )),
     "courier" to SubPage("文件投递", listOf(
         SubField.Input("目标仓库", "xf8410/hualuo-courier"),
         SubField.Slider("切片大小 MB", 8.0, 64.0, 32.0, 4.0),

@@ -52,6 +52,8 @@ sealed class SubField {
     object AboutCard : SubField()
     /** 记忆账卡（实装刀）：真记忆库统计 + 活动记忆查看 + 逐条删除（带确认）。 */
     object MemoryCard : SubField()
+    /** CI 监视卡（实装刀）：真调 GitHub Actions API 列最近 run 状态。 */
+    object CiRunsCard : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
 
