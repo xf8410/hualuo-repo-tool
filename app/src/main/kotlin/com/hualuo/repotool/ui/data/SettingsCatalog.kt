@@ -57,6 +57,19 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("行卡真跳浏览器；常用地址都在这页可加（后续接「收藏链接」指令再加条目）。"),
         ),
     ),
+    "roadmap" to SubPage(
+        "待开发任务",
+        listOf(
+            SubField.SiteRows(
+                "真账本",
+                listOf(
+                    "功能账本 FEATURE-LEDGER.csv（本仓 docs，CI 一起盯）" to "https://github.com/xf8410/hualuo-repo-tool/blob/main/docs/FEATURE-LEDGER.csv",
+                    "Issues 列表（真正的待办池）" to "https://github.com/xf8410/hualuo-repo-tool/issues",
+                ),
+            ),
+            SubField.Note("演示三行（todo/doing/done 假状态）已撤——真账本在仓库里，界面只放真链接不抄一份会过时的。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(
