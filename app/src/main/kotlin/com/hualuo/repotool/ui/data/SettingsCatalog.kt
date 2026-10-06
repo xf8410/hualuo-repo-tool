@@ -70,6 +70,20 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("演示三行（todo/doing/done 假状态）已撤——真账本在仓库里，界面只放真链接不抄一份会过时的。"),
         ),
     ),
+    "shell" to SubPage(
+        "终端",
+        listOf(
+            SubField.PersistedSwitch("启用沙盒终端（默认关：开了模型才能跑命令/装包）", UiKeys.SHELL_ENABLED, false),
+            SubField.Note("命令都在 proot 沙盒里跑（后端唯一实现，不给假选项）；run/install/remove 三件执行前必弹确认卡（明文命令全文核对）；单命令超时收在引擎里，不摆假滑块。改开关后重开会话生效。"),
+        ),
+    ),
+    "sandbox" to SubPage(
+        "沙盒",
+        listOf(
+            SubField.SandboxStatusCard,
+            SubField.Note("联网开关/内存上限是引擎侧策略（SANDBOX-LOGIC 文档），进 UI 前不摆假行；共享目录是唯一互通口。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(
