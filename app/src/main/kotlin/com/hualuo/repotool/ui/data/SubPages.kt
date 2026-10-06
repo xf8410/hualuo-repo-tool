@@ -63,11 +63,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Seg("带多少历史", listOf("20 条", "50 条", "按 token 装满"), 2),
         SubField.Note("历史「按条数」会浪费大上下文模型，默认按 token 装到真值上限"),
     )),
-    "title" to SubPage("标题生成", listOf(
-        SubField.Switch("启用", true),
-        SubField.Seg("用哪个模型", listOf("跟随当前", "固定小模型（省钱）"), 1),
-        SubField.Input("起标题的提示词（可空）", "10 字以内，概括主题"),
-    )),
     "trim" to SubPage("历史裁剪", listOf(
         SubField.Seg("策略", listOf("按 token", "按条数"), 0),
         SubField.Input("单回合上限 token", "128000"),
