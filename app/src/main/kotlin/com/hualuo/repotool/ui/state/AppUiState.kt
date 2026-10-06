@@ -334,7 +334,24 @@ class AppUiState(
         if (chat.lastTrimmed > 0) {
             toast("上下文装不下：砍了 ${chat.lastTrimmed} 条旧话才发（上限在「历史裁剪」里调）")
         }
+        // 标题生成页的开关真生效：还没名字的会话，拿首条消息前 20 字起名（规则起名，离线可用；
+        // 模型起名差一轮请求接线，接上后这条升级成模型起名）
+        autoTitleFromFirstMessage(text)
         input = ""
+    }
+
+    /** 首条消息自动起名（标题生成页实装刀）：开关开 + 会话还没标题才动；写库 + 刷列表。 */
+    private fun autoTitleFromFirstMessage(firstMessage: String) {
+        if (persist.load(UiKeys.TITLE_AUTO)?.equals("false") == true) return
+        val s = store ?: return
+        val id = chat.sessionId ?: return
+        val conv = convs.firstOrNull { it.id == id } ?: return
+        if (conv.title != "（未命名）") return
+        val title = firstMessage.trim().replace("\\s+".toRegex(), " ").take(20)
+        if (title.isBlank()) return
+        runCatching { s.rename(id, title) }.onSuccess {
+            convs = convs.map { if (it.id == id) it.copy(title = title) else it }
+        }
     }
 
     // ── 工具页真电：网页搜索（瞬时态在 [webSearchRun]，用哪家由 [webSearch] 现读） ──

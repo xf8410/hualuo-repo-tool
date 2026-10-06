@@ -37,6 +37,13 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("English 语言包未实装，不给假选项；开关真生效——开了就在每次请求的系统指令尾部追「请用简体中文回复」。"),
         ),
     ),
+    "title" to SubPage(
+        "标题生成",
+        listOf(
+            SubField.PersistedSwitch("自动给会话起名（首条消息前 20 字）", UiKeys.TITLE_AUTO, true),
+            SubField.Note("当前是规则起名（离线可用，当场生效写库）；「固定小模型起名」差一轮请求接线——接上后这页加模型选项，不给假 Seg。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(

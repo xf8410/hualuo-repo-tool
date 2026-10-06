@@ -76,6 +76,8 @@ object UiKeys {
 
     /** AI 回复语言跟随界面语言（语言页实装刀）：开了就在系统指令尾部追一行语言要求。 */
     const val LANG_AI_REPLY = "ui.lang_ai_reply"
+    /** 会话自动起名（标题生成页实装刀）：默认开；规则起名=首条消息前 20 字（离线可用）。 */
+    const val TITLE_AUTO = "ui.title_auto"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"
