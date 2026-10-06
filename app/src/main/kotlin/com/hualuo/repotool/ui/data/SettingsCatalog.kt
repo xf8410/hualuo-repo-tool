@@ -70,6 +70,13 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("演示三行（todo/doing/done 假状态）已撤——真账本在仓库里，界面只放真链接不抄一份会过时的。"),
         ),
     ),
+    "title" to SubPage(
+        "标题生成",
+        listOf(
+            SubField.PersistedSwitch("自动给会话起名（首条消息前 20 字）", UiKeys.TITLE_AUTO, true),
+            SubField.Note("当前是规则起名（离线可用，当场生效写库）；「固定小模型起名」差一轮请求接线——接上后这页加模型选项，不给假 Seg。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(
