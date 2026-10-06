@@ -180,12 +180,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Row("缓存（可清）", "0.1 GB · 清理 ›"),
         SubField.Note("备份不加密（拍板 D-10），存放位置自己负责"),
     )),
-    "roadmap" to SubPage("待开发任务", listOf(
-        SubField.Row("todo · 设置页语音输入挪聊天框", "已定稿待实现 ›"),
-        SubField.Row("doing · 分卷上传接线", "差最后一步 ›"),
-        SubField.Row("done · 版本单源", "CI 已判 ›"),
-        SubField.Row("＋ 记一条"),
-    )),
     "appearance" to SubPage("外观", listOf(
         SubField.Seg("主题", listOf("亮色", "暗色", "跟随系统"), 2),
         SubField.Seg("主色", listOf("蓝", "青", "紫", "橙"), 0),
