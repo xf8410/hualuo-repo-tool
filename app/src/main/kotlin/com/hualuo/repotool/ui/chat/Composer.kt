@@ -30,10 +30,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hualuo.repotool.ui.data.DemoAttachMenu
-import com.hualuo.repotool.ui.data.DemoLoopBar
-import com.hualuo.repotool.ui.data.DemoLoopIcon
-import com.hualuo.repotool.ui.data.DemoQueueBar
-import com.hualuo.repotool.ui.data.DemoQueueIcon
 import com.hualuo.repotool.ui.model.IconKey
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.state.currentModelChipText
@@ -69,8 +65,8 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  */
 @Composable
 fun Composer(state: AppUiState) {
-    val loopGlyph = stringResource(DemoLoopIcon.resId)
-    val queueGlyph = stringResource(DemoQueueIcon.resId)
+    val loopGlyph = stringResource(IconKey.Loop.resId)
+    val queueGlyph = stringResource(IconKey.Hourglass.resId)
     val stopGlyph = stringResource(IconKey.ActionStop.resId)
     val crossGlyph = stringResource(IconKey.Cross.resId)
     val plusGlyph = stringResource(IconKey.Plus.resId)
@@ -98,7 +94,18 @@ fun Composer(state: AppUiState) {
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("$loopGlyph $DemoLoopBar", fontSize = 12.sp, color = LoopInk)
+                val ctl = state.loopCtl
+                val now: Long = System.currentTimeMillis()
+                val nextTxt: String = if (ctl.nextAtMs > 0L) {
+                    val secLeft: Long = (ctl.nextAtMs - now) / 1000L + 1L
+                    " · 下轮 ${secLeft}s"
+                } else {
+                    ""
+                }
+                Text(
+                    "$loopGlyph 会话循环 ${ctl.rounds}/${ctl.maxRounds} · 每 ${ctl.intervalSec}s$nextTxt",
+                    fontSize = 12.sp, color = LoopInk,
+                )
                 Spacer(Modifier.weight(1f))
                 Text(
                     "$stopGlyph 停",
@@ -106,8 +113,9 @@ fun Composer(state: AppUiState) {
                     color = ErrRed,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clickable {
+                        state.loopCtl.stop()
                         state.loopBarOn = false
-                        state.toast("已停止本会话循环（演示）")
+                        state.toast("已停止会话循环（跑完 ${state.loopCtl.rounds} 轮）")
                     },
                 )
             }
@@ -122,7 +130,7 @@ fun Composer(state: AppUiState) {
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("$queueGlyph $DemoQueueBar", fontSize = 12.sp, color = Accent)
+                Text("$queueGlyph 排队机制未实装（草稿清空即发，不压队）", fontSize = 12.sp, color = Accent)
                 Spacer(Modifier.weight(1f))
                 Text(
                     "移除 $crossGlyph",

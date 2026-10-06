@@ -92,6 +92,9 @@ class ChatRuntime(
     /** 工具回合的轮次上限（防模型连轴转地调工具不给答案）。 */
     private val maxToolRounds: Int = MAX_TOOL_ROUNDS,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** 生成收尾回调（会话循环页实装刀）：每轮生成落定（成功/失败/按停）后调一次，
+     *  参数=是否用户主动按停。循环调度器挂这里，别去轮询 busy。 */
+    val onSettled: (cancelled: Boolean) -> Unit = {},
 ) {
 
     /** 真说过的话（含演示兜底由界面决定，这里只有真数据）。 */
@@ -362,6 +365,7 @@ class ChatRuntime(
             busy = false
             persistSettleLocked(finished, isErrorCard = finished.isEmpty())
         }
+        onSettled(false)
     }
 
     /** 用户按停收场：不算失败，但半截话照留并标清（与老版同款；工具轮之间按停走这里）。 */
@@ -380,6 +384,7 @@ class ChatRuntime(
             busy = false
             persistSettleLocked(finished, isErrorCard = true)
         }
+        onSettled(true)
     }
 
     /** 错误收场：错误卡带出路；半截话留在卡上标清「不完整」（网络错、打转上限都走这里）。 */
@@ -398,6 +403,7 @@ class ChatRuntime(
             busy = false
             persistSettleLocked(finished, isErrorCard = true)
         }
+        onSettled(false)
     }
 
     /** 流式追加：每段内容落到最后一张卡上。 */

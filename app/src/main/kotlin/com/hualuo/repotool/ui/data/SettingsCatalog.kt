@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "loop" to SubPage(
+        "会话循环",
+        listOf(
+            SubField.LoopCard,
+            SubField.Note("续跑提示词固定「继续」（要改口径先改系统指令）；回合流栏的循环条与这页同步（真读 LoopController 态）。"),
+        ),
+    ),
     "tasks" to SubPage(
         "定时任务",
         listOf(

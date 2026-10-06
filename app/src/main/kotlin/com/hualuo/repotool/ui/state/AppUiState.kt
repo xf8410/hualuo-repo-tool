@@ -243,6 +243,9 @@ class AppUiState(
      * 非空才注册（默认拒写）。三个真开关全部具名传：尾随 lambda 会绑到 ChatRuntime 的
      * 最后一个参数（clock），拿开关去尾随就是拿 Boolean 冒充 Long——CI 编译段抓到过，别再犯。
      */
+    /** 会话循环调度器（loop 页实装刀）：进程级，onSettled 驱动。 */
+    val loopCtl = LoopController(state = { this })
+
     val chat = ChatRuntime(
         persist,
         autoRetryCostly = { flag(RETRY_COSTLY_KEY, RETRY_COSTLY_DEFAULT) },
@@ -293,6 +296,10 @@ class AppUiState(
             },
             observeLink = observe.link,
         ),
+        // 会话循环（loop 页实装刀）：生成落定回调里驱动 LoopController（含按停语义）。
+        // 注意这里读的是局部 ui 引用而不是 chat 属性本身——onSettled 在 chat 构造参数里，
+        // 直接引用 chat 会造成构造期递归类型解析（CI 逮过：recursive problem + unresolved sessionId）。
+        onSettled = { cancelled -> loopCtl.onSettled(cancelled) },
     )
 
     /**
@@ -653,8 +660,10 @@ class AppUiState(
     // 输入区的瞬时态（不该持久化）
     var micOn by mutableStateOf(false)
     var addMenuOpen by mutableStateOf(false)
-    var loopBarOn by mutableStateOf(true)
-    var queueBarOn by mutableStateOf(true)
+    /** 循环条可见性：跟 LoopController.enabled 走（开着才显示）。 */
+    var loopBarOn by mutableStateOf(false)
+    /** 队列条：排队机制未实装，默认不摆（留着位置，实装后开）。 */
+    var queueBarOn by mutableStateOf(false)
     var thumbs by mutableStateOf(emptyList<String>())  // 输入条缩略位空置（无功能不占位）
 
     // 原位弹层（模型、工具、任务详情互斥，同原型 closeAll）
