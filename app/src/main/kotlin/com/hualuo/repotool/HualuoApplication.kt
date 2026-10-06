@@ -49,6 +49,9 @@ class HualuoApplication : Application() {
     /** 动作闸门（2026-10-05 全套刀）：建分支/删分支/建 issue/评论/关 PR 六件全过这道门。 */
     val actionGate = com.hualuo.repotool.ui.state.GitHubActionGate()
 
+    /** 定时任务表（tasks 页实装刀）：files/tasks.json，Worker 与设置页共用一个实例。 */
+    val taskStore by lazy { com.hualuo.repotool.notify.TaskStore(java.io.File(filesDir, "tasks.json")) }
+
     /** 记忆库：建不起来就 null，记忆工具不注册，聊天仍照常。 */
     private val memoryStore: com.hualuo.engine.memory.MemoryStore? by lazy {
         try {
