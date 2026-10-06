@@ -21,6 +21,28 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "ghactions" to SubPage(
+        "Actions 监视",
+        listOf(
+            SubField.CiRunsCard,
+            SubField.Note("后台通知在另一个真通道：每 15 分钟轮询，红了发系统通知（通知开关在系统设置里管）。这张卡是当场真查。"),
+        ),
+    ),
+    "memory" to SubPage(
+        "记忆",
+        listOf(
+            SubField.MemoryCard,
+            SubField.Note("统计与删除直接动真库（files/memory_db）；活动记忆是模型每次生成都带的那份底稿。技能库在工具页看，不在这。"),
+        ),
+    ),
+    "about" to SubPage(
+        "关于",
+        listOf(
+            SubField.AboutCard,
+            SubField.PersistedSwitch("崩溃报告：本地留一份（关掉=崩溃不留档，排查闪退会失去坐标）", UiKeys.CRASH_KEEP_LOCAL, true),
+            SubField.Note("检查更新走 GitHub releases/latest 真查；提 issue 跳浏览器；崩溃开关立即生效（崩溃回调只读内存值）。"),
+        ),
+    ),
     "storage" to SubPage(
         "存储占用",
         listOf(
