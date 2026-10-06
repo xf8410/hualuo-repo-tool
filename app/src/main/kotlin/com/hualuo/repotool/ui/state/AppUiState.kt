@@ -179,6 +179,8 @@ class AppUiState(
     fun setFlag(key: String, value: Boolean) {
         flagOverrides[key] = value
         persist.save(key, value.toString())
+        // 崩溃留档开关（关于页）：当场喂内存值——崩溃回调里只读内存，不碰盘
+        if (key == UiKeys.CRASH_KEEP_LOCAL) com.hualuo.repotool.CrashObserver.keepLocal = value
     }
 
     // ── 设置页的真文本（按键名；提供商地址密钥这类） ────────────────────────
