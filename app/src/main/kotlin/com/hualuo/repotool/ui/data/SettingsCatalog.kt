@@ -21,6 +21,26 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "sites" to SubPage(
+        "常用网站",
+        listOf(
+            SubField.SiteRows(
+                "自己的仓",
+                listOf(
+                    "hualuo-repo-tool（本仓）" to "https://github.com/xf8410/hualuo-repo-tool",
+                    "xf8410-repos-mingxi（总账仓）" to "https://github.com/xf8410/xf8410-repos-mingxi",
+                ),
+            ),
+            SubField.SiteRows(
+                "外部常用",
+                listOf(
+                    "GitHub Actions 文档" to "https://docs.github.com/actions",
+                    "OkHttp 文档" to "https://square.github.io/okhttp/",
+                ),
+            ),
+            SubField.Note("行卡真跳浏览器；常用地址都在这页可加（后续接「收藏链接」指令再加条目）。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(

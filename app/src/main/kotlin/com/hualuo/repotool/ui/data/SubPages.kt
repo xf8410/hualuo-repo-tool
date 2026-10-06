@@ -180,11 +180,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Row("缓存（可清）", "0.1 GB · 清理 ›"),
         SubField.Note("备份不加密（拍板 D-10），存放位置自己负责"),
     )),
-    "sites" to SubPage("常用网站", listOf(
-        SubField.Row("mine · xf8410/hualuo-repo-tool", "自己的仓 ›"),
-        SubField.Row("external · github.com/MetaCat", "别人的 ›"),
-        SubField.Row("＋ 添加", "跟 AI 说一句「收藏这个链接」也行"),
-    )),
     "roadmap" to SubPage("待开发任务", listOf(
         SubField.Row("todo · 设置页语音输入挪聊天框", "已定稿待实现 ›"),
         SubField.Row("doing · 分卷上传接线", "差最后一步 ›"),
