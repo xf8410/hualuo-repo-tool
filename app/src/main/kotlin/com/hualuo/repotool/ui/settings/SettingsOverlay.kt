@@ -258,8 +258,8 @@ private fun fetchLatestReleaseTag(): String =
         conn.setRequestProperty("Accept", "application/vnd.github+json")
         val body = conn.inputStream.bufferedReader().readText()
         conn.disconnect()
-        val m = Regex("\"tag_name\"\\s*:\s*\"([^\"]+)\"").find(body)
-        m?.groupValues?.get(1) ?: "仓库还没有发过 Release"
+        val tag = body.substringAfter("\"tag_name\":", "").substringAfter('"', "").substringBefore('"', "")
+        tag.ifEmpty { "仓库还没有发过 Release" }
     }.getOrElse { "查不到（网络不通或接口限流）" }
 
 /** 存储占用卡：真统计 + 缓存真清理（清完重算；会话仓与收件箱只报大小不给一键删——防手滑丢历史）。 */
