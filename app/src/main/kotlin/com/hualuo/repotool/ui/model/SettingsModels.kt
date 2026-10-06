@@ -48,6 +48,8 @@ sealed class SubField {
     object ModelSettings : SubField()
     /** 存储占用卡（实装刀）：真统计各私有目录大小 + 缓存目录真清理。 */
     object StorageStats : SubField()
+    /** 关于卡（实装刀）：版本真值 + 检查更新真查 + 提 issue 真 intent + 开源许可真弹层。 */
+    object AboutCard : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
 

@@ -214,12 +214,4 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Seg("界面语言", listOf("跟随系统", "简体中文", "English"), 1),
         SubField.Note("只换界面文字；AI 回复语言看系统指令"),
     )),
-    "about" to SubPage("关于", listOf(
-        SubField.Row("版本", "%VERSION% · 单源 ›"),
-        SubField.Row("检查更新", "›"),
-        SubField.Switch("崩溃报告：本地留一份，启动问一次", true),
-        SubField.Row("提 issue", "xf8410/hualuo-repo-tool ›"),
-        SubField.Row("开源许可", "›"),
-        SubField.Row("给个好评"),
-    )),
 )

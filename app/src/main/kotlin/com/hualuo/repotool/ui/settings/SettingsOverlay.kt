@@ -159,6 +159,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.PersistedSlider -> PersistedSliderField(state, f)
                 is SubField.PersistedSeg -> PersistedSegField(state, f)
                 SubField.StorageStats -> StorageStatsCard(state)
+                SubField.AboutCard -> AboutCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -171,6 +172,95 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
         }
     }
 }
+
+/** 关于卡：版本行读真 versionLabel；检查更新真调 GitHub releases/latest 对比；提 issue 真 intent。 */
+@Composable
+private fun AboutCardField(state: AppUiState) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var latest by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var checking by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var licenseOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth()) {
+            Text("版本", fontSize = 13.sp, color = SubInk)
+            Spacer(Modifier.weight(1f))
+            Text(state.versionLabel.ifEmpty { "正在读取" }, fontSize = 13.sp, color = Ink)
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth()) {
+            Text(
+                if (checking) "正在查更新…" else "检查更新",
+                fontSize = 13.sp, color = Accent,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
+                    if (checking) return@clickable
+                    checking = true
+                    Thread {
+                        val result = fetchLatestReleaseTag()
+                        latest = result
+                        checking = false
+                    }.apply { name = "hualuo-update-check" }.start()
+                }.padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+            Spacer(Modifier.weight(1f))
+            latest?.let {
+                Text(it, fontSize = 13.sp, color = Ink)
+            }
+        }
+        if (latest != null) {
+            val current = state.versionLabel.substringBefore(" (")
+            val newer = latest.orEmpty().removePrefix("v") > current.removePrefix("v")
+            Text(
+                if (newer) "有新版本（上面是线上最新 tag，去仓库 Releases 下载）" else "已是线上最新（tag 对比）",
+                fontSize = 11.sp, color = SubInk,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "提 issue",
+            fontSize = 13.sp, color = Accent,
+            modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
+                runCatching {
+                    ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/xf8410/hualuo-repo-tool/issues/new")))
+                }.onFailure { state.toast("打不开 issue 页（设备上没有能接的浏览器？）") }
+            }.padding(horizontal = 8.dp, vertical = 6.dp),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "开源许可",
+            fontSize = 13.sp, color = Accent,
+            modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { licenseOpen = true }.padding(horizontal = 8.dp, vertical = 6.dp),
+        )
+    }
+    if (licenseOpen) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { licenseOpen = false }) {
+            Column(Modifier.clip(RoundedCornerShape(18.dp)).background(CardBg).padding(18.dp)) {
+                Text("开源许可", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "本应用自身：源码仓 xf8410/hualuo-repo-tool（项目组自有，未挂第三方开源许可）。\n" +
+                        "依赖件：AndroidX / Jetpack Compose / Kotlin 标准库 / kotlinx-serialization / OkHttp 生态等，" +
+                        "各自按其上游许可分发；完整清单见仓库 gradle/libs.versions.toml。",
+                    fontSize = 12.5.sp, color = SubInk,
+                )
+            }
+        }
+    }
+}
+
+/** 后台查 GitHub 最新 release tag；查不到就回一句人话（网络/私有仓/无 release 都落这里）。 */
+private fun fetchLatestReleaseTag(): String =
+    runCatching {
+        val url = java.net.URL("https://api.github.com/repos/xf8410/hualuo-repo-tool/releases/latest")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.connectTimeout = 8000
+        conn.readTimeout = 8000
+        conn.setRequestProperty("User-Agent", "hualuo-repo-tool")
+        conn.setRequestProperty("Accept", "application/vnd.github+json")
+        val body = conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        val m = Regex("\"tag_name\"\\s*:\s*\"([^\"]+)\"").find(body)
+        m?.groupValues?.get(1) ?: "仓库还没有发过 Release"
+    }.getOrElse { "查不到（网络不通或接口限流）" }
 
 /** 存储占用卡：真统计 + 缓存真清理（清完重算；会话仓与收件箱只报大小不给一键删——防手滑丢历史）。 */
 @Composable
