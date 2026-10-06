@@ -164,6 +164,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 SubField.AboutCard -> AboutCardField(state)
                 SubField.MemoryCard -> MemoryCardField(state)
                 SubField.CiRunsCard -> CiRunsCardField(state)
+                is SubField.SiteRows -> SiteRowsField(state, f)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -172,6 +173,37 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.Note -> Text(f.text, fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(6.dp))
                 is SubField.Button -> Text(f.text, color = Accent, modifier = Modifier.fillMaxWidth().clickable { f.actionKey?.let(state::requestDataAction) ?: state.toast("已提交（演示，接线后生效）") }.padding(14.dp))
                 else -> Text(f.toString(), fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(8.dp))
+            }
+        }
+    }
+}
+
+/** 常用网站：行卡真跳浏览器（intent），打不开给人话；收藏的是项目组真实地址，不是演示文案。 */
+@Composable
+private fun SiteRowsField(state: AppUiState, f: SubField.SiteRows) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(f.title, fontSize = 13.sp, color = SubInk, modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp))
+        f.urls.forEach { (label, url) ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 9.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(CardBg)
+                    .clickable {
+                        runCatching {
+                            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                        }.onFailure { state.toast("打不开 $label（设备上没有能接的浏览器？）") }
+                    }
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(label, fontSize = 14.sp, color = Ink)
+                    Text(url, fontSize = 11.sp, color = SubInk)
+                }
+                Text("›", fontSize = 16.sp, color = ChevGray)
             }
         }
     }

@@ -37,6 +37,26 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.Note("English 语言包未实装，不给假选项；开关真生效——开了就在每次请求的系统指令尾部追「请用简体中文回复」。"),
         ),
     ),
+    "sites" to SubPage(
+        "常用网站",
+        listOf(
+            SubField.SiteRows(
+                "自己的仓",
+                listOf(
+                    "hualuo-repo-tool（本仓）" to "https://github.com/xf8410/hualuo-repo-tool",
+                    "xf8410-repos-mingxi（总账仓）" to "https://github.com/xf8410/xf8410-repos-mingxi",
+                ),
+            ),
+            SubField.SiteRows(
+                "外部常用",
+                listOf(
+                    "GitHub Actions 文档" to "https://docs.github.com/actions",
+                    "OkHttp 文档" to "https://square.github.io/okhttp/",
+                ),
+            ),
+            SubField.Note("行卡真跳浏览器；常用地址都在这页可加（后续接「收藏链接」指令再加条目）。"),
+        ),
+    ),
     "ghactions" to SubPage(
         "Actions 监视",
         listOf(
