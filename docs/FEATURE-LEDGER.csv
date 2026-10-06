@@ -805,3 +805,6 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 804,engine.api.LineSink#exec text summary has no image,engine·exectextsummaryhasnoimage,engine域「LineSink」的独立行为：exectextsummaryhasnoimage（源用例 execTextSummaryHasNoImage）,用例,engine/vision,execTextSummaryHasNoImage
 805,生成参数页实装·修摆设,设置「生成参数」页真滑块/真选项组（温度0-2步进0.1、top_p、历史条数），温度/top_p 首次接进聊天请求体；替换 Slider(label=...) 字面量演示,实装,app/settings,PR#78 804后
 806,外观页主色切换·修摆设,主色四档（蓝青紫橙）落盘即切全界面；亮色单主题钉死（用户拍板无暗色）；Accent 响应式改造 58 引用零改动,实装,app/theme,PR#79
+807,关于页实装·修摆设,AboutCard 真卡：版本真值/检查更新真调 releases/latest/提issue真intent/开源许可弹层；崩溃留档开关全链（CrashObserver.keepLocal 内存门）,实装,app/settings,PR#84
+808,记忆页实装·修摆设,MemoryCard：memory_db 真统计+活动记忆原文+带确认删除（deleteFile 连 meta 清）,实装,app/settings,PR#85
+809,Actions监视页实装·修摆设,CiRunsCard：真调 GitHubCiClient.latestRuns 最近5条红绿；与后台通知双通道,实装,app/settings,PR#86
