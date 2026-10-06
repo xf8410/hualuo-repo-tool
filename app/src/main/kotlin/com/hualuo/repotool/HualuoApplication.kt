@@ -50,6 +50,9 @@ class HualuoApplication : Application() {
     val actionGate = com.hualuo.repotool.ui.state.GitHubActionGate()
     val sandboxGate = com.hualuo.repotool.ui.state.SandboxGate()
 
+    /** 定时任务表（tasks 页实装刀）：files/tasks.json，Worker 与设置页共用一个实例。 */
+    val taskStore by lazy { com.hualuo.repotool.notify.TaskStore(java.io.File(filesDir, "tasks.json")) }
+
     /** 记忆库：建不起来就 null，记忆工具不注册，聊天仍照常。 */
     private val memoryStore: com.hualuo.engine.memory.MemoryStore? by lazy {
         try {
