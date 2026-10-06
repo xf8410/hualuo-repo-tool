@@ -160,6 +160,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.PersistedSeg -> PersistedSegField(state, f)
                 SubField.StorageStats -> StorageStatsCard(state)
                 SubField.AboutCard -> AboutCardField(state)
+                SubField.MemoryCard -> MemoryCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -169,6 +170,49 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.Button -> Text(f.text, color = Accent, modifier = Modifier.fillMaxWidth().clickable { f.actionKey?.let(state::requestDataAction) ?: state.toast("已提交（演示，接线后生效）") }.padding(14.dp))
                 else -> Text(f.toString(), fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(8.dp))
             }
+        }
+    }
+}
+
+/** 记忆账卡：真库统计（memory_db）+ 活动记忆原文 + 逐条删除（先确认再删，删完刷新）。 */
+@Composable
+private fun MemoryCardField(state: AppUiState) {
+    var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    val files = androidx.compose.runtime.remember(refresh) { state.memoryFiles() }
+    val active = androidx.compose.runtime.remember(refresh) { state.activeMemory() }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        when {
+            files == null -> Text("记忆库没建起来（本机降级态）", fontSize = 13.sp, color = SubInk)
+            files.isEmpty() -> Text("记忆库是空的：AI 还没往里记过东西（记忆工具族可用，模型调 memory_write 才会落条目）", fontSize = 13.sp, color = SubInk)
+            else -> {
+                Text("记忆 ${'$'}{files.size} 条（memory_db）", fontSize = 13.sp, color = Ink)
+                Spacer(Modifier.height(6.dp))
+                files.forEach { f ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(f.name, fontSize = 13.sp, color = Ink)
+                            if (f.description.isNotEmpty()) Text(f.description, fontSize = 11.sp, color = SubInk)
+                        }
+                        Text(
+                            "删除",
+                            fontSize = 12.sp, color = Accent,
+                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
+                                state.confirmText = "删记忆 ${'$'}{f.name}？"
+                                state.confirmAction = {
+                                    state.deleteMemory(f.name)?.let { state.toast(it) }
+                                    refresh += 1
+                                }
+                                state.confirmOpen = true
+                            }.padding(horizontal = 6.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+        if (active.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("活动记忆（每次生成都会带上）：", fontSize = 12.sp, color = SubInk)
+            Text(active.take(200) + if (active.length > 200) "…" else "", fontSize = 12.sp, color = Ink)
         }
     }
 }
