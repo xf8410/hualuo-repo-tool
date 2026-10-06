@@ -175,12 +175,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Head("完整通信数据交给模型", "协议观测返回完整的 path、header、cookie、token、payload 和 hex。本地采集容量由 hlpatch 单独管理。"),
         SubField.Note("红线：一切对游戏只读，不写内存不发包；18767 冻结待拍板"),
     )),
-    "memory" to SubPage("记忆", listOf(
-        SubField.Row("活跃记忆（当前注入对话）", "1.8 KB ›"),
-        SubField.Row("agora重构-地基状态.md", "3.2 KB ›"),
-        SubField.Switch("AI 可自动增删记忆", true),
-        SubField.Note("记忆=AI 自己写的备忘，跨对话生效；这里能看能删"),
-    )),
     "datactl" to SubPage("数据控制", listOf(
         SubField.Row("立即导出", "全部对话与附件清单打包成一个文件 ›"),
         SubField.Row("从备份导入", "合并模式，同 id 跳过不覆盖 ›"),
@@ -213,13 +207,5 @@ val SubPages: Map<String, SubPage> = mapOf(
     "lang" to SubPage("语言", listOf(
         SubField.Seg("界面语言", listOf("跟随系统", "简体中文", "English"), 1),
         SubField.Note("只换界面文字；AI 回复语言看系统指令"),
-    )),
-    "about" to SubPage("关于", listOf(
-        SubField.Row("版本", "%VERSION% · 单源 ›"),
-        SubField.Row("检查更新", "›"),
-        SubField.Switch("崩溃报告：本地留一份，启动问一次", true),
-        SubField.Row("提 issue", "xf8410/hualuo-repo-tool ›"),
-        SubField.Row("开源许可", "›"),
-        SubField.Row("给个好评"),
     )),
 )

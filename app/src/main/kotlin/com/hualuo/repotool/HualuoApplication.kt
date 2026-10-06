@@ -119,6 +119,8 @@ class HualuoApplication : Application() {
         super.onCreate()
         // 幂等：attachBaseContext 已装过就跳过；这行只是双保险
         CrashObserver.install(this)
+        // 崩溃留档开关（关于页）：设置件此时可读，读一次喂内存值（崩溃回调里只读内存）
+        CrashObserver.keepLocal = uiBundle.persistence.load(com.hualuo.repotool.ui.state.UiKeys.CRASH_KEEP_LOCAL) != "false"
         warmUpModelSettings()
     }
 
