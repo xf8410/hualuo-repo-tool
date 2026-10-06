@@ -51,7 +51,9 @@ import com.hualuo.repotool.ui.theme.Accent
 import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
 import com.hualuo.repotool.ui.theme.ChevGray
+import com.hualuo.repotool.ui.theme.ErrRed
 import com.hualuo.repotool.ui.theme.Hairline
+import com.hualuo.repotool.ui.theme.OkGreen
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
 
@@ -161,6 +163,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 SubField.StorageStats -> StorageStatsCard(state)
                 SubField.AboutCard -> AboutCardField(state)
                 SubField.MemoryCard -> MemoryCardField(state)
+                SubField.CiRunsCard -> CiRunsCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -169,6 +172,49 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.Note -> Text(f.text, fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(6.dp))
                 is SubField.Button -> Text(f.text, color = Accent, modifier = Modifier.fillMaxWidth().clickable { f.actionKey?.let(state::requestDataAction) ?: state.toast("已提交（演示，接线后生效）") }.padding(14.dp))
                 else -> Text(f.toString(), fontSize = 12.sp, color = SubInk, modifier = Modifier.padding(8.dp))
+            }
+        }
+    }
+}
+
+/** CI 监视卡：真调 GitHub Actions API（仓/密钥按既有设置），列最近 run 状态；红绿如实报。 */
+@Composable
+private fun CiRunsCardField(state: AppUiState) {
+    var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    var snapshot by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.hualuo.engine.github.GitHubCiSnapshot?>(null) }
+    var loading by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(refresh) {
+        if (refresh == 0) return@LaunchedEffect
+        loading = true
+        snapshot = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { state.latestCiRuns(5) }
+        loading = false
+    }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth()) {
+            Text("最近 Actions 运行（真调 API）", fontSize = 13.sp, color = SubInk)
+            Spacer(Modifier.weight(1f))
+            Text(
+                if (loading) "查…" else "刷新",
+                fontSize = 13.sp, color = Accent,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { refresh += 1 }.padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        val snap = snapshot
+        when {
+            snap == null -> Text("点右上「刷新」拉最近 5 条（不走缓存，每次都真查）", fontSize = 12.sp, color = SubInk)
+            snap.error != null -> Text(snap.error.orEmpty(), fontSize = 12.sp, color = Ink)
+            snap.runs.isEmpty() -> Text("这个仓还没有跑过 Actions", fontSize = 12.sp, color = SubInk)
+            else -> snap.runs.forEach { r ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    val verdict = r.conclusion ?: r.status
+                    Text(if (r.name.isNotBlank()) r.name else "#" + r.id, fontSize = 13.sp, color = Ink, modifier = Modifier.weight(1f))
+                    Text(verdict, fontSize = 12.sp, color = when (verdict) {
+                        "success" -> OkGreen
+                        "failure" -> ErrRed
+                        else -> SubInk
+                    })
+                }
             }
         }
     }

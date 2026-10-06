@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "ghactions" to SubPage(
+        "Actions 监视",
+        listOf(
+            SubField.CiRunsCard,
+            SubField.Note("后台通知在另一个真通道：每 15 分钟轮询，红了发系统通知（通知开关在系统设置里管）。这张卡是当场真查。"),
+        ),
+    ),
     "memory" to SubPage(
         "记忆",
         listOf(
