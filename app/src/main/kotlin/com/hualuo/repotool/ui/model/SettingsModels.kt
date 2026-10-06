@@ -56,6 +56,8 @@ sealed class SubField {
     object CiRunsCard : SubField()
     /** 常用网站组（实装刀）：真 URL 跳浏览器（mine=自己仓清单，external=常用外站）。 */
     data class SiteRows(val title: String, val urls: List<Pair<String, String>>) : SubField()
+    /** 沙盒状态卡（实装刀）：真探 rootfs/work/shared 目录（存在/大小/路径），不抄演示值。 */
+    object SandboxStatusCard : SubField()
     data class Seg(val label: String, val options: List<String>, val sel: Int) : SubField()
     data class Input(val label: String, val placeholder: String = "") : SubField()
 

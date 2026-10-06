@@ -78,6 +78,8 @@ object UiKeys {
     const val LANG_AI_REPLY = "ui.lang_ai_reply"
     /** 会话自动起名（标题生成页实装刀）：默认开；规则起名=首条消息前 20 字（离线可用）。 */
     const val TITLE_AUTO = "ui.title_auto"
+    /** 沙盒终端开关（终端页实装刀）：默认关——开了才注册沙盒工具族（rootfs 首次使用时下载）。 */
+    const val SHELL_ENABLED = "ui.shell_enabled"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"

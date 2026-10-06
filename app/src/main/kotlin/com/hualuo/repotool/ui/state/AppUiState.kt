@@ -82,6 +82,10 @@ class AppUiState(
     /** GitHub 动作族（建分支/删分支/建 issue/评论/关 PR/评论 PR）的确认闸门；
      *  null = 六件全部不注册（默认拒）。 */
     private val actionGate: GitHubActionGate? = null,
+    /** 沙盒确认闸（终端页实装刀）：null=不注册沙盒族（默认拒跑命令的另一半）。 */
+    private val sandboxGate: SandboxGate? = null,
+    /** 沙盒根目录（rootfs/work/shared 都在这下面）；null=不给沙盒工具族落盘位。 */
+    private val sandboxRootDir: java.io.File? = null,
     /** 记忆库；null = 不注册记忆工具族（同闸门纪律）。 */
     private val memoryStore: com.hualuo.engine.memory.MemoryStore? = null,
     /** 技能库；null = 不注册技能工具族、系统提示词不拼技能目录。 */
@@ -266,6 +270,10 @@ class AppUiState(
             writeGate,
             prConfirmer = prGate,
             actionConfirmer = actionGate,
+            // 终端页开关真生效（SHELL_ENABLED 默认关——沙盒族五件开着就要装 rootfs，
+            // 用户明示打开才注册；闸门与目录都到位才真接）
+            sandboxConfirmer = if (persist.load(UiKeys.SHELL_ENABLED)?.equals("true") == true) sandboxGate else null,
+            sandboxRootDir = if (persist.load(UiKeys.SHELL_ENABLED)?.equals("true") == true) sandboxRootDir else null,
             memoryStore = memoryStore,
             sessionStore = store,
             webSearchEnabled = { webSearchOn },
@@ -604,6 +612,9 @@ class AppUiState(
 
     /** 版本串由入口注入（BuildConfig 读自 version.properties 单源），界面里不许写死。 */
     var versionLabel by mutableStateOf("")
+
+    /** 沙盒根目录路径（沙盒状态卡真探用）：没给就是空串，卡上明示未接。 */
+    val sandboxRootPath: String get() = sandboxRootDir?.absolutePath ?: ""
 
     /** CI 最近 run（设置页监视卡用）：后台线程调用（内部真联网，别在主线程碰）。
      *  仓与 token 按既有规则读设置；本仓 Actions 只有 run 没有的字段，界面拿什么显示什么。 */
