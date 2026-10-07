@@ -24,6 +24,7 @@ enum class IconKey(@param:StringRes val resId: Int) {
     NavTools(R.string.icon_nav_tools),
     NavRepo(R.string.icon_nav_repo),
     NavObserve(R.string.icon_nav_observe),
+    NavReports(R.string.icon_nav_reports),
 
     // 顶栏与通用
     Menu(R.string.icon_menu),

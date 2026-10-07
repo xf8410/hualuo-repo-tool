@@ -72,6 +72,7 @@ import com.hualuo.repotool.ui.theme.Bg
 import com.hualuo.repotool.ui.theme.CardBg
 import com.hualuo.repotool.ui.theme.Ink
 import com.hualuo.repotool.ui.theme.SubInk
+import com.hualuo.repotool.ui.reports.ReportsScreen
 import com.hualuo.repotool.ui.tools.ToolsScreen
 import kotlinx.coroutines.delay
 
@@ -88,6 +89,7 @@ private val NavTabIcons = mapOf(
     NavTab.Chat to R.drawable.ic_nav_chat,
     NavTab.Tasks to R.drawable.ic_nav_tasks,
     NavTab.ToolsPage to R.drawable.ic_nav_tools,
+    NavTab.Reports to R.drawable.ic_nav_reports,
     NavTab.Repo to R.drawable.ic_nav_repo,
     NavTab.Observe to R.drawable.ic_nav_observe,
 )
@@ -364,6 +366,7 @@ fun HualuoApp(versionLabel: String) {
                         NavTab.ToolsPage -> ToolsScreen(state)
                         NavTab.Repo -> RepoScreen(state)
                         NavTab.Observe -> ObserveScreen(state)
+                        NavTab.Reports -> ReportsScreen(state)
                     }
                 }
                 if (state.tab == NavTab.Chat) {
