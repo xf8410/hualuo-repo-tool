@@ -20,6 +20,7 @@
     <string name="icon_nav_tools">&#x1F52E;</string>
     <string name="icon_nav_repo">&#x1F4E6;</string>
     <string name="icon_nav_observe">&#x1F4E1;</string>
+    <string name="icon_nav_reports">&#x1F4CA;</string>
 
     <!-- 顶栏与通用：三横线（开抽屉）、左箭头（返回）、右尖括号（行尾）、放大镜（搜索） -->
     <string name="icon_menu">&#x2630;</string>

@@ -121,6 +121,13 @@ class AppUiState(
     )
 
     /** 工具页那张卡的瞬时态（搜索词/忙灯/结果/收场话）；用哪家现场问 [webSearch]。 */
+    /** 报告三件套（报告页实装刀）：数据分析/汇报文档/PPT 大纲——真 AI 生成，瞬时态。 */
+    val reports = ReportRunState(
+        toast = ::toast,
+        currentModel = { currentModel },
+        sessionFor = { id -> ModelSettingsRuntime.current()?.sessionFor(id) },
+    )
+
     val webSearchRun = WebSearchRunState(
         configProvider = { webSearch.config() },
         providerLabel = { webSearch.providerLabel() },

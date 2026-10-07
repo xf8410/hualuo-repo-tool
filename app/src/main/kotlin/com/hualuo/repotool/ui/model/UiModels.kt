@@ -14,6 +14,7 @@ enum class NavTab(val title: String, val iconKey: IconKey) {
     ToolsPage("工具", IconKey.NavTools),
     Repo("仓库CI", IconKey.NavRepo),
     Observe("观测", IconKey.NavObserve),
+    Reports("报告", IconKey.NavReports),
 }
 
 /** 徽标色：g=成功绿 y=警告黄 r=错误红 n=中性灰（对应原型 .badge.g/.y/.r）。 */
