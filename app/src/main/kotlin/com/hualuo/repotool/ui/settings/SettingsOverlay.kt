@@ -168,6 +168,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.SiteRows -> SiteRowsField(state, f)
                 SubField.SandboxStatusCard -> SandboxStatusCardField(state)
                 SubField.TasksCard -> TasksCardField(state)
+                SubField.LoopCard -> LoopCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
                 SubField.WebSearchSettings -> WebSearchSettingsPanel(state)
                 SubField.GithubLogin -> GithubLoginCard(state)
@@ -246,6 +247,55 @@ private fun SandboxStatusCardField(state: AppUiState) {
             fontSize = 13.sp, color = Accent,
             modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { refresh += 1 }.padding(horizontal = 8.dp, vertical = 6.dp),
         )
+    }
+}
+
+/** 会话循环卡：开关/间隔/轮次真生效（LoopController）；状态行真读（轮数/下轮倒计时）。 */
+@Composable
+private fun LoopCardField(state: AppUiState) {
+    val ctl = state.loopCtl
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
+                Text("会话循环", fontSize = 13.sp, color = Ink)
+                Text(
+                    if (ctl.enabled) "运行中 ${ctl.rounds}/${ctl.maxRounds} 轮 · 每 ${ctl.intervalSec}s" else "没开",
+                    fontSize = 11.sp, color = SubInk,
+                )
+            }
+            Text(
+                if (ctl.enabled) "停止" else "开启",
+                fontSize = 13.sp, color = Accent,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
+                    if (ctl.enabled) ctl.stop() else ctl.start()
+                    state.loopBarOn = ctl.enabled
+                }.padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text("间隔秒（60-3600）", fontSize = 12.sp, color = SubInk)
+        androidx.compose.foundation.text.BasicTextField(
+            value = ctl.intervalSec.toString(),
+            onValueChange = { t -> t.trim().toLongOrNull()?.let { ctl.tuneInterval(it.coerceIn(60, 3600).toInt()) } },
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFFFAFBFC)).padding(10.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text("最大轮次（1-100）", fontSize = 12.sp, color = SubInk)
+        androidx.compose.foundation.text.BasicTextField(
+            value = ctl.maxRounds.toString(),
+            onValueChange = { t -> t.trim().toLongOrNull()?.let { ctl.tuneMaxRounds(it.coerceIn(1, 100).toInt()) } },
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFFFAFBFC)).padding(10.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "现在跑一轮",
+            fontSize = 13.sp, color = Accent,
+            modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { ctl.fireNow() }.padding(horizontal = 8.dp, vertical = 6.dp),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text("每轮落定后隔设定秒数自动发「继续」到当前会话；按停/换会话/打满轮数就停。检查点=会话本身（每轮都落库，崩了重开接着数）。", fontSize = 11.sp, color = SubInk)
     }
 }
 
