@@ -111,12 +111,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Switch("重复导入按 sha256 去重", true),
         SubField.Note("审计库只读；大文件分块读，不进内存"),
     )),
-    "loop" to SubPage("会话循环", listOf(
-        SubField.Row("当前运行", "重构主线 4/20 · 每 300s ›"),
-        SubField.Slider("默认间隔秒", 60.0, 3600.0, 300.0, 30.0),
-        SubField.Slider("最大轮次", 1.0, 100.0, 20.0, 1.0),
-        SubField.Note("检查点存库：崩了重开接着跑，不从头再来"),
-    )),
     "relay" to SubPage("多智能体接力", listOf(
         SubField.Row("队伍「代码审查」", "3 棒：写、挑错、定稿 ›"),
         SubField.Row("＋ 新建队伍", "每棒单独选模型"),

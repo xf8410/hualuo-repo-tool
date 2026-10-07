@@ -11,10 +11,6 @@ import com.hualuo.repotool.ui.model.IconKey
 // 仍保留——回合流栏（Composer 循环条/排队条/ctx 读数/附件菜单键位表）还在引用的
 //        静态形状。对应功能实装时一并替换为真数据源，届时本文件清空删除。
 
-val DemoLoopIcon = IconKey.Loop
-val DemoLoopBar = "会话循环 4/20 · 每 300s"
-val DemoQueueIcon = IconKey.Hourglass
-val DemoQueueBar = "排队中 1 条：「继续挖 phase2」"
 val DemoCtx = "ctx 21.4k/1M · 发 856"
 
 /** 附件菜单三项（v13 addmenu，原样开头是一个全角加号）：图形键名 + 文字。 */
