@@ -65,6 +65,12 @@ class MainActivity : ComponentActivity() {
             ExistingPeriodicWorkPolicy.KEEP,
             PeriodicWorkRequestBuilder<CiNotifyWorker>(15, TimeUnit.MINUTES).build(),
         )
+        // 定时任务（tasks 页实装刀）：与 CI 通知同一节拍；任务表空/全没到点时安静返回
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            com.hualuo.repotool.notify.TaskWorker.UNIQUE_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<com.hualuo.repotool.notify.TaskWorker>(15, TimeUnit.MINUTES).build(),
+        )
     }
 
     private companion object {
