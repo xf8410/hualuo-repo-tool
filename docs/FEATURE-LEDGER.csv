@@ -808,3 +808,6 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 807,关于页实装·修摆设,AboutCard 真卡：版本真值/检查更新真调 releases/latest/提issue真intent/开源许可弹层；崩溃留档开关全链（CrashObserver.keepLocal 内存门）,实装,app/settings,PR#84
 808,记忆页实装·修摆设,MemoryCard：memory_db 真统计+活动记忆原文+带确认删除（deleteFile 连 meta 清）,实装,app/settings,PR#85
 809,Actions监视页实装·修摆设,CiRunsCard：真调 GitHubCiClient.latestRuns 最近5条红绿；与后台通知双通道,实装,app/settings,PR#86
+810,定时任务页实装·修摆设,TaskStore 真任务表+TaskWorker（15min节拍到点开新会话发提示词，runLog 50条）+TasksCard 新建/启停/确认删除,实装,app/tasks,PR#92
+811,会话循环页实装·修摆设,LoopController 真调度（ChatRuntime.onSettled 驱动/按停还控制权/换会话清零）+循环条真读态+LoopCard；排队条诚实化,实装,app/loop,PR#93
+812,报告页三件套实装,数据分析（AI严格JSON+Canvas折线图）/汇报文档（Markdown渲染）/PPT大纲（页卡翻页）；NavTab 第六页+一次性chat通路,实装,app/reports,PR#94
