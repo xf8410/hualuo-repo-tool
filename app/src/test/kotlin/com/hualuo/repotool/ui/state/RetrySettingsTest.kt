@@ -9,6 +9,7 @@ import com.hualuo.engine.settings.SettingsStore
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_DEFAULT
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_KEY
 import com.hualuo.repotool.ui.data.RealSectionAdditions
+import com.hualuo.repotool.ui.data.RealSubPages
 import com.hualuo.repotool.ui.data.SettingsSections
 import com.hualuo.repotool.ui.data.SubPages
 import com.hualuo.repotool.ui.data.mergedSettingsSections
@@ -183,7 +184,8 @@ class RetrySettingsTest {
 
         assertNotNull(retry)
         assertEquals("失败与重试", retry!!.title)
-        assertEquals(SubPages["proxy"], subPage("proxy"))
+        // proxy 页已从演示表搬进真表（刀⑯实装）：查真表而不是演示表
+        assertEquals(RealSubPages["proxy"], subPage("proxy"))
         assertNull(subPage("no-such-page"))
     }
 
