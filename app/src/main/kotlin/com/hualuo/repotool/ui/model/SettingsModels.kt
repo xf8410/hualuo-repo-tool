@@ -58,6 +58,8 @@ sealed class SubField {
     data class SiteRows(val title: String, val urls: List<Pair<String, String>>) : SubField()
     /** 沙盒状态卡（实装刀）：真探 rootfs/work/shared 目录（存在/大小/路径），不抄演示值。 */
     object SandboxStatusCard : SubField()
+    /** 代理卡（实装刀）：类型/地址/端口真存盘，保存当场安装进 TransportProxy。 */
+    object ProxyCard : SubField()
     /** 定时任务卡（实装刀）：真任务表（建/启停/删）+ 执行账；执行=开新会话发提示词。 */
     object TasksCard : SubField()
     /** 会话循环卡（实装刀）：开关/间隔/轮次真生效（LoopController 进程级调度）。 */

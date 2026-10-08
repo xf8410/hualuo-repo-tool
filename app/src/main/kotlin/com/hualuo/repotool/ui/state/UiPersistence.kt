@@ -80,6 +80,15 @@ object UiKeys {
     const val TITLE_AUTO = "ui.title_auto"
     /** 沙盒终端开关（终端页实装刀）：默认关——开了才注册沙盒工具族（rootfs 首次使用时下载）。 */
     const val SHELL_ENABLED = "ui.shell_enabled"
+
+    /** 代理类型（proxy 页实装刀）：none/http/socks。 */
+    const val PROXY_TYPE = "net.proxy_type"
+
+    /** 代理地址（proxy 页实装刀）。 */
+    const val PROXY_HOST = "net.proxy_host"
+
+    /** 代理端口（proxy 页实装刀）。 */
+    const val PROXY_PORT = "net.proxy_port"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"

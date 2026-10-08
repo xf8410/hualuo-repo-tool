@@ -45,12 +45,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Input("别名（聊天框胶囊显示名）", "留空=模型原名"),
         SubField.Note("上下文上限从模型端探测，探测不到就标灰「未知」，不许手填冒充"),
     )),
-    "proxy" to SubPage("代理", listOf(
-        SubField.Seg("类型", listOf("无", "HTTP", "SOCKS"), 0),
-        SubField.Input("地址", "127.0.0.1"),
-        SubField.Input("端口", "7890"),
-        SubField.Note("只影响 AI 请求和 GitHub API，不影响游戏观测桥"),
-    )),
     "prompt" to SubPage("系统指令", listOf(
         SubField.Row("家规 · 全局", "结论必须带证据；丢东西要出声 ›"),
         SubField.Row("仓库工 · 会话级", "改动走 workbench 分支，CI 绿了才提 PR ›"),
