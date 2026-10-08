@@ -811,3 +811,4 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 810,定时任务页实装·修摆设,TaskStore 真任务表+TaskWorker（15min节拍到点开新会话发提示词，runLog 50条）+TasksCard 新建/启停/确认删除,实装,app/tasks,PR#92
 811,会话循环页实装·修摆设,LoopController 真调度（ChatRuntime.onSettled 驱动/按停还控制权/换会话清零）+循环条真读态+LoopCard；排队条诚实化,实装,app/loop,PR#93
 812,报告页三件套实装,数据分析（AI严格JSON+Canvas折线图）/汇报文档（Markdown渲染）/PPT大纲（页卡翻页）；NavTab 第六页+一次性chat通路,实装,app/reports,PR#94
+813,代理页实装·修摆设,ProxyCard：类型/地址/端口真存盘当场 installProxy（AI+GitHub API 出网口）；观测桥不经此口,实装,app/settings+engine/api,PR#95
