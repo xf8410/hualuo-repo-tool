@@ -812,3 +812,7 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 811,会话循环页实装·修摆设,LoopController 真调度（ChatRuntime.onSettled 驱动/按停还控制权/换会话清零）+循环条真读态+LoopCard；排队条诚实化,实装,app/loop,PR#93
 812,报告页三件套实装,数据分析（AI严格JSON+Canvas折线图）/汇报文档（Markdown渲染）/PPT大纲（页卡翻页）；NavTab 第六页+一次性chat通路,实装,app/reports,PR#94
 813,代理页实装·修摆设,ProxyCard：类型/地址/端口真存盘当场 installProxy（AI+GitHub API 出网口）；观测桥不经此口,实装,app/settings+engine/api,PR#95
+814,对话搜索页实装·修摆设,关键词逐会话搜+点行切会话；空库空词安静返回,实装,app/settings,PR#96
+815,图像转述页实装·修摆设,选图真调视觉模型（VisionTurns三协议）；三护栏：无模型明示/全链runCatching/4MB上限,实装,app/settings,PR#97
+816,二进制审计页实装·修摆设,复用工具页 ApkCheckCard 真组件（ApkInspector 引擎）,实装,app/settings,PR#98
+817,模型选择去硬编码,撤 DEFAULT_MODEL（无钥匙的默认=摆设）；视觉/图像生成页换已接入模型点选卡；清假模型清单,实装,app+engine,PR#99
