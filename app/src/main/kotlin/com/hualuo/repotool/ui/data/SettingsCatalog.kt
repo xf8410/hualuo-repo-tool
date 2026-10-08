@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "chatsearch" to SubPage(
+        "对话搜索",
+        listOf(
+            SubField.ChatSearchCard,
+            SubField.Note("关键词搜索真跑会话库；语义搜索（要嵌入模型）未实装，不给假 Seg。"),
+        ),
+    ),
     "proxy" to SubPage(
         "代理",
         listOf(
