@@ -71,6 +71,9 @@ object UiKeys {
     /** 崩溃本地留档开关（关于页）：默认开；写盘回调只读 CrashObserver.keepLocal 内存值。 */
     const val CRASH_KEEP_LOCAL = "ui.crash_keep_local"
 
+    /** 图像转述提示词（caption 页实装刀）：空=默认要求。 */
+    const val CAPTION_PROMPT = "ui.caption_prompt"
+
     /** 界面语言偏好（语言页实装刀）：system/zh-Hans；English 语言包未实装，不提供假选项。 */
     const val LANG_UI = "ui.lang"
 
