@@ -21,6 +21,12 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "proxy" to SubPage(
+        "代理",
+        listOf(
+            SubField.ProxyCard,
+        ),
+    ),
     "loop" to SubPage(
         "会话循环",
         listOf(

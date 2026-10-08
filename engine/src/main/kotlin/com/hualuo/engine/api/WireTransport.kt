@@ -83,6 +83,30 @@ interface WireTransport {
     fun isCancelled(): Boolean
 }
 
+/**
+ * 进程级代理口（proxy 页实装刀）：null=直连。App 层在设置变化时调 [installProxy]，
+ * 所有 UrlConnTransport 实例（AI 请求/GitHub API）从此处取代理——只影响这两类出网，
+ * 游戏观测桥是设备侧 localhost:18765，不经这里（家规：代理不碰观测）。
+ */
+object TransportProxy {
+    @Volatile var proxy: java.net.Proxy? = null
+
+    /** 格式：type("http"/"socks") + host + port；type 不认或 host 空返回 false 不动旧值。 */
+    fun installProxy(type: String, host: String, port: Int): Boolean {
+        val h = host.trim()
+        if (h.isEmpty() || port !in 1..65535) return false
+        proxy = when (type.lowercase()) {
+            "http" -> java.net.Proxy(java.net.Proxy.Type.HTTP, java.net.InetSocketAddress(h, port))
+            "socks" -> java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress(h, port))
+            else -> return false
+        }
+        return true
+    }
+
+    /** 清掉：回直连。 */
+    fun clear() { proxy = null }
+}
+
 /** JDK HttpURLConnection 实现。 */
 class UrlConnTransport : WireTransport {
 
@@ -92,7 +116,7 @@ class UrlConnTransport : WireTransport {
     override fun exchange(request: WireRequest, sink: LineSink): WireResponse {
         cancelled = false
         if (request.url.isBlank()) throw IOException("URL 是空的，没发出去")
-        val conn = (URL(request.url).openConnection() as HttpURLConnection).apply {
+        val conn = (URL(request.url).openConnection(TransportProxy.proxy) as HttpURLConnection).apply {
             instanceFollowRedirects = true
             useCaches = false
             connectTimeout = request.connectTimeoutMs.coerceIn(1, 120_000)
