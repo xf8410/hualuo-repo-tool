@@ -80,12 +80,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Seg("尺寸", listOf("1:1", "16:9", "9:16"), 0),
         SubField.Switch("生成结果自动作为附件登记", true),
     )),
-    "chatsearch" to SubPage("对话搜索", listOf(
-        SubField.Switch("启用", true),
-        SubField.Seg("方式", listOf("关键词（快）", "语义（要嵌入模型）"), 0),
-        SubField.Seg("嵌入模型", listOf("OpenAI", "ollama 本地", "不下载"), 2),
-        SubField.Note("语义搜索首次要下嵌入模型（约 80MB），下完离线可用"),
-    )),
     "github" to SubPage("GitHub 工作台", listOf(
         SubField.Row("登录状态", "xf8410 · 令牌有效 ›"),
         SubField.Input("默认仓库", "xf8410/hualuo-repo-tool"),

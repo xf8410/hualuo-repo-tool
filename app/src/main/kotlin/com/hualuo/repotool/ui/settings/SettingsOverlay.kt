@@ -168,6 +168,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 is SubField.SiteRows -> SiteRowsField(state, f)
                 SubField.SandboxStatusCard -> SandboxStatusCardField(state)
                 SubField.ProxyCard -> ProxyCardField(state)
+                SubField.ChatSearchCard -> ChatSearchCardField(state)
                 SubField.TasksCard -> TasksCardField(state)
                 SubField.LoopCard -> LoopCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
@@ -209,6 +210,72 @@ private fun SiteRowsField(state: AppUiState, f: SubField.SiteRows) {
                     Text(url, fontSize = 11.sp, color = SubInk)
                 }
                 Text("›", fontSize = 16.sp, color = ChevGray)
+            }
+        }
+    }
+}
+
+/** 对话搜索卡：关键词真搜会话库（逐 jsonl 逐行），命中列出；点行真切过去（openConversation）。 */
+@Composable
+private fun ChatSearchCardField(state: AppUiState) {
+    var query by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    var busy by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var hits by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Triple<String, String, String>>>(emptyList()) }
+    var note by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text("搜对话（关键词，逐行真搜；语义搜索未实装不给假选项）", fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(6.dp))
+        Row(Modifier.fillMaxWidth()) {
+            Box(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Bg)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            ) {
+                if (query.isEmpty()) Text("输关键词，比如「MCTS」", fontSize = 13.sp, color = SubInk)
+                androidx.compose.foundation.text.BasicTextField(
+                    value = query, onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (busy) SubInk else Accent)
+                    .clickable(enabled = !busy) {
+                        val q = query.trim()
+                        if (q.isEmpty()) { note = "先输入关键词"; return@clickable }
+                        busy = true; note = null
+                        Thread({
+                            val found = state.searchConversations(q)
+                            hits = found
+                            busy = false
+                            note = if (found.isEmpty()) "没搜到（全部会话里没有这个词）" else "命中 ${found.size} 条（点行切过去）"
+                        }, "hualuo-chat-search").start()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            ) { Text(if (busy) "搜着…" else "搜", fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.SemiBold) }
+        }
+        note?.let { n ->
+            Spacer(Modifier.height(6.dp))
+            Text(n, fontSize = 12.sp, color = if (n.startsWith("没搜到")) ErrRed else SubInk)
+        }
+        Spacer(Modifier.height(4.dp))
+        hits.take(20).forEach { (title, id, line) ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 3.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Bg)
+                    .clickable { state.openConversation(id); state.settingsOpen = false }
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            ) {
+                Text(title, fontSize = 13.sp, color = Ink, fontWeight = FontWeight.SemiBold)
+                Text(line.take(120), fontSize = 11.sp, color = SubInk)
             }
         }
     }
