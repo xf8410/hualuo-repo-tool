@@ -6,7 +6,9 @@ import com.hualuo.repotool.ui.model.SettingsSection
 
 // 设置页信息架构：源出 ui/v13.html 的 8 组 26 项演示；2026-10-05 竖式改版，前两组分区名
 // 改照 Agora（AI 服务->服务、对话->回复），条目一件没动；合并真设置项（SettingsCatalog 追加的
-// 「失败与重试」「文件投递」）后为 8 组 28 项。二级页字段表在 SubPages.kt。
+// 「失败与重试」「文件投递」）。二级页字段表在 SubPages.kt。
+// 2026-10-09 摆设清剿收官：撤「语音转写」（引擎无 ASR 后端，2 模型行是演示数据，真接时随功能回来）
+// 与「多智能体接力」（接力引擎未立项，1 队伍行是演示数据），26 项撤 2 项=24 项，加真设置 2 项=26 项。
 // 文案规矩（原型页脚）：每项一句大白话说清「干什么、数据去哪」，不许出现「管理 XX」这种绕话。
 // 命名红线：新界面一律不再出现「Agora」字样（地基红线 10），原型里残留的几处已改为「内置/本应用」。
 // 版本行用 %VERSION% 占位，渲染时由界面状态替换——数据文件里同样不许写死版本号。
@@ -32,7 +34,6 @@ val SettingsSections: List<SettingsSection> = listOf(
     )),
     SettingsSection("s-multi", "多模态", listOf(
         SettingsItem(IconKey.SettingsCaption, "图像转述", "能看的模型把图说成文字给不能看的用", null, "caption"),
-        SettingsItem(IconKey.SettingsTranscription, "语音转写", "语音消息自动转成文字再发给模型", "2 模型", "transcription"),
         SettingsItem(IconKey.SettingsImageGen, "图像生成", "按你写的文字出图", null, "imagegen"),
     )),
     SettingsSection("s-tools", "工具", listOf(
@@ -42,7 +43,6 @@ val SettingsSections: List<SettingsSection> = listOf(
         SettingsItem(IconKey.SettingsGithub, "GitHub 工作台", "登录、仓库、CI、PR", "xf8410", "github"),
         SettingsItem(IconKey.SettingsSites, "常用网站", "收藏链接速开，AI 帮你存", "12 条", "sites"),
         SettingsItem(IconKey.SettingsRoadmap, "待开发任务", "想要的功能先记这", "3 待办", "roadmap"),
-        SettingsItem(IconKey.SettingsRelay, "多智能体接力", "几个模型接龙：一个主答一个挑错", "1 队", "relay"),
         SettingsItem(IconKey.SettingsUma, "赛马娘工作台", "18765 只读观测桥，不写游戏", "在线", "uma"),
         SettingsItem(IconKey.SettingsTasks, "定时任务", "到点自动干活，每次开新会话", "2 启用", "tasks"),
         SettingsItem(IconKey.SettingsLoop, "会话循环", "隔一阵自动接一句，有轮次上限", "1 运行", "loop"),

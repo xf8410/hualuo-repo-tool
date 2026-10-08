@@ -312,7 +312,6 @@ fun HualuoApp(versionLabel: String) {
         state.webSearchOn,
         state.shellOn,
         state.codeExecOn,
-        state.relayOn,
         state.lockToConversation,
         state.settingsRevision,
     ) {

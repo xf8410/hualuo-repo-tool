@@ -53,7 +53,6 @@ class AppUiStatePersistenceTest {
         assertTrue(state.webSearchOn)
         assertFalse(state.shellOn)
         assertFalse(state.codeExecOn)
-        assertFalse(state.relayOn)
         assertFalse(state.lockToConversation)
         assertTrue(state.persistenceMessages().isEmpty())
     }
@@ -83,7 +82,6 @@ class AppUiStatePersistenceTest {
         before.input = "半截话，还没发出去"
         before.currentModel = "qwen3.8-flash"
         before.thinkLevel = 1
-        before.relayOn = true
         assertNull(before.flushPersistence())
         assertEquals("落一次盘", 1, storage.writeCount)
 
@@ -94,7 +92,6 @@ class AppUiStatePersistenceTest {
         assertEquals("半截话，还没发出去", after.input)
         assertEquals("qwen3.8-flash", after.currentModel)
         assertEquals(1, after.thinkLevel)
-        assertTrue(after.relayOn)
     }
 
     @Test
