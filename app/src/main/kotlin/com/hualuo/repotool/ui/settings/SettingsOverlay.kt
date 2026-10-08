@@ -393,6 +393,57 @@ private fun SandboxStatusCardField(state: AppUiState) {
     }
 }
 
+/** 模型点选卡（刀⑳）：从已接入的提供商模型清单点选即写键——密钥在「提供商」页配一次，
+ *  所有模型共用，不重复填；手填框并存（清单外的自定义仍可填）。空清单明示去配提供商。 */
+@Composable
+private fun ModelPickerCardField(state: AppUiState, f: SubField.ModelPickerCard) {
+    val current = state.text(f.key)
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text(f.label, fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(6.dp))
+        val models = runCatching {
+            com.hualuo.repotool.ui.state.ModelSettingsRuntime.current()?.availableModels().orEmpty()
+        }.getOrElse { emptyList() }
+        val enabled = models.filter { it.enabled }
+        if (enabled.isEmpty()) {
+            Text("还没接入任何模型（先到设置「提供商」配钥匙，模型会自动进清单）", fontSize = 12.sp, color = SubInk)
+        } else {
+            enabled.forEach { m ->
+                val selected = current == m.id
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (selected) com.hualuo.repotool.ui.theme.Bg else Color.Transparent)
+                        .clickable { state.setText(f.key, if (selected) "" else m.id) }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        (m.alias ?: m.modelName) + "  ·  " + m.providerName,
+                        fontSize = 12.5.sp,
+                        color = if (selected) Accent else Ink,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (selected) Text("已选", fontSize = 11.sp, color = Accent)
+                }
+            }
+        }
+        if (f.allowCustom) {
+            Spacer(Modifier.height(4.dp))
+            Text("或手填（清单外自定义）：", fontSize = 11.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = current,
+                onValueChange = { state.setText(f.key, it) },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(com.hualuo.repotool.ui.theme.Bg).padding(10.dp),
+            )
+        }
+    }
+}
+
 /** 图像转述卡：选图后真调视觉模型转述（VisionTurns 三协议通路）；护栏三条见 runCaption。
  *  选图走 OpenDocument（图片类）；任何一步失败给人话，不闪退不留旧文。 */
 @Composable

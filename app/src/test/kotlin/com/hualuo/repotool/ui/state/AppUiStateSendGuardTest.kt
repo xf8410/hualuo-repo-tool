@@ -29,6 +29,7 @@ class AppUiStateSendGuardTest {
     @Test
     fun exactLimitPassesButNothingWastefulHappensBeforeIt() {
         val state = AppUiState()
+        state.currentModel = "test:any-model"
         state.input = "好".repeat(AppUiState.MAX_PROMPT_CHARS)
         state.sendCurrentInput()
         assertEquals("上限内的长文是合法输入，该发就发", "", state.input)
@@ -46,7 +47,7 @@ class AppUiStateSendGuardTest {
     @Test
     fun normalDraftGoesToRuntimeAndClearsTheBox() {
         val state = AppUiState()
-        state.currentModel = AppUiState.DEFAULT_MODEL
+        state.currentModel = "test:any-model"  // 刀⑳：撤默认后测试自己给模型名
         state.input = "第一条真话"
         state.sendCurrentInput()
         assertEquals("发出去草稿就该清", "", state.input)

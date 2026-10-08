@@ -46,7 +46,8 @@ class AppUiStatePersistenceTest {
 
         assertEquals(NavTab.Chat, state.tab)
         assertEquals("", state.input)
-        assertEquals(AppUiState.DEFAULT_MODEL, state.currentModel)
+        // 刀⑳：首次启动不再硬塞默认模型（没钥匙的默认=摆设），空=未选态
+        assertEquals("", state.currentModel)
         assertTrue(state.thinkOn)
         assertEquals(2, state.thinkLevel)
         assertTrue(state.webSearchOn)
