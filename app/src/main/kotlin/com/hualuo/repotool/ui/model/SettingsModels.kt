@@ -60,6 +60,8 @@ sealed class SubField {
     object SandboxStatusCard : SubField()
     /** 代理卡（实装刀）：类型/地址/端口真存盘，保存当场安装进 TransportProxy。 */
     object ProxyCard : SubField()
+    /** 对话搜索卡（实装刀）：关键词真搜会话库（jsonl 逐行），命中可点开跳会话。 */
+    object ChatSearchCard : SubField()
     /** 定时任务卡（实装刀）：真任务表（建/启停/删）+ 执行账；执行=开新会话发提示词。 */
     object TasksCard : SubField()
     /** 会话循环卡（实装刀）：开关/间隔/轮次真生效（LoopController 进程级调度）。 */

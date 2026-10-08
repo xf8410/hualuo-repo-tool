@@ -747,6 +747,26 @@ class AppUiState(
         toast("已新建会话")
     }
 
+    /** 对话搜索（chatsearch 页实装刀）：关键词逐会话逐行真搜，返回（标题, id, 命中行）。
+     *  后台线程调用（IO）；一次最多回 50 条，界面端再截 20。 */
+    fun searchConversations(query: String): List<Triple<String, String, String>> {
+        val s = store ?: return emptyList()
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
+        val out = ArrayList<Triple<String, String, String>>()
+        for ((id, head) in s.list().heads) {
+            if (out.size >= 50) break
+            val loaded = s.load(id) ?: continue
+            for (m in loaded.messages) {
+                if (m.text.contains(q, ignoreCase = true)) {
+                    out.add(Triple(head.title.ifBlank { "（未命名）" }, id, m.text))
+                    break  // 一个会话只报第一处命中
+                }
+            }
+        }
+        return out
+    }
+
     /** 抽屉点某条会话：同步读那份 JSONL 摆上屏；读不出就出声，绝不摆空壳。 */
     fun openConversation(id: String) {
         if (store == null) return
