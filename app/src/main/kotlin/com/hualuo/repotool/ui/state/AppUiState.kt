@@ -147,8 +147,9 @@ class AppUiState(
     /** 输入框草稿（进程被杀、切去别的 App 再回来，不该丢字）。 */
     var input: String by saved(UiKeys.DRAFT, persist.load(UiKeys.DRAFT) ?: "", { it })
 
-    /** 当前模型。 */
-    var currentModel: String by saved(UiKeys.MODEL, persist.load(UiKeys.MODEL) ?: DEFAULT_MODEL, { it })
+    /** 当前模型。空串=还没选（首次启动不再硬塞 DEFAULT_MODEL——没配钥匙的默认是摆设：
+     *  每次请求都会失败。未选态在发送口明示拦下并指路）。 */
+    var currentModel: String by saved(UiKeys.MODEL, persist.load(UiKeys.MODEL) ?: "", { it })
 
     var thinkOn: Boolean by saved(UiKeys.THINK_ON, readBool(UiKeys.THINK_ON, true), { it.toString() })
 
@@ -350,6 +351,10 @@ class AppUiState(
         }
         if (text.length > MAX_PROMPT_CHARS) {
             toast("这条 ${text.length} 字，超了单条上限 $MAX_PROMPT_CHARS：拆开发送或先精简，别拿大粘贴赌对方的窗口")
+            return
+        }
+        if (currentModel.isBlank()) {
+            toast("还没选模型（点输入栏上方的模型徽标，或设置里配一家提供商）——字先留在草稿里不丢")
             return
         }
         chat.send(text, currentModel)
@@ -957,7 +962,6 @@ class AppUiState(
 
     companion object {
         /** 没设置过时的默认模型（真接线后由模型清单决定，这里只是不空着）。 */
-        const val DEFAULT_MODEL = "qwen3.8-flash"
 
         /** 仓库CI 默认看的仓库（设置「GitHub 工作台」里可改）。 */
         const val DEFAULT_GITHUB_REPO = "xf8410/hualuo-repo-tool"
