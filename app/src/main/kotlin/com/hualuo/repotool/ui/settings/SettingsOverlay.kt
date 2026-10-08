@@ -170,6 +170,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 SubField.ProxyCard -> ProxyCardField(state)
                 SubField.ChatSearchCard -> ChatSearchCardField(state)
                 SubField.CaptionCard -> CaptionCardField(state)
+                SubField.AuditCard -> com.hualuo.repotool.ui.tools.ApkCheckCard(state)
                 SubField.TasksCard -> TasksCardField(state)
                 SubField.LoopCard -> LoopCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }

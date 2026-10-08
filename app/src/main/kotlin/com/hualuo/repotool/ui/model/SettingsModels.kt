@@ -64,6 +64,8 @@ sealed class SubField {
     object ChatSearchCard : SubField()
     /** 图像转述卡（实装刀）：选图后真调视觉模型转述；无视觉模型明示不可用。 */
     object CaptionCard : SubField()
+    /** 二进制审计卡（实装刀）：选 APK/XAPK 真检查（魔数/条目/ABI/重复/SHA-256），与工具页同引擎。 */
+    object AuditCard : SubField()
     /** 定时任务卡（实装刀）：真任务表（建/启停/删）+ 执行账；执行=开新会话发提示词。 */
     object TasksCard : SubField()
     /** 会话循环卡（实装刀）：开关/间隔/轮次真生效（LoopController 进程级调度）。 */

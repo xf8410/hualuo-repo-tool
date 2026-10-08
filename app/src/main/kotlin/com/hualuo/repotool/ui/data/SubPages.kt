@@ -88,12 +88,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Switch("上传前显示总大小和卷数，等你确认", true),
         SubField.Note("断了自动续传，按 sha256 对账，不重复传"),
     )),
-    "audit" to SubPage("二进制审计", listOf(
-        SubField.Row("global-metadata.dat", "16.2 MB · IL2CPP v31 ›"),
-        SubField.Row("base.apk", "63.5 MB ›"),
-        SubField.Switch("重复导入按 sha256 去重", true),
-        SubField.Note("审计库只读；大文件分块读，不进内存"),
-    )),
     "relay" to SubPage("多智能体接力", listOf(
         SubField.Row("队伍「代码审查」", "3 棒：写、挑错、定稿 ›"),
         SubField.Row("＋ 新建队伍", "每棒单独选模型"),

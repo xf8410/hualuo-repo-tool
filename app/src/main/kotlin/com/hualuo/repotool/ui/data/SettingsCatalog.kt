@@ -21,6 +21,13 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "audit" to SubPage(
+        "二进制审计",
+        listOf(
+            SubField.AuditCard,
+            SubField.Note("与工具页「APK 检查」同引擎（ApkInspector：魔数/条目/ABI/重复组/SHA-256）；文件复制到缓存检查完即删，不进内存整读。"),
+        ),
+    ),
     "caption" to SubPage(
         "图像转述",
         listOf(
