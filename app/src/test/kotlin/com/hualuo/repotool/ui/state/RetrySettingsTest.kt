@@ -174,7 +174,7 @@ class RetrySettingsTest {
         // SettingsData 顶部注释写的是「8 组 26 项演示 + 2 项真设置」，实际条目数由这条钉住：
         // 哪天加删条目，这里的数字和那句注释必须一起改，不许只改一边（本次红的教训：
         // 加「文件投递」只改了追加表没动钉数，护栏当场把 PR 拦下）
-        assertEquals("演示表实际条目数（和文件头注释对一次）", 26, demoCount)
+        assertEquals("演示表实际条目数（和文件头注释对一次）", 24, demoCount)
         assertEquals(demoCount + 2, mergedSettingsSections().sumOf { it.items.size })
     }
 

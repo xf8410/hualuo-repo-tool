@@ -47,7 +47,6 @@
     <string name="icon_settings_title">&#x270F;&#xFE0F;</string>         <!-- 铅笔：标题生成 -->
     <string name="icon_settings_trim">&#x2702;</string>                  <!-- 剪刀：历史裁剪 -->
     <string name="icon_settings_caption">&#x1F5BC;&#xFE0F;</string>      <!-- 画框：图像转述 -->
-    <string name="icon_settings_transcription">&#x1F3A4;</string>        <!-- 话筒：语音转写 -->
     <string name="icon_settings_imagegen">&#x1F3A8;</string>             <!-- 调色板：图像生成 -->
     <string name="icon_settings_websearch">&#x1F50E;</string>            <!-- 右放大镜：网页搜索 -->
     <string name="icon_settings_chatsearch">&#x1F50D;</string>           <!-- 左放大镜：对话搜索 -->
@@ -55,7 +54,6 @@
     <string name="icon_settings_github">&#x27E8;&#x27E9;</string>        <!-- 尖括号：GitHub 工作台 -->
     <string name="icon_settings_sites">&#x1F516;</string>                <!-- 书签：常用网站 -->
     <string name="icon_settings_roadmap">&#x1F4A1;</string>              <!-- 灯泡：待开发任务 -->
-    <string name="icon_settings_relay">&#x1F465;</string>                <!-- 两人：多智能体接力 -->
     <string name="icon_settings_uma">&#x1F3C7;</string>                  <!-- 骑马：赛马娘工作台 -->
     <string name="icon_settings_tasks">&#x23F0;</string>                 <!-- 闹钟：定时任务 -->
     <string name="icon_settings_loop">&#x23F1;</string>                  <!-- 秒表：会话循环 -->
