@@ -169,6 +169,7 @@ private fun SubPageView(state: AppUiState, key: String, modifier: Modifier) {
                 SubField.SandboxStatusCard -> SandboxStatusCardField(state)
                 SubField.ProxyCard -> ProxyCardField(state)
                 SubField.ChatSearchCard -> ChatSearchCardField(state)
+                SubField.CaptionCard -> CaptionCardField(state)
                 SubField.TasksCard -> TasksCardField(state)
                 SubField.LoopCard -> LoopCardField(state)
                 is SubField.Switch -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) { Text(f.label, modifier = Modifier.weight(1f)); val on = switches[f.label] ?: f.on; SwitchPill(on) { switches[f.label] = !on } }
@@ -388,6 +389,57 @@ private fun SandboxStatusCardField(state: AppUiState) {
             fontSize = 13.sp, color = Accent,
             modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { refresh += 1 }.padding(horizontal = 8.dp, vertical = 6.dp),
         )
+    }
+}
+
+/** 图像转述卡：选图后真调视觉模型转述（VisionTurns 三协议通路）；护栏三条见 runCaption。
+ *  选图走 OpenDocument（图片类）；任何一步失败给人话，不闪退不留旧文。 */
+@Composable
+private fun CaptionCardField(state: AppUiState) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                ctx.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            }.getOrNull()?.let { bytes ->
+                val mime = runCatching { ctx.contentResolver.getType(uri) }.getOrNull() ?: "image/jpeg"
+                state.runCaption(bytes, mime)
+            } ?: state.toast("图读不出来（授权失效或文件没了）")
+        }
+    }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
+        Text("图像转述（能看的模型把图说成文字）", fontSize = 13.sp, color = SubInk)
+        Spacer(Modifier.height(8.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(com.hualuo.repotool.ui.theme.Bg)
+                .clickable(enabled = !state.captionBusy) {
+                    runCatching { picker.launch(arrayOf("image/*")) }
+                        .onFailure { state.toast("选图组件打不开（${it.message ?: "原因不明"}）") }
+                }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            Text(
+                if (state.captionBusy) "转述中…" else "选一张图（≤4MB）",
+                fontSize = 13.sp,
+                color = if (state.captionBusy) SubInk else Accent,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        state.captionError?.let { err ->
+            Spacer(Modifier.height(6.dp))
+            Text(err, fontSize = 12.sp, color = ErrRed)
+        }
+        state.captionResult?.let { text ->
+            Spacer(Modifier.height(6.dp))
+            Text("转述结果（一次性查看，不进会话）：", fontSize = 12.sp, color = SubInk)
+            Spacer(Modifier.height(4.dp))
+            Text(text, fontSize = 12.5.sp, color = Ink)
+        }
     }
 }
 

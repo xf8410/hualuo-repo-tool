@@ -63,11 +63,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Switch("裁剪时界面出声（警告行）", true),
         SubField.Note("这条开关默认锁死，关掉等于允许静默丢历史——红线"),
     )),
-    "caption" to SubPage("图像转述", listOf(
-        SubField.Seg("转述用模型", listOf("qwen3.8-flash", "gpt-4o-mini"), 0),
-        SubField.Input("转述要求", "说清图里的文字、数字、界面布局"),
-        SubField.Note("目标模型没有视觉时自动先转述；有视觉直接原图发"),
-    )),
     "transcription" to SubPage("语音转写", listOf(
         SubField.Row("转写模型", "whisper-large-v3 · OpenAI ›"),
         SubField.Row("已启用模型", "whisper-large-v3（OpenAI）· paraformer（本地）›"),

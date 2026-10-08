@@ -747,6 +747,59 @@ class AppUiState(
         toast("已新建会话")
     }
 
+    /** 图像转述（caption 页实装刀）：瞬时态；失败明示，不留旧文顶数。 */
+    var captionBusy by mutableStateOf(false)
+        private set
+    var captionResult by mutableStateOf<String?>(null)
+        private set
+    var captionError by mutableStateOf<String?>(null)
+        private set
+
+    /** 真调视觉模型转述一张图（caption 页实装刀）。
+     *  兼容性护栏（本轮主题）：①无视觉模型就明示不可用不发起；②读图/编码/请求全 runCatching，
+     *  任何失败落到 captionError 给人话；③超 4MB 图直接拒（内存与请求体双保护）。
+     *  不进会话库不占会话列表——工具产物一次性查看。 */
+    fun runCaption(bytes: ByteArray, mime: String) {
+        if (captionBusy) return
+        if (bytes.isEmpty()) {
+            captionError = "图是空的"
+            captionResult = null
+            return
+        }
+        if (bytes.size > 4 * 1024 * 1024) {
+            captionError = "图超过 4MB（${bytes.size / 1024} KiB）：先压缩再转述（内存与请求体双保护）"
+            captionResult = null
+            return
+        }
+        val session = visionSessionOrDefault()
+        if (session == null) {
+            captionError = "视觉模型没配（设置里「视觉模型」填 provider:id），配好再来"
+            captionResult = null
+            return
+        }
+        captionBusy = true
+        captionError = null
+        captionResult = null
+        Thread({
+            val outcome = runCatching {
+                val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                val prompt = persist.load(UiKeys.CAPTION_PROMPT)?.trim().orEmpty()
+                    .ifBlank { "把这张图的内容完整转述成文字：说清图里的文字、数字、界面布局与显著物体。" }
+                when (val r = com.hualuo.engine.vision.VisionExec.ask(
+                    session,
+                    com.hualuo.engine.api.UrlConnTransport(),
+                    listOf(b64),
+                    prompt,
+                )) {
+                    is com.hualuo.engine.vision.VisionExec.Outcome.Ok -> r.text
+                    is com.hualuo.engine.vision.VisionExec.Outcome.Failed -> "转述失败：${r.reason}"
+                }
+            }.getOrElse { "转述失败：${it.message ?: "原因不明"}" }
+            captionResult = outcome.ifBlank { "模型回了空文本（换个模型或重试）" }
+            captionBusy = false
+        }, "hualuo-caption").start()
+    }
+
     /** 对话搜索（chatsearch 页实装刀）：关键词逐会话逐行真搜，返回（标题, id, 命中行）。
      *  后台线程调用（IO）；一次最多回 50 条，界面端再截 20。 */
     fun searchConversations(query: String): List<Triple<String, String, String>> {
