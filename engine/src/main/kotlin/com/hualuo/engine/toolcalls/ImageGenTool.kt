@@ -37,7 +37,6 @@ data class ImageGenConfig(
 object ImageGenTool {
 
     private const val DEFAULT_SIZE = "1024x1024"
-    private const val DEFAULT_MODEL = "gpt-image-1"
     private const val DEFAULT_BASE = "https://api.openai.com/v1"
 
     fun register(
@@ -73,7 +72,8 @@ object ImageGenTool {
         val size = (args["size"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
             ?: config.size.ifBlank { DEFAULT_SIZE }
         val base = config.baseUrl.trimEnd('/').ifBlank { DEFAULT_BASE }
-        val model = config.model.ifBlank { DEFAULT_MODEL }
+        val model = config.model.trim()
+        if (model.isEmpty()) return err("no_model", "图像生成没选模型（设置里选或手填一个）——不静默替你挑")
 
         return try {
             val body = """{"model":${JsonPrimitive(model)},"prompt":${JsonPrimitive(prompt)},"size":${JsonPrimitive(size)},"n":1}"""

@@ -200,11 +200,7 @@ val RealSubPages: Map<String, SubPage> = mapOf(
     "vision" to SubPage(
         "看视频的眼睛",
         listOf(
-            SubField.PersistedText(
-                "眼睛模型",
-                UiKeys.VISION_MODEL,
-                "已启用模型的完整 id（如 google:gemini-2.0-flash）；它负责看帧出文字，主对话模型随便用什么都行",
-            ),
+            SubField.ModelPickerCard("眼睛模型（点选已接入的模型；它负责看帧出文字，主对话模型随便用什么都行）", UiKeys.VISION_MODEL),
             SubField.Note("录屏导入时抽好帧缓存；对话里的 AI 调 watch_video 工具即看，不依赖主模型自带视觉。"),
         ),
     ),
@@ -213,8 +209,8 @@ val RealSubPages: Map<String, SubPage> = mapOf(
         listOf(
             SubField.PersistedText("API 密钥", UiKeys.IMAGE_GEN_KEY, "OpenAI 兼容 /images/generations 的钥匙；配了生成工具就出现", secret = true),
             SubField.PersistedText("API 地址", UiKeys.IMAGE_GEN_BASE_URL, "默认 https://api.openai.com/v1（兼容端点填到 v1 为止）"),
-            SubField.PersistedText("模型", UiKeys.IMAGE_GEN_MODEL, "默认 gpt-image-1"),
-            SubField.PersistedText("尺寸", UiKeys.IMAGE_GEN_SIZE, "默认 1024x1024"),
+            SubField.ModelPickerCard("模型（点选已接入的模型，或手填）", UiKeys.IMAGE_GEN_MODEL),
+            SubField.PersistedText("尺寸", UiKeys.IMAGE_GEN_SIZE, "留空=1024x1024"),
             SubField.Note("出图存到应用目录 tool_images 下，回执里报路径。"),
         ),
     ),
