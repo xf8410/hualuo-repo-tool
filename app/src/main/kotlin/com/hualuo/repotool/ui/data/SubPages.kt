@@ -25,16 +25,7 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Row("官方 API", "OpenAI / Anthropic · 已配置 ›"),
         SubField.Row("本地 ollama", "127.0.0.1:11434 · 在线 ›"),
         SubField.Row("＋ 添加提供商", "自定义 OpenAI 兼容端点"),
-        SubField.Row("Claude 配置导入", "从官方 Claude 应用搬家 ›", gotoKey = "claudeimport"),
         SubField.Note("密钥只存本机，明文（拍板 D-10）；导出备份会带上密钥，别外传"),
-    )),
-    "claudeimport" to SubPage("Claude 配置导入", listOf(
-        SubField.Row("检测到的 Claude 配置", "~/.claude · 1 份 ›"),
-        SubField.Switch("导入对话历史", true),
-        SubField.Switch("导入项目说明（CLAUDE.md）", true),
-        SubField.Seg("重名会话", listOf("跳过", "改名后导入"), 1),
-        SubField.Button("开始导入"),
-        SubField.Note("一次性搬家：导入后就是普通会话；密钥不搬，需要重新填"),
     )),
     "model" to SubPage("模型", listOf(
         SubField.Switch("（清单来自提供商页已接入模型）", true),
@@ -63,13 +54,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Switch("裁剪时界面出声（警告行）", true),
         SubField.Note("这条开关默认锁死，关掉等于允许静默丢历史——红线"),
     )),
-    "transcription" to SubPage("语音转写", listOf(
-        SubField.Row("转写模型", "whisper-large-v3 · OpenAI ›"),
-        SubField.Row("已启用模型", "whisper-large-v3（OpenAI）· paraformer（本地）›"),
-        SubField.Row("＋ 添加模型", "从提供商拉取可用列表 ›"),
-        SubField.Input("高级 · 转写提示词", "例：中文对话，必须带标点"),
-        SubField.Note("语音消息先转文字再发给模型；本地模型首次下载后离线可用"),
-    )),
     "imagegen" to SubPage("图像生成", listOf(
         SubField.Seg("服务商", listOf("OpenAI", "ComfyUI 本地", "Pollinations 免费"), 0),
         SubField.Seg("尺寸", listOf("1:1", "16:9", "9:16"), 0),
@@ -87,13 +71,6 @@ val SubPages: Map<String, SubPage> = mapOf(
         SubField.Slider("切片大小 MB", 8.0, 64.0, 32.0, 4.0),
         SubField.Switch("上传前显示总大小和卷数，等你确认", true),
         SubField.Note("断了自动续传，按 sha256 对账，不重复传"),
-    )),
-    "relay" to SubPage("多智能体接力", listOf(
-        SubField.Row("队伍「代码审查」", "3 棒：写、挑错、定稿 ›"),
-        SubField.Row("＋ 新建队伍", "每棒单独选模型"),
-        SubField.Seg("接力方式", listOf("顺序接力", "并行后合并"), 0),
-        SubField.Switch("每棒署名，产出合成一条回复", true),
-        SubField.Note("队伍存库可复用；中途某棒失败自动从该棒重跑，账不混"),
     )),
     "uma" to SubPage("赛马娘工作台", listOf(
         SubField.Sec("内置 SO 连接"),

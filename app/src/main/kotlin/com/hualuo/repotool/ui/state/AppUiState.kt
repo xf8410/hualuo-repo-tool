@@ -161,7 +161,6 @@ class AppUiState(
 
     var codeExecOn: Boolean by saved(UiKeys.CODE_EXEC_ON, readBool(UiKeys.CODE_EXEC_ON, false), { it.toString() })
 
-    var relayOn: Boolean by saved(UiKeys.RELAY_ON, readBool(UiKeys.RELAY_ON, false), { it.toString() })
 
     var lockToConversation: Boolean by saved(
         UiKeys.LOCK_TO_CONVERSATION,
