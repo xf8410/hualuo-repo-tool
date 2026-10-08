@@ -21,6 +21,14 @@ const val GEN_TEMPERATURE_DEFAULT = 0.7
 const val GEN_TOP_P_DEFAULT = 0.95
 
 val RealSubPages: Map<String, SubPage> = mapOf(
+    "caption" to SubPage(
+        "图像转述",
+        listOf(
+            SubField.CaptionCard,
+            SubField.PersistedText("转述要求（可空=默认：说清图里的文字、数字、界面布局）", com.hualuo.repotool.ui.state.UiKeys.CAPTION_PROMPT, "说清图里的文字、数字、界面布局"),
+            SubField.Note("视觉模型在设置「视觉模型」项填 provider:id（与主对话模型无关）；转述不进会话库。"),
+        ),
+    ),
     "chatsearch" to SubPage(
         "对话搜索",
         listOf(
