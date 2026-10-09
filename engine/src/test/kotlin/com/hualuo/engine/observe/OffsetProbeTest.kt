@@ -18,7 +18,7 @@ import org.junit.Test
 class OffsetProbeTest {
 
     private fun card(name: String, offset: Int, type: String = "System.Int32") =
-        FieldCard(name, offset, type)
+        OffsetProbe.FieldCard(name, offset, type)
 
     // ---------- 对齐规则 ----------
 
@@ -190,7 +190,7 @@ class OffsetProbeTest {
             old = listOf(card("Turn", 16), card("OldGuy", 40, "System.String")),
             new = listOf(card("Turn", 24), card("NewGuy", 48, "System.Int64")),
         )
-        val text = d.render()
+        val text = with(OffsetProbe) { d.render() }
         assertTrue(text.contains("Turn: 16 -> 24"))
         assertTrue(text.contains("OldGuy"))
         assertTrue(text.contains("NewGuy"))
