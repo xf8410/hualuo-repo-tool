@@ -86,13 +86,14 @@ class MetadataParserTest {
     @Test
     fun `类清单流式迭代`() {
         val rows = mutableListOf<MetadataParser.TypeRow>()
-        MetadataParser(buildMini()).forEachType { rows += it }
+        val parser = MetadataParser(buildMini())
+        parser.forEachType { rows += it }
         assertEquals(1, rows.size)
         assertEquals("WorkDataManager", rows[0].name)
         assertEquals("Gallop", rows[0].namespace)
         assertEquals(3, rows[0].fieldCount)
         assertEquals(5, rows[0].methodCount)
-        assertEquals(1, MetadataParser(buildMini()).typeCount())
+        assertEquals(1, parser.typeCount())
     }
 
     @Test
