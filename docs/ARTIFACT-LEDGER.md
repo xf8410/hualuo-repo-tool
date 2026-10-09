@@ -1,16 +1,16 @@
 # Artifact 统一账本（功能 · 包 · 证据 对齐表）
 
-> 生成：2026-10-09 08:25（Asia/Shanghai）· 生成器：`tools/gen-artifact-ledger.py`（幂等，随时重跑）
+> 生成：2026-10-09 10:09（Asia/Shanghai）· 生成器：`tools/gen-artifact-ledger.py`（幂等，随时重跑）
 > 数据源：`docs/FEATURE-LEDGER.csv` + GitHub API（releases / actions runs / artifacts）
 > 规矩出处：一功能一包一存档（用户规矩：跑一次 CI 留一个包）；本表只登记事实，覆盖判定看审计报告。
 
 ## 一、总览
 
-- 功能账：**818** 条（1-818）
-- Release：**93** 个（功能包 23 · 常规自检 70）
-- Actions run：**680** 个；其中功能名 run 238 条（涉及 125 个功能号）
+- 功能账：**819** 条（1-819）
+- Release：**96** 个（功能包 23 · 常规自检 73）
+- Actions run：**688** 个；其中功能名 run 239 条（涉及 126 个功能号）
 - 对齐：功能包 23/23 能对上功能账（全对上）
-- 无包功能：795 条（包是两波：10-02 的 1-10 语言批与 805 起的实装批；其余条目存证=PR+commit，属正常态）
+- 无包功能：796 条（包是两波：10-02 的 1-10 语言批与 805 起的实装批；其余条目存证=PR+commit，属正常态）
 
 ## 二、功能包对照表（新到旧）
 
@@ -278,11 +278,11 @@
 
 ### 常规自检包（样例，最新 5 个；全量见 Releases 页）
 
+- run [697](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r697-src0fa290b) · `v0.6.1-r697-src0fa290b` · 2026-10-09
+- run [693](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r693-src616a17d) · `v0.6.1-r693-src616a17d` · 2026-10-09
+- run [692](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r692-src7374bd1) · `v0.6.1-r692-src7374bd1` · 2026-10-09
 - run [691](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r691-src61571d7) · `v0.6.1-r691-src61571d7` · 2026-10-08
 - run [689](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r689-src5507937) · `v0.6.1-r689-src5507937` · 2026-10-08
-- run [688](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r688-src7b72fa6) · `v0.6.1-r688-src7b72fa6` · 2026-10-08
-- run [687](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r687-src73664b1) · `v0.6.1-r687-src73664b1` · 2026-10-08
-- run [682](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r682-srce3f570d) · `v0.6.1-r682-srce3f570d` · 2026-10-08
 
 ## 四、怎么用
 
