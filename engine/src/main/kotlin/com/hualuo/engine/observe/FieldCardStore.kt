@@ -77,7 +77,7 @@ class FieldCardStore(private val root: File) {
         val safe = safeFileName(className)
         val f = File(File(root, gameVersion), "$safe.json")
         if (!f.exists()) return null
-        val text = f.readText()
+        val text = f.bufferedReader().use { it.readText() }
         val obj = runCatching { Json.parseToJsonElement(text).jsonObject }
             .getOrElse { throw IllegalArgumentException("字段卡坏了（$f）：${it.message}") }
         val fields = (obj["fields"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { el ->

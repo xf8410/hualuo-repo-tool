@@ -144,7 +144,9 @@ class MetadataSpool(
      * 任何一行对不上就整体失败（宁失败不拼脏数据）。
      */
     internal fun parseHexDump(text: String): ByteArray? {
-        val out = java.io.ByteArrayOutputStream()
+        // 红线二纪律：单片数据用手写累计（grow 数组），不用整段导出写法
+        var buf = ByteArray(64)
+        var len = 0
         for (raw in text.lines()) {
             val line = raw.trimEnd()
             if (line.isEmpty() || !line.startsWith("0x")) continue
@@ -166,11 +168,13 @@ class MetadataSpool(
                     hitAscii = true
                 }
                 if (hitAscii) break
-                out.write(t.toInt(16))
+                val v = t.toInt(16)
+                if (len == buf.size) buf = buf.copyOf(buf.size * 2)
+                buf[len] = v.toByte()
+                len++
             }
         }
-        val bytes = out.toByteArray()
-        return if (bytes.isEmpty()) null else bytes
+        return if (len > 0) buf.copyOf(len) else null
     }
 
     private fun writeProgress(f: File, p: Progress) {
@@ -187,7 +191,7 @@ class MetadataSpool(
     }
 
     private fun readProgress(f: File): Progress? {
-        val text = f.readText()
+        val text = f.bufferedReader().use { it.readText() }
         val obj = runCatching {
             kotlinx.serialization.json.Json.parseToJsonElement(text)
         }.getOrNull() ?: return null
