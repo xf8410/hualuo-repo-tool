@@ -79,6 +79,7 @@ object UmaTool {
         registry: ToolRegistry,
         clientProvider: () -> ObserveClient?,
         state: ObserveState,
+        fieldCardDir: java.io.File? = null,
     ) {
         NO_ARG.forEach { (name, desc, path) ->
             registry.registerGated(
@@ -169,6 +170,86 @@ object UmaTool {
                 call(clientProvider(), state, ObserveClient.validateReadPath(path), (maxKib * 1024).toInt())
             },
         ) { clientProvider() != null }
+
+        // ---- IL2CPP 偏移漂移族（立项第二/三刀）：字段卡存取+跨版本对账+metadata 分片搬运 ----
+        if (fieldCardDir != null) {
+            val cards = FieldCardStore(fieldCardDir)
+            registry.registerGated(
+                ToolSpec(
+                    name = "uma_fieldcard_save",
+                    description = "把观测桥当前 /fields/<class> 的字段表存成字段卡（游戏版本号+类名），供跨版本对账。class_name 与 game_version 必填。",
+                    parametersJson = """{"type":"object","properties":{"class_name":{"type":"string","description":"完整类名"},"game_version":{"type":"string","description":"游戏版本号，如 686"}},"required":["class_name","game_version"]}""",
+                ),
+                ToolHandler { args ->
+                    val cn = textArg(args, "class_name") ?: throw IllegalArgumentException("class_name 必填。正确用法：{\"class_name\":\"Gallop.WorkDataManager\",\"game_version\":\"686\"}")
+                    val gv = textArg(args, "game_version") ?: throw IllegalArgumentException("game_version 必填（游戏版本号，如 686）")
+                    val clientNow = clientProvider() ?: throw IllegalStateException("观测桥未配置——先到「观测」页填地址并探测")
+                    val body = clientNow.get("/fields/" + ObserveClient.safeSegment(cn, "class_name")).let {
+                        if (it.ok) it.body ?: throw IllegalStateException("/fields/$cn 读取成功但无响应体")
+                        else throw IllegalStateException("[/fields/$cn 读取失败] " + (it.error ?: ObserveClient.httpExplain(it.httpStatus ?: 0)))
+                    }
+                    val fields = OffsetProbe.parseFieldsResponse(body)
+                    val card = FieldCardStore.Card(
+                        gameVersion = gv, className = cn, fields = fields,
+                        capturedAtMs = System.currentTimeMillis(),
+                    )
+                    cards.save(card)
+                    "已存字段卡：游戏版本 $gv 类 $cn（${fields.size} 个字段）"
+                },
+            ) { clientProvider() != null }
+            registry.registerGated(
+                ToolSpec(
+                    name = "uma_offset_diff",
+                    description = "跨版本偏移对账：拿旧版本字段卡对观测桥当前字段表，出保留/平移/改名候选/新增/消失差账。old_game_version 与 class_name 必填。",
+                    parametersJson = """{"type":"object","properties":{"class_name":{"type":"string"},"old_game_version":{"type":"string","description":"旧版本号（卡仓里要有这张卡）"}},"required":["class_name","old_game_version"]}""",
+                ),
+                ToolHandler { args ->
+                    val cn = textArg(args, "class_name") ?: throw IllegalArgumentException("class_name 必填。正确用法：{\"class_name\":\"WorkDataManager\",\"old_game_version\":\"676\"}")
+                    val ov = textArg(args, "old_game_version") ?: throw IllegalArgumentException("old_game_version 必填（旧版本号）")
+                    val oldCard = cards.load(ov, cn)
+                        ?: throw IllegalArgumentException("旧卡不存在：版本 $ov 类 $cn——先用 uma_fieldcard_save 存卡")
+                    val clientNow = clientProvider() ?: throw IllegalStateException("观测桥未配置——先到「观测」页填地址并探测")
+                    val body = clientNow.get("/fields/" + ObserveClient.safeSegment(cn, "class_name")).let {
+                        if (it.ok) it.body ?: throw IllegalStateException("/fields/$cn 读取成功但无响应体")
+                        else throw IllegalStateException("[/fields/$cn 读取失败] " + (it.error ?: ObserveClient.httpExplain(it.httpStatus ?: 0)))
+                    }
+                    val newFields = OffsetProbe.parseFieldsResponse(body)
+                    with(OffsetProbe) { diff(oldCard.fields, newFields).render() }
+                },
+            ) { clientProvider() != null }
+            registry.registerGated(
+                ToolSpec(
+                    name = "uma_metadata_spool",
+                    description = "分片搬运解密后的 global-metadata（游戏内存里的 151MB）到本机文件：每片 32KB 落盘、断点续传、App 内存只持一片——解「一次拉全量两头崩」。game_version 必填；max_chunks 默认 128（约 4MB/次调用，分多次调完）。",
+                    parametersJson = """{"type":"object","properties":{"game_version":{"type":"string"},"max_chunks":{"type":"integer","description":"本次最多搬几片，默认 128"}},"required":["game_version"]}""",
+                ),
+                ToolHandler { args ->
+                    val gv = textArg(args, "game_version") ?: throw IllegalArgumentException("game_version 必填（游戏版本号，如 686）")
+                    val maxChunks = (longArg(args, "max_chunks") ?: 128L).toInt().coerceIn(1, 2048)
+                    val clientNow = clientProvider() ?: throw IllegalStateException("观测桥未配置——先到「观测」页填地址并探测")
+                    val spool = MetadataSpool(java.io.File(fieldCardDir, "meta-$gv"), clientNow)
+                    val prev = spool.progress()
+                    val outcome = if (prev != null) {
+                        spool.spool(prev.addrHex, prev.totalBytes, maxChunks = maxChunks)
+                    } else {
+                        val probe = clientNow.get("/debug/global_metadata_probe").let {
+                            if (it.ok) it.body ?: throw IllegalStateException("probe 读取成功但无响应体")
+                            else throw IllegalStateException("[/debug/global_metadata_probe 读取失败] " + (it.error ?: ObserveClient.httpExplain(it.httpStatus ?: 0)))
+                        }
+                        val (addrHex, totalBytes) = parseProbe(probe)
+                            ?: throw IllegalStateException("probe 响应里没有可用的 metadata 地址与大小（原话前 500 字）：${probe.take(500)}")
+                        spool.spool(addrHex, totalBytes, maxChunks = maxChunks)
+                    }
+                    buildString {
+                        append("分片搬运：")
+                        append(if (outcome.finished) "已完成——" else "进行中——")
+                        append("${outcome.bytesDone}/${outcome.totalBytes} 字节（本回合 ${outcome.chunksDone} 片）")
+                        outcome.error?.let { append("；错误：$it") }
+                        if (outcome.finished) append("；文件在 ${java.io.File(fieldCardDir, "meta-$gv/metadata.bin").absolutePath}，可离线解析")
+                    }
+                },
+            ) { clientProvider() != null }
+        }
     }
 
     // ---------- 执行 ----------
@@ -203,6 +284,22 @@ object UmaTool {
         } finally {
             state.endBusy()
         }
+    }
+
+    /** 解析 global_metadata_probe 响应：拿第一个命中的 addr + size_estimate。
+     *  形状（hlpatch safe_mem_scan 实测）：{"ok":true,"hits":[{"addr":"0x...","version":31,"size_estimate":158M,...}]} */
+    private fun parseProbe(body: String): Pair<String, Long>? {
+        val obj = runCatching {
+            kotlinx.serialization.json.Json.parseToJsonElement(body)
+        }.getOrNull() as? kotlinx.serialization.json.JsonObject ?: return null
+        val hits = (obj["hits"] as? kotlinx.serialization.json.JsonArray) ?: return null
+        for (h in hits) {
+            val o = h as? kotlinx.serialization.json.JsonObject ?: continue
+            val addr = (o["addr"] as? kotlinx.serialization.json.JsonPrimitive)?.content ?: continue
+            val size = (o["size_estimate"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull() ?: continue
+            if (size in 1..512L * 1024 * 1024) return addr to size
+        }
+        return null
     }
 
     // ---------- 参数小工具 ----------
