@@ -818,3 +818,4 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 817,模型选择去硬编码,撤 DEFAULT_MODEL（无钥匙的默认=摆设）；视觉/图像生成页换已接入模型点选卡；清假模型清单,实装,app+engine,PR#99
 818,摆设清剿收官·撤三页,撤最后三页无后端演示页（语音转写/多智能体接力/Claude导入）；清 relayOn 摆设布尔与图标资源；24 设置页全真实,撤页,app/settings,PR#100
 819,IL2CPP立项第一刀·偏移试探器,OffsetProbe：旧新字段表四态对账+对齐规则穷举候选偏移（引用8/int4/short2/byte1，对象头16起）；13用例；外部三仓实证随docs/IL2CPP-OFFSET-STUDY.md,实装,engine/observe,PR#103
+820,IL2CPP第二三刀·字段卡仓+metadata分片搬运,FieldCardStore（版本目录存字段卡原子落盘）+MetadataSpool（32KB分片read_mem落盘+断点续传，解151MB双崩）+三工具：uma_fieldcard_save/uma_offset_diff/uma_metadata_spool,实装,engine/observe,PR#105
