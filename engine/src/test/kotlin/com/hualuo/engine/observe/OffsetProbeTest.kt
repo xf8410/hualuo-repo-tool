@@ -46,7 +46,7 @@ class OffsetProbeTest {
 
     @Test
     fun `未知类型按引用档8兜底宁可少候选不误报`() {
-        // 不认识的结构体按 8 对齐（最保守）：7 不落 8 格点 → 空表，调用方换 step=1 重试
+        // 不认识的结构体按 8 对齐（最保守）：7 不落 8 格点 -> 空表，调用方换 step=1 重试
         assertTrue(OffsetProbe.candidates(7, "Whatever", window = 8).isEmpty())
     }
 
@@ -72,7 +72,7 @@ class OffsetProbeTest {
             old = listOf(card("Turn", 16), card("Vitality", 20)),
             new = listOf(card("Turn", 16), card("Vitality", 20)),
         )
-        assertEquals(2, d.kept)
+        assertEquals(2, d.kept.size)
         assertTrue(d.shifted.isEmpty() && d.added.isEmpty() && d.gone.isEmpty())
     }
 
@@ -82,7 +82,7 @@ class OffsetProbeTest {
             old = listOf(card("Turn", 16), card("Vitality", 20)),
             new = listOf(card("Turn", 16), card("Vitality", 28)),  // 中间插了个 8 字节字段
         )
-        assertEquals(1, d.kept)
+        assertEquals(1, d.kept.size)
         assertEquals(1, d.shifted.size)
         assertEquals(8, d.shifted.first().delta)
         assertEquals(28, d.shifted.first().newOffset)
@@ -143,13 +143,13 @@ class OffsetProbeTest {
             new = listOf(card("Turn", 16), card("Instance", -1)),
         )
         // 两张表的 -1（IL2CPP 静态字段惯例）都滤掉，对账只看实例字段
-        assertEquals(1, d.kept)
+        assertEquals(1, d.kept.size)
     }
 
     @Test
     fun `空表对空表不炸`() {
         val d = OffsetProbe.diff(old = emptyList(), new = emptyList())
-        assertEquals(0, d.kept)
+        assertEquals(0, d.kept.size)
         assertTrue(d.summary().contains("0"))
     }
 

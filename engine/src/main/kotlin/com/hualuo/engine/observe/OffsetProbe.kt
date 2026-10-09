@@ -13,7 +13,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * 游戏版本更新后，类字段偏移会漂移。Il2CppDumper 的做法是按 metadata 版本号
  * 切换结构布局并做「候选试探」（invokerPointersCount 超 0x50000 就退一版重读——
  * Il2Cpp/Il2Cpp.cs AutoPlusInit）；hlpatch 走运行时按名反射
- * （il2cpp_class_get_fields → FieldInfo.offset），名字在偏移就在。
+ * （il2cpp_class_get_fields -> FieldInfo.offset），名字在偏移就在。
  * 但「按名反射」救不了两种场景：
  *   a) 字段改名/新增/删除——旧名字找不到，新名字没记忆；
  *   b) 拿旧版本 dump 记忆（字段卡）对账新版本——需要一个「差多少」的判决器。
@@ -101,7 +101,7 @@ object OffsetProbe {
      * 旧表对新表出差账。
      *
      * @param similarityFloor 改名判定阈值 0-1（默认 0.72：编辑距离相似度，
-     *   经验值——名字前后缀变化如 RemainTurnNum→RemainTurnCount 命中，
+     *   经验值——名字前后缀变化如 RemainTurnNum->RemainTurnCount 命中，
      *   完全无关名字不误报）。阈值是候选门不是判决门。
      */
     fun diff(old: List<FieldCard>, new: List<FieldCard>, similarityFloor: Double = 0.72): DiffResult {
@@ -165,7 +165,7 @@ object OffsetProbe {
      *  - arm64 引用/long/double=8、int/float=4、short/char=2、byte/bool=1，自然对齐
      *  - 实例字段从 16（对象头）起排，静态字段单独区（负区不打扰实例候选）
      *  - 一次版本更新常见漂移=前插 1 个引用字段（+8）或重排头（±16）；
-     *    默认格点步长 4（int/float 粒度），窗口 ±64 字节 → 候选最多 33 个
+     *    默认格点步长 4（int/float 粒度），窗口 ±64 字节 -> 候选最多 33 个
      *  - 候选必须落在 [16, classSize) 且对齐到字段自身宽度——格点先按 4 出，
      *    调用方按 [typeName] 再筛 8 对齐的（引用/long）
      *
@@ -218,7 +218,7 @@ object OffsetProbe {
 
     /**
      * 名字相似度（0-1）：编辑距离归一化。简单但够用——字段改名一般是
-     * 前后缀微调（RemainTurnNum→RemainTurnCount），不是面目全非。
+     * 前后缀微调（RemainTurnNum->RemainTurnCount），不是面目全非。
      */
     fun nameSimilarity(a: String, b: String): Double {
         if (a == b) return 1.0
