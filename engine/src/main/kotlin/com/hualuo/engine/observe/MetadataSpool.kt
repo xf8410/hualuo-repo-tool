@@ -143,39 +143,6 @@ class MetadataSpool(
      * 解析纪律：只认 "0x%08x: " 打头的数据行，hex 对收空白分组；
      * 任何一行对不上就整体失败（宁失败不拼脏数据）。
      */
-    internal fun parseHexDump(text: String): ByteArray? {
-        // 红线二纪律：单片数据用手写累计（grow 数组），不用整段导出写法
-        var buf = ByteArray(64)
-        var len = 0
-        for (raw in text.lines()) {
-            val line = raw.trimEnd()
-            if (line.isEmpty() || !line.startsWith("0x")) continue
-            val colon = line.indexOf(':')
-            if (colon < 0) return null
-            val rest = line.substring(colon + 1)
-            // 数据区到 ASCII 区之间是两个以上空格；ASCII 区可能有点和可见字符。
-            // 只取前半：按空白切 token，token 必须是 1-2 位 hex。
-            val tokens = rest.trim().split(Regex("\\s+"))
-            var hitAscii = false
-            for (t in tokens) {
-                if (t.isEmpty()) continue
-                val okHex = t.length == 2 && t.all { c ->
-                    val lc = c.lowercaseChar()
-                    (lc in '0'..'9') || (lc in 'a'..'f')
-                }
-                if (!okHex) {
-                    // 碰到非 hex token：说明进 ASCII 区了——本行数据已收完，跳过剩余
-                    hitAscii = true
-                }
-                if (hitAscii) break
-                val v = t.toInt(16)
-                if (len == buf.size) buf = buf.copyOf(buf.size * 2)
-                buf[len] = v.toByte()
-                len++
-            }
-        }
-        return if (len > 0) buf.copyOf(len) else null
-    }
 
     private fun writeProgress(f: File, p: Progress) {
         val tmp = File(f.parentFile, f.name + ".tmp")
@@ -209,6 +176,44 @@ class MetadataSpool(
     }
 
     companion object {
+
+    internal fun parseHexDump(text: String): ByteArray? {
+        // 红线二纪律：单片数据用手写累计（grow 数组），不用整段导出写法
+        var buf = ByteArray(64)
+        var len = 0
+        for (raw in text.lines()) {
+            val line = raw.trimEnd()
+            if (line.isEmpty() || !line.startsWith("0x")) continue
+            val colon = line.indexOf(':')
+            if (colon < 0) return null
+            val rest = line.substring(colon + 1)
+            // 数据区到 ASCII 区之间是两个以上空格；ASCII 区可能有点和可见字符。
+            // 区界不能只靠空格数认（不足 16 字节的行数据区里就有 3 空格 padding），
+            // 也不能只靠「非 hex token 即 ASCII」——ASCII 区 "ab" 这类恰是 2 位 hex
+            // 的词会被误吃进数据（读对象内存时 ASCII 随机，碰撞不低）。
+            // 事实判据：SO 侧每行固定最多 16 字节——吃满 16 个 token 后面必是 ASCII。
+            val tokens = rest.trim().split(Regex("\\s+"))
+            var eaten = 0
+            for (t in tokens) {
+                if (t.isEmpty()) continue
+                if (eaten >= 16) break
+                val okHex = t.length == 2 && t.all { c ->
+                    val lc = c.lowercaseChar()
+                    (lc in '0'..'9') || (lc in 'a'..'f')
+                }
+                if (!okHex) {
+                    // 碰到非 hex token：说明进 ASCII 区了——本行数据已收完，跳过剩余
+                    break
+                }
+                val v = t.toInt(16)
+                if (len == buf.size) buf = buf.copyOf(buf.size * 2)
+                buf[len] = v.toByte()
+                len++
+                eaten++
+            }
+        }
+        return if (len > 0) buf.copyOf(len) else null
+    }
         const val DEFAULT_CHUNK = 32 * 1024
         const val BIN_NAME = "metadata.bin"
         const val PROGRESS_NAME = "metadata.progress.json"
