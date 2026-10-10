@@ -120,10 +120,22 @@ class FieldCardAndSpoolTest {
         val spool = MetadataSpool(tmp.newFolder(), ObserveClient("http://127.0.0.1:18765", FakeBridge(16)))
         val dump = "addr: 0x7f001000\nsize: 4\nbytes_read: 4\n\n" +
             "0x00000000:  af 1b b1 fa                           ....\n"
-        val bytes = spool.parseHexDump(dump)
+        val bytes = MetadataSpool.parseHexDump(dump)
         assertEquals(4, bytes!!.size)
         assertEquals(0xaf.toByte(), bytes[0])
         assertEquals(0xfa.toByte(), bytes[3])
+    }
+
+    @Test
+    fun `hexdump满行后ASCII区hex状词不误吃`() {
+        // 16 字节吃满后，ASCII 区 "ab cd"（恰是 2 位 hex 形）不许进数据——
+        // 对象内存 ASCII 随机，这个碰撞真会发生（BoardReader 读板就靠它）
+        val dump = "addr: 0x7f001000\nsize: 16\nbytes_read: 16\n\n" +
+            "0x00000000:  5a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ab cd\n"
+        val bytes = MetadataSpool.parseHexDump(dump)
+        assertEquals(16, bytes!!.size)
+        assertEquals(0x5a.toByte(), bytes[0])
+        assertEquals(0.toByte(), bytes[15])
     }
 
     @Test

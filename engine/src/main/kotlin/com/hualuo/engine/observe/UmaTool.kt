@@ -249,6 +249,107 @@ object UmaTool {
                     }
                 },
             ) { clientProvider() != null }
+            registry.registerGated(
+                ToolSpec(
+                    name = "uma_metadata_parse",
+                    description = "离线解析 spool 搬下来的 metadata.bin（不连桥）。game_version 必填；class_name=查单个类的字段名清单；keyword=按关键字搜类名（最多 30 条）；都不带=概要（版本+类总数）。",
+                    parametersJson = """{"type":"object","properties":{"game_version":{"type":"string","description":"spool 时用的游戏版本号"},"class_name":{"type":"string","description":"完整类名或简名"},"keyword":{"type":"string","description":"类名/命名空间模糊搜"}},"required":["game_version"]}""",
+                ),
+                ToolHandler { args ->
+                    val gv = textArg(args, "game_version") ?: throw IllegalArgumentException("game_version 必填（spool 时用的那个版本号，如 686）")
+                    val f = java.io.File(java.io.File(fieldCardDir, "meta-$gv"), "metadata.bin")
+                    if (!f.exists()) throw IllegalStateException("meta-$gv/metadata.bin 还不存在——先跑 uma_metadata_spool(game_version=\"$gv\") 把它搬下来")
+                    val p = MetadataParser(f)
+                    val cn = textArg(args, "class_name")
+                    val kw = textArg(args, "keyword")
+                    when {
+                        cn != null -> {
+                            val fn = p.findClass(cn)
+                                ?: return@ToolHandler "类没找到：$cn。换 keyword 模糊搜（如 {\"game_version\":\"$gv\",\"keyword\":\"Work\"}），或用 uma_find_class 确认全名"
+                            val names = fn.fieldNames
+                            val full = if (fn.namespace.isEmpty()) fn.name else "${fn.namespace}.${fn.name}"
+                            if (names.size > 200) {
+                                "类 $full 共 ${names.size} 个字段，只列前 200（全量用 findClass 按类逐段给）：\n" + names.take(200).joinToString("\n")
+                            } else {
+                                "类 $full 共 ${names.size} 个字段：\n" + names.joinToString("\n")
+                            }
+                        }
+                        kw != null -> {
+                            val hits = mutableListOf<String>()
+                            p.forEachType { row ->
+                                if (hits.size < 30 &&
+                                    (row.name.contains(kw, true) || row.namespace.contains(kw, true))
+                                ) {
+                                    val full = if (row.namespace.isEmpty()) row.name else "${row.namespace}.${row.name}"
+                                    hits.add("$full（字段 ${row.fieldCount}·方法 ${row.methodCount}）")
+                                }
+                            }
+                            if (hits.isEmpty()) "没搜到含 \"$kw\" 的类。换个更短的词，或用 uma_metadata_parse 不带参数看类总数"
+                            else "搜到 ${hits.size} 条（上限 30，词再精确些可缩小）：\n" + hits.joinToString("\n")
+                        }
+                        else -> {
+                            val secs = p.sections()
+                            "metadata 解析就绪：版本 ${secs.version}，共 ${p.typeCount()} 个类型。带 class_name 查字段名清单，或带 keyword 搜类名"
+                        }
+                    }
+                },
+            ) { true }
+            registry.registerGated(
+                ToolSpec(
+                    name = "uma_board_read",
+                    description = "按剧本板采集：/singletons 拿实例地址 -> read_mem 整段读 -> 按板切语义字段值（冷启动流水 L5）。scenario 必填；entry_class 可选（只读一条类调试）。板文件在 files/fieldcards/boards/<scenario>.json。",
+                    parametersJson = """{"type":"object","properties":{"scenario":{"type":"string","description":"剧本板名（如 ramen）"},"entry_class":{"type":"string","description":"只读这条类（板里的 class 字段值）"}},"required":["scenario"]}""",
+                ),
+                ToolHandler { args ->
+                    val scenario = textArg(args, "scenario") ?: throw IllegalArgumentException("scenario 必填（剧本板名，如 ramen）")
+                    require(scenario.length in 1..100 && !scenario.contains('/') && !scenario.contains('\\') && scenario.none { it.code < 0x20 }) {
+                        "板名不合法：$scenario"
+                    }
+                    val boardFile = java.io.File(java.io.File(fieldCardDir, "boards"), "$scenario.json")
+                    if (!boardFile.exists()) throw IllegalStateException("剧本板还不存在：${boardFile.absolutePath}。板=冷启动 L4 的产物（对账固化），先跑 uma_offset_diff 出差账、人拍板后固化成板")
+                    val board = BoardReader.parse(boardFile.readText())
+                    val only = textArg(args, "entry_class")
+                    val entries = if (only != null) board.entries.filter { it.className == only } else board.entries
+                    if (entries.isEmpty()) throw IllegalStateException(if (only != null) "板里没有 class=$only 的条目" else "板是空的（entries 为空）")
+                    val clientNow = clientProvider() ?: throw IllegalStateException("观测桥未配置——先到「观测」页填地址并探测")
+                    // 1) 单例地址表
+                    val sing = clientNow.get("/singletons").let {
+                        if (it.ok) it.body ?: throw IllegalStateException("/singletons 读取成功但无响应体")
+                        else throw IllegalStateException("[/singletons 读取失败] " + (it.error ?: ObserveClient.httpExplain(it.httpStatus ?: 0)))
+                    }
+                    val addrByClass = mutableMapOf<String, String>()
+                    for (m in Regex("\"class\":\"([^\"]+)\",\"singleton\":(true|false),\"instance\":\"(0x[0-9a-f]+|0x0)\"").findAll(sing)) {
+                        if (m.groupValues[2] == "true" && m.groupValues[3] != "0x0") addrByClass[m.groupValues[1]] = m.groupValues[3]
+                    }
+                    // 2) 逐条 entry：read_mem -> 切值
+                    val out = StringBuilder()
+                    var okCount = 0
+                    for (e in entries) {
+                        val addr = addrByClass[e.className]
+                            ?: addrByClass.entries.firstOrNull { it.key.endsWith(".${e.singletonHint}") }?.value
+                        if (addr == null) {
+                            out.append("[${e.className}] 单例未找到（游戏没进对应场景或类未加载），跳过\n")
+                            continue
+                        }
+                        val size = BoardReader.requiredBytes(e)
+                        val mem = clientNow.get("/il2cpp/read_mem?addr=$addr&size=$size").let {
+                            if (it.ok) it.body ?: throw IllegalStateException("read_mem 读取成功但无响应体")
+                            else throw IllegalStateException("[read_mem $addr 读取失败] " + (it.error ?: ObserveClient.httpExplain(it.httpStatus ?: 0)))
+                        }
+                        val bytes = MetadataSpool.parseHexDump(mem)
+                        if (bytes == null) {
+                            out.append("[${e.className}] read_mem 响应形状不对（前 200 字）：${mem.take(200)}\n")
+                            continue
+                        }
+                        val vals = BoardReader.readEntry(e, bytes)
+                        out.append("[${e.className}] @$addr ${bytes.size}B\n")
+                        for ((sem, v) in vals) out.append("  $sem = $v\n")
+                        okCount++
+                    }
+                    "剧本板 $scenario（版本 ${board.gameVersion}，${entries.size} 条里 $okCount 条读到）：\n" + out.toString().trimEnd() +
+                        "\n【singletons · read_mem×$okCount · 值均为本回合实测】"
+                },
+            ) { clientProvider() != null }
         }
     }
 
