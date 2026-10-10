@@ -34,6 +34,7 @@ class BoardAndParseToolTest {
                 path.startsWith("/il2cpp/read_mem") -> memBody
                 else -> """{"error":"not_found","path":"$path"}"""
             }
+            body.lines().forEach { sink.onLine(it) } // body 走 sink 流式吐（ObserveClient 按行组装）
             return WireResponse(200, null, body.length.toLong(), null)
         }
         override fun cancel() {}
@@ -75,12 +76,12 @@ class BoardAndParseToolTest {
         while (pad < strOff) { out.write(0); pad++ }
         out.write(strings.toByteArray())
         for (i in 0 until 3) {
-            out.write(u32(23L + 10L * i)) // nameIndex -> Turn/Vitality/CheckPointPt
+            out.write(u32(longArrayOf(23L, 28L, 37L)[i])) // nameIndex -> Turn@23/Vitality@28/CheckPointPt@37
             out.write(u32(0)); out.write(u32(0))
         }
         val rec = ByteArray(88)
-        System.arraycopy(u32(0), 0, rec, 0, 4)      // nameIndex -> WorkDataManager
-        System.arraycopy(u32(15), 0, rec, 4, 4)     // namespaceIndex -> Gallop
+        System.arraycopy(u32(0), 0, rec, 0, 4)      // nameIndex -> WorkDataManager@0
+        System.arraycopy(u32(16), 0, rec, 4, 4)     // namespaceIndex -> Gallop@16..21
         System.arraycopy(u32(0), 0, rec, 32, 4)     // fieldStart
         System.arraycopy(u32(0), 0, rec, 36, 4)     // methodStart
         System.arraycopy(u16(5), 0, rec, 64, 2)     // method_count
