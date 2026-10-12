@@ -123,7 +123,7 @@ object TransportProxy {
 
     /**
      * 给目标主机解出要用的代理：**返回值绝不为 null**（旧 Agora 契约）。
-     * 没配代理或命中绕行清单 → [java.net.Proxy.NO_PROXY]。
+     * 没配代理或命中绕行清单时，返回 [java.net.Proxy.NO_PROXY]。
      */
     fun resolve(host: String): java.net.Proxy {
         val installed = proxy ?: return java.net.Proxy.NO_PROXY
