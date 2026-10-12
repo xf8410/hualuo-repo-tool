@@ -1,141 +1,141 @@
 feature_no,实装符号,功能名,用途,来源,模块,关联用例
-1,lang:kotlin,Kotlin（kotlin）·语法高亮与查看器着色,查看器打开 kotlin 源码文件按 Kotlin 语法着色、识别注释与字符串,LangRegistry 项,language,
-2,lang:java,Java（java）·语法高亮与查看器着色,查看器打开 java 源码文件按 Java 语法着色、识别注释与字符串,LangRegistry 项,language,
-3,lang:python,Python（python）·语法高亮与查看器着色,查看器打开 python 源码文件按 Python 语法着色、识别注释与字符串,LangRegistry 项,language,
-4,lang:rust,Rust（rust）·语法高亮与查看器着色,查看器打开 rust 源码文件按 Rust 语法着色、识别注释与字符串,LangRegistry 项,language,
-5,lang:go,Go（go）·语法高亮与查看器着色,查看器打开 go 源码文件按 Go 语法着色、识别注释与字符串,LangRegistry 项,language,
-6,lang:c,C（c）·语法高亮与查看器着色,查看器打开 c 源码文件按 C 语法着色、识别注释与字符串,LangRegistry 项,language,
-7,lang:cpp,C++（cpp）·语法高亮与查看器着色,查看器打开 cpp 源码文件按 C++ 语法着色、识别注释与字符串,LangRegistry 项,language,
-8,lang:csharp,C#（csharp）·语法高亮与查看器着色,查看器打开 csharp 源码文件按 C# 语法着色、识别注释与字符串,LangRegistry 项,language,
-9,lang:javascript,JavaScript（javascript）·语法高亮与查看器着色,查看器打开 javascript 源码文件按 JavaScript 语法着色、识别注释与字符串,LangRegistry 项,language,
-10,lang:typescript,TypeScript（typescript）·语法高亮与查看器着色,查看器打开 typescript 源码文件按 TypeScript 语法着色、识别注释与字符串,LangRegistry 项,language,
-11,lang:swift,Swift（swift）·语法高亮与查看器着色,查看器打开 swift 源码文件按 Swift 语法着色、识别注释与字符串,LangRegistry 项,language,
-12,lang:dart,Dart（dart）·语法高亮与查看器着色,查看器打开 dart 源码文件按 Dart 语法着色、识别注释与字符串,LangRegistry 项,language,
-13,lang:ruby,Ruby（ruby）·语法高亮与查看器着色,查看器打开 ruby 源码文件按 Ruby 语法着色、识别注释与字符串,LangRegistry 项,language,
-14,lang:php,PHP（php）·语法高亮与查看器着色,查看器打开 php 源码文件按 PHP 语法着色、识别注释与字符串,LangRegistry 项,language,
-15,lang:shell,Shell（shell）·语法高亮与查看器着色,查看器打开 shell 源码文件按 Shell 语法着色、识别注释与字符串,LangRegistry 项,language,
-16,lang:sql,SQL（sql）·语法高亮与查看器着色,查看器打开 sql 源码文件按 SQL 语法着色、识别注释与字符串,LangRegistry 项,language,
-17,lang:scala,Scala（scala）·语法高亮与查看器着色,查看器打开 scala 源码文件按 Scala 语法着色、识别注释与字符串,LangRegistry 项,language,
-18,lang:lua,Lua（lua）·语法高亮与查看器着色,查看器打开 lua 源码文件按 Lua 语法着色、识别注释与字符串,LangRegistry 项,language,
-19,lang:r,R（r）·语法高亮与查看器着色,查看器打开 r 源码文件按 R 语法着色、识别注释与字符串,LangRegistry 项,language,
-20,lang:yaml,YAML（yaml）·语法高亮与查看器着色,查看器打开 yaml 源码文件按 YAML 语法着色、识别注释与字符串,LangRegistry 项,language,
-21,lang:toml,TOML（toml）·语法高亮与查看器着色,查看器打开 toml 源码文件按 TOML 语法着色、识别注释与字符串,LangRegistry 项,language,
-22,lang:ini,INI/配置（ini）·语法高亮与查看器着色,查看器打开 ini 源码文件按 INI/配置 语法着色、识别注释与字符串,LangRegistry 项,language,
-23,lang:json,JSON（json）·语法高亮与查看器着色,查看器打开 json 源码文件按 JSON 语法着色、识别注释与字符串,LangRegistry 项,language,
-24,lang:jupyter,Jupyter 笔记本（jupyter）·语法高亮与查看器着色,查看器打开 jupyter 源码文件按 Jupyter 笔记本 语法着色、识别注释与字符串,LangRegistry 项,language,
-25,lang:xml,XML（xml）·语法高亮与查看器着色,查看器打开 xml 源码文件按 XML 语法着色、识别注释与字符串,LangRegistry 项,language,
-26,lang:html,HTML（html）·语法高亮与查看器着色,查看器打开 html 源码文件按 HTML 语法着色、识别注释与字符串,LangRegistry 项,language,
-27,lang:css,CSS（css）·语法高亮与查看器着色,查看器打开 css 源码文件按 CSS 语法着色、识别注释与字符串,LangRegistry 项,language,
-28,lang:scss,SCSS/Sass（scss）·语法高亮与查看器着色,查看器打开 scss 源码文件按 SCSS/Sass 语法着色、识别注释与字符串,LangRegistry 项,language,
-29,lang:less,Less（less）·语法高亮与查看器着色,查看器打开 less 源码文件按 Less 语法着色、识别注释与字符串,LangRegistry 项,language,
-30,lang:markdown,Markdown（markdown）·语法高亮与查看器着色,查看器打开 markdown 源码文件按 Markdown 语法着色、识别注释与字符串,LangRegistry 项,language,
-31,lang:tex,TeX/LaTeX（tex）·语法高亮与查看器着色,查看器打开 tex 源码文件按 TeX/LaTeX 语法着色、识别注释与字符串,LangRegistry 项,language,
-32,lang:diff,Diff/Patch（diff）·语法高亮与查看器着色,查看器打开 diff 源码文件按 Diff/Patch 语法着色、识别注释与字符串,LangRegistry 项,language,
-33,lang:log,日志（log）·语法高亮与查看器着色,查看器打开 log 源码文件按 日志 语法着色、识别注释与字符串,LangRegistry 项,language,
-34,lang:csv,CSV/TSV（csv）·语法高亮与查看器着色,查看器打开 csv 源码文件按 CSV/TSV 语法着色、识别注释与字符串,LangRegistry 项,language,
-35,lang:properties,Properties（properties）·语法高亮与查看器着色,查看器打开 properties 源码文件按 Properties 语法着色、识别注释与字符串,LangRegistry 项,language,
-36,lang:dockerfile,Dockerfile（dockerfile）·语法高亮与查看器着色,查看器打开 dockerfile 源码文件按 Dockerfile 语法着色、识别注释与字符串,LangRegistry 项,language,
-37,lang:makefile,Makefile（makefile）·语法高亮与查看器着色,查看器打开 makefile 源码文件按 Makefile 语法着色、识别注释与字符串,LangRegistry 项,language,
-38,lang:cmake,CMake（cmake）·语法高亮与查看器着色,查看器打开 cmake 源码文件按 CMake 语法着色、识别注释与字符串,LangRegistry 项,language,
-39,lang:gradle,Gradle（gradle）·语法高亮与查看器着色,查看器打开 gradle 源码文件按 Gradle 语法着色、识别注释与字符串,LangRegistry 项,language,
-40,lang:bazel,Bazel/Starlark（bazel）·语法高亮与查看器着色,查看器打开 bazel 源码文件按 Bazel/Starlark 语法着色、识别注释与字符串,LangRegistry 项,language,
-41,lang:terraform,Terraform/HCL（terraform）·语法高亮与查看器着色,查看器打开 terraform 源码文件按 Terraform/HCL 语法着色、识别注释与字符串,LangRegistry 项,language,
-42,lang:groovy,Groovy/Jenkinsfile（groovy）·语法高亮与查看器着色,查看器打开 groovy 源码文件按 Groovy/Jenkinsfile 语法着色、识别注释与字符串,LangRegistry 项,language,
-43,lang:objective,Objective-C（objective）·语法高亮与查看器着色,查看器打开 objective 源码文件按 Objective-C 语法着色、识别注释与字符串,LangRegistry 项,language,
-44,lang:perl,Perl（perl）·语法高亮与查看器着色,查看器打开 perl 源码文件按 Perl 语法着色、识别注释与字符串,LangRegistry 项,language,
-45,lang:haskell,Haskell（haskell）·语法高亮与查看器着色,查看器打开 haskell 源码文件按 Haskell 语法着色、识别注释与字符串,LangRegistry 项,language,
-46,lang:elixir,Elixir（elixir）·语法高亮与查看器着色,查看器打开 elixir 源码文件按 Elixir 语法着色、识别注释与字符串,LangRegistry 项,language,
-47,lang:erlang,Erlang（erlang）·语法高亮与查看器着色,查看器打开 erlang 源码文件按 Erlang 语法着色、识别注释与字符串,LangRegistry 项,language,
-48,lang:ocaml,OCaml/Reason（ocaml）·语法高亮与查看器着色,查看器打开 ocaml 源码文件按 OCaml/Reason 语法着色、识别注释与字符串,LangRegistry 项,language,
-49,lang:fsharp,F#（fsharp）·语法高亮与查看器着色,查看器打开 fsharp 源码文件按 F# 语法着色、识别注释与字符串,LangRegistry 项,language,
-50,lang:clojure,Clojure（clojure）·语法高亮与查看器着色,查看器打开 clojure 源码文件按 Clojure 语法着色、识别注释与字符串,LangRegistry 项,language,
-51,lang:lisp,Lisp/Scheme/Racket（lisp）·语法高亮与查看器着色,查看器打开 lisp 源码文件按 Lisp/Scheme/Racket 语法着色、识别注释与字符串,LangRegistry 项,language,
-52,lang:zig,Zig（zig）·语法高亮与查看器着色,查看器打开 zig 源码文件按 Zig 语法着色、识别注释与字符串,LangRegistry 项,language,
-53,lang:nim,Nim（nim）·语法高亮与查看器着色,查看器打开 nim 源码文件按 Nim 语法着色、识别注释与字符串,LangRegistry 项,language,
-54,lang:crystal,Crystal（crystal）·语法高亮与查看器着色,查看器打开 crystal 源码文件按 Crystal 语法着色、识别注释与字符串,LangRegistry 项,language,
-55,lang:julia,Julia（julia）·语法高亮与查看器着色,查看器打开 julia 源码文件按 Julia 语法着色、识别注释与字符串,LangRegistry 项,language,
-56,lang:haxe,Haxe（haxe）·语法高亮与查看器着色,查看器打开 haxe 源码文件按 Haxe 语法着色、识别注释与字符串,LangRegistry 项,language,
-57,lang:elm,Elm（elm）·语法高亮与查看器着色,查看器打开 elm 源码文件按 Elm 语法着色、识别注释与字符串,LangRegistry 项,language,
-58,lang:purescript,PureScript（purescript）·语法高亮与查看器着色,查看器打开 purescript 源码文件按 PureScript 语法着色、识别注释与字符串,LangRegistry 项,language,
-59,lang:fortran,Fortran（fortran）·语法高亮与查看器着色,查看器打开 fortran 源码文件按 Fortran 语法着色、识别注释与字符串,LangRegistry 项,language,
-60,lang:cobol,COBOL（cobol）·语法高亮与查看器着色,查看器打开 cobol 源码文件按 COBOL 语法着色、识别注释与字符串,LangRegistry 项,language,
-61,lang:pascal,Pascal/Delphi（pascal）·语法高亮与查看器着色,查看器打开 pascal 源码文件按 Pascal/Delphi 语法着色、识别注释与字符串,LangRegistry 项,language,
-62,lang:ada,Ada（ada）·语法高亮与查看器着色,查看器打开 ada 源码文件按 Ada 语法着色、识别注释与字符串,LangRegistry 项,language,
-63,lang:asm,汇编（asm）·语法高亮与查看器着色,查看器打开 asm 源码文件按 汇编 语法着色、识别注释与字符串,LangRegistry 项,language,
-64,lang:verilog,Verilog/SystemVerilog（verilog）·语法高亮与查看器着色,查看器打开 verilog 源码文件按 Verilog/SystemVerilog 语法着色、识别注释与字符串,LangRegistry 项,language,
-65,lang:vhdl,VHDL（vhdl）·语法高亮与查看器着色,查看器打开 vhdl 源码文件按 VHDL 语法着色、识别注释与字符串,LangRegistry 项,language,
-66,lang:cuda,CUDA（cuda）·语法高亮与查看器着色,查看器打开 cuda 源码文件按 CUDA 语法着色、识别注释与字符串,LangRegistry 项,language,
-67,lang:glsl,GLSL/着色器（glsl）·语法高亮与查看器着色,查看器打开 glsl 源码文件按 GLSL/着色器 语法着色、识别注释与字符串,LangRegistry 项,language,
-68,lang:hlsl,HLSL（hlsl）·语法高亮与查看器着色,查看器打开 hlsl 源码文件按 HLSL 语法着色、识别注释与字符串,LangRegistry 项,language,
-69,lang:metal,Metal（metal）·语法高亮与查看器着色,查看器打开 metal 源码文件按 Metal 语法着色、识别注释与字符串,LangRegistry 项,language,
-70,lang:solidity,Solidity（solidity）·语法高亮与查看器着色,查看器打开 solidity 源码文件按 Solidity 语法着色、识别注释与字符串,LangRegistry 项,language,
-71,lang:graphql,GraphQL（graphql）·语法高亮与查看器着色,查看器打开 graphql 源码文件按 GraphQL 语法着色、识别注释与字符串,LangRegistry 项,language,
-72,lang:protobuf,Protobuf（protobuf）·语法高亮与查看器着色,查看器打开 protobuf 源码文件按 Protobuf 语法着色、识别注释与字符串,LangRegistry 项,language,
-73,lang:thrift,Thrift（thrift）·语法高亮与查看器着色,查看器打开 thrift 源码文件按 Thrift 语法着色、识别注释与字符串,LangRegistry 项,language,
-74,lang:vue,Vue 单文件（vue）·语法高亮与查看器着色,查看器打开 vue 源码文件按 Vue 单文件 语法着色、识别注释与字符串,LangRegistry 项,language,
-75,lang:svelte,Svelte（svelte）·语法高亮与查看器着色,查看器打开 svelte 源码文件按 Svelte 语法着色、识别注释与字符串,LangRegistry 项,language,
-76,lang:astro,Astro（astro）·语法高亮与查看器着色,查看器打开 astro 源码文件按 Astro 语法着色、识别注释与字符串,LangRegistry 项,language,
-77,lang:jsx,JSX/模板（jsx）·语法高亮与查看器着色,查看器打开 jsx 源码文件按 JSX/模板 语法着色、识别注释与字符串,LangRegistry 项,language,
-78,lang:twig,Twig 模板（twig）·语法高亮与查看器着色,查看器打开 twig 源码文件按 Twig 模板 语法着色、识别注释与字符串,LangRegistry 项,language,
-79,lang:jinja,Jinja 模板（jinja）·语法高亮与查看器着色,查看器打开 jinja 源码文件按 Jinja 模板 语法着色、识别注释与字符串,LangRegistry 项,language,
-80,lang:ejs,EJS 模板（ejs）·语法高亮与查看器着色,查看器打开 ejs 源码文件按 EJS 模板 语法着色、识别注释与字符串,LangRegistry 项,language,
-81,lang:haml,Haml（haml）·语法高亮与查看器着色,查看器打开 haml 源码文件按 Haml 语法着色、识别注释与字符串,LangRegistry 项,language,
-82,lang:slim,Slim（slim）·语法高亮与查看器着色,查看器打开 slim 源码文件按 Slim 语法着色、识别注释与字符串,LangRegistry 项,language,
-83,lang:pug,Pug/Jade（pug）·语法高亮与查看器着色,查看器打开 pug 源码文件按 Pug/Jade 语法着色、识别注释与字符串,LangRegistry 项,language,
-84,lang:jsp,JSP（jsp）·语法高亮与查看器着色,查看器打开 jsp 源码文件按 JSP 语法着色、识别注释与字符串,LangRegistry 项,language,
-85,lang:razor,Razor（razor）·语法高亮与查看器着色,查看器打开 razor 源码文件按 Razor 语法着色、识别注释与字符串,LangRegistry 项,language,
-86,lang:plantuml,PlantUML（plantuml）·语法高亮与查看器着色,查看器打开 plantuml 源码文件按 PlantUML 语法着色、识别注释与字符串,LangRegistry 项,language,
-87,lang:mermaid,Mermaid 图（mermaid）·语法高亮与查看器着色,查看器打开 mermaid 源码文件按 Mermaid 图 语法着色、识别注释与字符串,LangRegistry 项,language,
-88,lang:vim,Vim 脚本（vim）·语法高亮与查看器着色,查看器打开 vim 源码文件按 Vim 脚本 语法着色、识别注释与字符串,LangRegistry 项,language,
-89,lang:powershell,PowerShell（powershell）·语法高亮与查看器着色,查看器打开 powershell 源码文件按 PowerShell 语法着色、识别注释与字符串,LangRegistry 项,language,
-90,lang:batch,批处理（batch）·语法高亮与查看器着色,查看器打开 batch 源码文件按 批处理 语法着色、识别注释与字符串,LangRegistry 项,language,
-91,lang:applescript,AppleScript（applescript）·语法高亮与查看器着色,查看器打开 applescript 源码文件按 AppleScript 语法着色、识别注释与字符串,LangRegistry 项,language,
-92,lang:autohotkey,AutoHotkey（autohotkey）·语法高亮与查看器着色,查看器打开 autohotkey 源码文件按 AutoHotkey 语法着色、识别注释与字符串,LangRegistry 项,language,
-93,lang:autoit,AutoIt（autoit）·语法高亮与查看器着色,查看器打开 autoit 源码文件按 AutoIt 语法着色、识别注释与字符串,LangRegistry 项,language,
-94,lang:nix,Nix（nix）·语法高亮与查看器着色,查看器打开 nix 源码文件按 Nix 语法着色、识别注释与字符串,LangRegistry 项,language,
-95,lang:proto3,Proto（proto3）·语法高亮与查看器着色,查看器打开 proto3 源码文件按 Proto 语法着色、识别注释与字符串,LangRegistry 项,language,
-96,lang:ipynb,Jupyter 笔记本（ipynb）·语法高亮与查看器着色,查看器打开 ipynb 源码文件按 Jupyter 笔记本 语法着色、识别注释与字符串,LangRegistry 项,language,
-97,lang:binary,二进制（binary）·语法高亮与查看器着色,查看器打开 binary 源码文件按 二进制 语法着色、识别注释与字符串,LangRegistry 项,language,
-98,uma_health,uma_health·SO观测桥只读命令,探测本机 hlpatch SO 观测桥健康与版本（先调这个确认桥在不在）。,UmaTool 注册项,observe,
-99,uma_status,uma_status·SO观测桥只读命令,读 hlpatch 初始化/状态快照。,UmaTool 注册项,observe,
-100,uma_summary,uma_summary·SO观测桥只读命令,读当前育成对局状态摘要（含账号 id，可能数 MB）。,UmaTool 注册项,observe,
-101,uma_event_choices,uma_event_choices·SO观测桥只读命令,读当前育成事件的选择肢快照。,UmaTool 注册项,observe,
-102,uma_event_reward_targets,uma_event_reward_targets·SO观测桥只读命令,读事件奖励目标。,UmaTool 注册项,observe,
-103,uma_ramen_transitions,uma_ramen_transitions·SO观测桥只读命令,读拉面杯转场记录（育成流程分析）。,UmaTool 注册项,observe,
-104,uma_hook_diagnostics,uma_hook_diagnostics·SO观测桥只读命令,读 Hook 诊断（哪些 hook 挂上了、失败原因）。,UmaTool 注册项,observe,
-105,uma_sniff_status,uma_sniff_status·SO观测桥只读命令,读嗅探器状态（是否开着、抓了多少条）。,UmaTool 注册项,observe,
-106,uma_sniff_metadata,uma_sniff_metadata·SO观测桥只读命令,读完整协议观测（请求体十六进制+头+路径，可能很大）。,UmaTool 注册项,observe,
-107,uma_sniff_unity,uma_sniff_unity·SO观测桥只读命令,读 Unity 层请求观测。,UmaTool 注册项,observe,
-108,uma_sniff_diag,uma_sniff_diag·SO观测桥只读命令,读嗅探 hook 诊断（压缩/解压/POST 链路）。,UmaTool 注册项,observe,
-109,uma_md5log,uma_md5log·SO观测桥只读命令,读 MakeMd5 输入输出对（协议逆向用）。,UmaTool 注册项,observe,
-110,uma_data,uma_data·SO观测桥只读命令,读游戏数据总览。,UmaTool 注册项,observe,
-111,uma_scenario,uma_scenario·SO观测桥只读命令,读当前剧本信息。,UmaTool 注册项,observe,
-112,uma_events,uma_events·SO观测桥只读命令,读事件列表。,UmaTool 注册项,observe,
-113,uma_event_recommend,uma_event_recommend·SO观测桥只读命令,读事件推荐。,UmaTool 注册项,observe,
-114,uma_action_latest,uma_action_latest·SO观测桥只读命令,读最新一次行动。,UmaTool 注册项,observe,
-115,uma_training_result,uma_training_result·SO观测桥只读命令,读最近训练结果。,UmaTool 注册项,observe,
-116,uma_log,uma_log·SO观测桥只读命令,读育成日志。,UmaTool 注册项,observe,
-117,uma_log_turn,uma_log_turn·SO观测桥只读命令,读回合日志。,UmaTool 注册项,observe,
-118,uma_ramen,uma_ramen·SO观测桥只读命令,读拉面对局总览。,UmaTool 注册项,observe,
-119,uma_rameninfo,uma_rameninfo·SO观测桥只读命令,读拉面信息。,UmaTool 注册项,observe,
-120,uma_ramengains,uma_ramengains·SO观测桥只读命令,读拉面增益。,UmaTool 注册项,observe,
-121,uma_ramen_participants,uma_ramen_participants·SO观测桥只读命令,读拉面参与者。,UmaTool 注册项,observe,
-122,uma_ramen_planner_state,uma_ramen_planner_state·SO观测桥只读命令,读拉面规划器状态（决策 AI 直接相关）。,UmaTool 注册项,observe,
-123,uma_seed_history,uma_seed_history·SO观测桥只读命令,读种子历史。,UmaTool 注册项,observe,
-124,uma_seed_stats,uma_seed_stats·SO观测桥只读命令,读种子统计。,UmaTool 注册项,observe,
-125,uma_inherit_compat,uma_inherit_compat·SO观测桥只读命令,读继承兼容性。,UmaTool 注册项,observe,
-126,uma_carddb,uma_carddb·SO观测桥只读命令,读卡牌数据库（可能很大）。,UmaTool 注册项,observe,
-127,uma_skilldata,uma_skilldata·SO观测桥只读命令,读技能数据（可能很大）。,UmaTool 注册项,observe,
-128,uma_mdb,uma_mdb·SO观测桥只读命令,读 MDB 数据库概览（可能很大）。,UmaTool 注册项,observe,
-129,uma_mdb_schema,uma_mdb_schema·SO观测桥只读命令,读 MDB 表结构。,UmaTool 注册项,observe,
-130,uma_singletons,uma_singletons·SO观测桥只读命令,读单例列表。,UmaTool 注册项,observe,
-131,uma_tables,uma_tables·SO观测桥只读命令,读表列表。,UmaTool 注册项,observe,
-132,uma_gauge,uma_gauge·SO观测桥只读命令,读量表一。,UmaTool 注册项,observe,
-133,uma_gauge2,uma_gauge2·SO观测桥只读命令,读量表二。,UmaTool 注册项,observe,
-134,uma_training_partners,uma_training_partners·SO观测桥只读命令,读训练伙伴。,UmaTool 注册项,observe,
-135,uma_training_seed,uma_training_seed·SO观测桥只读命令,读训练种子。,UmaTool 注册项,observe,
-136,uma_turn_probe,uma_turn_probe·SO观测桥只读命令,读回合探针。,UmaTool 注册项,observe,
-137,uma_breeders,uma_breeders·SO观测桥只读命令,读育成师数据。,UmaTool 注册项,observe,
+1,lang:kotlin,Kotlin（kotlin）·语法高亮与查看器着色,查看器打开 kotlin 源码文件按 Kotlin 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+2,lang:java,Java（java）·语法高亮与查看器着色,查看器打开 java 源码文件按 Java 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+3,lang:python,Python（python）·语法高亮与查看器着色,查看器打开 python 源码文件按 Python 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+4,lang:rust,Rust（rust）·语法高亮与查看器着色,查看器打开 rust 源码文件按 Rust 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+5,lang:go,Go（go）·语法高亮与查看器着色,查看器打开 go 源码文件按 Go 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+6,lang:c,C（c）·语法高亮与查看器着色,查看器打开 c 源码文件按 C 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+7,lang:cpp,C++（cpp）·语法高亮与查看器着色,查看器打开 cpp 源码文件按 C++ 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+8,lang:csharp,C#（csharp）·语法高亮与查看器着色,查看器打开 csharp 源码文件按 C# 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+9,lang:javascript,JavaScript（javascript）·语法高亮与查看器着色,查看器打开 javascript 源码文件按 JavaScript 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+10,lang:typescript,TypeScript（typescript）·语法高亮与查看器着色,查看器打开 typescript 源码文件按 TypeScript 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+11,lang:swift,Swift（swift）·语法高亮与查看器着色,查看器打开 swift 源码文件按 Swift 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+12,lang:dart,Dart（dart）·语法高亮与查看器着色,查看器打开 dart 源码文件按 Dart 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+13,lang:ruby,Ruby（ruby）·语法高亮与查看器着色,查看器打开 ruby 源码文件按 Ruby 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+14,lang:php,PHP（php）·语法高亮与查看器着色,查看器打开 php 源码文件按 PHP 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+15,lang:shell,Shell（shell）·语法高亮与查看器着色,查看器打开 shell 源码文件按 Shell 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+16,lang:sql,SQL（sql）·语法高亮与查看器着色,查看器打开 sql 源码文件按 SQL 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+17,lang:scala,Scala（scala）·语法高亮与查看器着色,查看器打开 scala 源码文件按 Scala 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+18,lang:lua,Lua（lua）·语法高亮与查看器着色,查看器打开 lua 源码文件按 Lua 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+19,lang:r,R（r）·语法高亮与查看器着色,查看器打开 r 源码文件按 R 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+20,lang:yaml,YAML（yaml）·语法高亮与查看器着色,查看器打开 yaml 源码文件按 YAML 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+21,lang:toml,TOML（toml）·语法高亮与查看器着色,查看器打开 toml 源码文件按 TOML 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+22,lang:ini,INI/配置（ini）·语法高亮与查看器着色,查看器打开 ini 源码文件按 INI/配置 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+23,lang:json,JSON（json）·语法高亮与查看器着色,查看器打开 json 源码文件按 JSON 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+24,lang:jupyter,Jupyter 笔记本（jupyter）·语法高亮与查看器着色,查看器打开 jupyter 源码文件按 Jupyter 笔记本 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+25,lang:xml,XML（xml）·语法高亮与查看器着色,查看器打开 xml 源码文件按 XML 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+26,lang:html,HTML（html）·语法高亮与查看器着色,查看器打开 html 源码文件按 HTML 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+27,lang:css,CSS（css）·语法高亮与查看器着色,查看器打开 css 源码文件按 CSS 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+28,lang:scss,SCSS/Sass（scss）·语法高亮与查看器着色,查看器打开 scss 源码文件按 SCSS/Sass 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+29,lang:less,Less（less）·语法高亮与查看器着色,查看器打开 less 源码文件按 Less 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+30,lang:markdown,Markdown（markdown）·语法高亮与查看器着色,查看器打开 markdown 源码文件按 Markdown 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+31,lang:tex,TeX/LaTeX（tex）·语法高亮与查看器着色,查看器打开 tex 源码文件按 TeX/LaTeX 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+32,lang:diff,Diff/Patch（diff）·语法高亮与查看器着色,查看器打开 diff 源码文件按 Diff/Patch 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+33,lang:log,日志（log）·语法高亮与查看器着色,查看器打开 log 源码文件按 日志 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+34,lang:csv,CSV/TSV（csv）·语法高亮与查看器着色,查看器打开 csv 源码文件按 CSV/TSV 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+35,lang:properties,Properties（properties）·语法高亮与查看器着色,查看器打开 properties 源码文件按 Properties 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+36,lang:dockerfile,Dockerfile（dockerfile）·语法高亮与查看器着色,查看器打开 dockerfile 源码文件按 Dockerfile 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+37,lang:makefile,Makefile（makefile）·语法高亮与查看器着色,查看器打开 makefile 源码文件按 Makefile 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+38,lang:cmake,CMake（cmake）·语法高亮与查看器着色,查看器打开 cmake 源码文件按 CMake 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+39,lang:gradle,Gradle（gradle）·语法高亮与查看器着色,查看器打开 gradle 源码文件按 Gradle 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+40,lang:bazel,Bazel/Starlark（bazel）·语法高亮与查看器着色,查看器打开 bazel 源码文件按 Bazel/Starlark 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+41,lang:terraform,Terraform/HCL（terraform）·语法高亮与查看器着色,查看器打开 terraform 源码文件按 Terraform/HCL 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+42,lang:groovy,Groovy/Jenkinsfile（groovy）·语法高亮与查看器着色,查看器打开 groovy 源码文件按 Groovy/Jenkinsfile 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+43,lang:objective,Objective-C（objective）·语法高亮与查看器着色,查看器打开 objective 源码文件按 Objective-C 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+44,lang:perl,Perl（perl）·语法高亮与查看器着色,查看器打开 perl 源码文件按 Perl 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+45,lang:haskell,Haskell（haskell）·语法高亮与查看器着色,查看器打开 haskell 源码文件按 Haskell 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+46,lang:elixir,Elixir（elixir）·语法高亮与查看器着色,查看器打开 elixir 源码文件按 Elixir 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+47,lang:erlang,Erlang（erlang）·语法高亮与查看器着色,查看器打开 erlang 源码文件按 Erlang 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+48,lang:ocaml,OCaml/Reason（ocaml）·语法高亮与查看器着色,查看器打开 ocaml 源码文件按 OCaml/Reason 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+49,lang:fsharp,F#（fsharp）·语法高亮与查看器着色,查看器打开 fsharp 源码文件按 F# 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+50,lang:clojure,Clojure（clojure）·语法高亮与查看器着色,查看器打开 clojure 源码文件按 Clojure 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+51,lang:lisp,Lisp/Scheme/Racket（lisp）·语法高亮与查看器着色,查看器打开 lisp 源码文件按 Lisp/Scheme/Racket 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+52,lang:zig,Zig（zig）·语法高亮与查看器着色,查看器打开 zig 源码文件按 Zig 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+53,lang:nim,Nim（nim）·语法高亮与查看器着色,查看器打开 nim 源码文件按 Nim 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+54,lang:crystal,Crystal（crystal）·语法高亮与查看器着色,查看器打开 crystal 源码文件按 Crystal 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+55,lang:julia,Julia（julia）·语法高亮与查看器着色,查看器打开 julia 源码文件按 Julia 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+56,lang:haxe,Haxe（haxe）·语法高亮与查看器着色,查看器打开 haxe 源码文件按 Haxe 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+57,lang:elm,Elm（elm）·语法高亮与查看器着色,查看器打开 elm 源码文件按 Elm 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+58,lang:purescript,PureScript（purescript）·语法高亮与查看器着色,查看器打开 purescript 源码文件按 PureScript 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+59,lang:fortran,Fortran（fortran）·语法高亮与查看器着色,查看器打开 fortran 源码文件按 Fortran 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+60,lang:cobol,COBOL（cobol）·语法高亮与查看器着色,查看器打开 cobol 源码文件按 COBOL 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+61,lang:pascal,Pascal/Delphi（pascal）·语法高亮与查看器着色,查看器打开 pascal 源码文件按 Pascal/Delphi 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+62,lang:ada,Ada（ada）·语法高亮与查看器着色,查看器打开 ada 源码文件按 Ada 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+63,lang:asm,汇编（asm）·语法高亮与查看器着色,查看器打开 asm 源码文件按 汇编 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+64,lang:verilog,Verilog/SystemVerilog（verilog）·语法高亮与查看器着色,查看器打开 verilog 源码文件按 Verilog/SystemVerilog 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+65,lang:vhdl,VHDL（vhdl）·语法高亮与查看器着色,查看器打开 vhdl 源码文件按 VHDL 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+66,lang:cuda,CUDA（cuda）·语法高亮与查看器着色,查看器打开 cuda 源码文件按 CUDA 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+67,lang:glsl,GLSL/着色器（glsl）·语法高亮与查看器着色,查看器打开 glsl 源码文件按 GLSL/着色器 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+68,lang:hlsl,HLSL（hlsl）·语法高亮与查看器着色,查看器打开 hlsl 源码文件按 HLSL 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+69,lang:metal,Metal（metal）·语法高亮与查看器着色,查看器打开 metal 源码文件按 Metal 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+70,lang:solidity,Solidity（solidity）·语法高亮与查看器着色,查看器打开 solidity 源码文件按 Solidity 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+71,lang:graphql,GraphQL（graphql）·语法高亮与查看器着色,查看器打开 graphql 源码文件按 GraphQL 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+72,lang:protobuf,Protobuf（protobuf）·语法高亮与查看器着色,查看器打开 protobuf 源码文件按 Protobuf 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+73,lang:thrift,Thrift（thrift）·语法高亮与查看器着色,查看器打开 thrift 源码文件按 Thrift 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+74,lang:vue,Vue 单文件（vue）·语法高亮与查看器着色,查看器打开 vue 源码文件按 Vue 单文件 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+75,lang:svelte,Svelte（svelte）·语法高亮与查看器着色,查看器打开 svelte 源码文件按 Svelte 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+76,lang:astro,Astro（astro）·语法高亮与查看器着色,查看器打开 astro 源码文件按 Astro 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+77,lang:jsx,JSX/模板（jsx）·语法高亮与查看器着色,查看器打开 jsx 源码文件按 JSX/模板 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+78,lang:twig,Twig 模板（twig）·语法高亮与查看器着色,查看器打开 twig 源码文件按 Twig 模板 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+79,lang:jinja,Jinja 模板（jinja）·语法高亮与查看器着色,查看器打开 jinja 源码文件按 Jinja 模板 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+80,lang:ejs,EJS 模板（ejs）·语法高亮与查看器着色,查看器打开 ejs 源码文件按 EJS 模板 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+81,lang:haml,Haml（haml）·语法高亮与查看器着色,查看器打开 haml 源码文件按 Haml 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+82,lang:slim,Slim（slim）·语法高亮与查看器着色,查看器打开 slim 源码文件按 Slim 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+83,lang:pug,Pug/Jade（pug）·语法高亮与查看器着色,查看器打开 pug 源码文件按 Pug/Jade 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+84,lang:jsp,JSP（jsp）·语法高亮与查看器着色,查看器打开 jsp 源码文件按 JSP 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+85,lang:razor,Razor（razor）·语法高亮与查看器着色,查看器打开 razor 源码文件按 Razor 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+86,lang:plantuml,PlantUML（plantuml）·语法高亮与查看器着色,查看器打开 plantuml 源码文件按 PlantUML 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+87,lang:mermaid,Mermaid 图（mermaid）·语法高亮与查看器着色,查看器打开 mermaid 源码文件按 Mermaid 图 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+88,lang:vim,Vim 脚本（vim）·语法高亮与查看器着色,查看器打开 vim 源码文件按 Vim 脚本 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+89,lang:powershell,PowerShell（powershell）·语法高亮与查看器着色,查看器打开 powershell 源码文件按 PowerShell 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+90,lang:batch,批处理（batch）·语法高亮与查看器着色,查看器打开 batch 源码文件按 批处理 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+91,lang:applescript,AppleScript（applescript）·语法高亮与查看器着色,查看器打开 applescript 源码文件按 AppleScript 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+92,lang:autohotkey,AutoHotkey（autohotkey）·语法高亮与查看器着色,查看器打开 autohotkey 源码文件按 AutoHotkey 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+93,lang:autoit,AutoIt（autoit）·语法高亮与查看器着色,查看器打开 autoit 源码文件按 AutoIt 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+94,lang:nix,Nix（nix）·语法高亮与查看器着色,查看器打开 nix 源码文件按 Nix 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+95,lang:proto3,Proto（proto3）·语法高亮与查看器着色,查看器打开 proto3 源码文件按 Proto 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+96,lang:ipynb,Jupyter 笔记本（ipynb）·语法高亮与查看器着色,查看器打开 ipynb 源码文件按 Jupyter 笔记本 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+97,lang:binary,二进制（binary）·语法高亮与查看器着色,查看器打开 binary 源码文件按 二进制 语法着色、识别注释与字符串,LangRegistry 项,language,LangRegistryTest
+98,uma_health,uma_health·SO观测桥只读命令,探测本机 hlpatch SO 观测桥健康与版本（先调这个确认桥在不在）。,UmaTool 注册项,observe,UmaToolTest
+99,uma_status,uma_status·SO观测桥只读命令,读 hlpatch 初始化/状态快照。,UmaTool 注册项,observe,UmaToolTest
+100,uma_summary,uma_summary·SO观测桥只读命令,读当前育成对局状态摘要（含账号 id，可能数 MB）。,UmaTool 注册项,observe,UmaToolTest
+101,uma_event_choices,uma_event_choices·SO观测桥只读命令,读当前育成事件的选择肢快照。,UmaTool 注册项,observe,UmaToolTest
+102,uma_event_reward_targets,uma_event_reward_targets·SO观测桥只读命令,读事件奖励目标。,UmaTool 注册项,observe,UmaToolTest
+103,uma_ramen_transitions,uma_ramen_transitions·SO观测桥只读命令,读拉面杯转场记录（育成流程分析）。,UmaTool 注册项,observe,UmaToolTest
+104,uma_hook_diagnostics,uma_hook_diagnostics·SO观测桥只读命令,读 Hook 诊断（哪些 hook 挂上了、失败原因）。,UmaTool 注册项,observe,UmaToolTest
+105,uma_sniff_status,uma_sniff_status·SO观测桥只读命令,读嗅探器状态（是否开着、抓了多少条）。,UmaTool 注册项,observe,UmaToolTest
+106,uma_sniff_metadata,uma_sniff_metadata·SO观测桥只读命令,读完整协议观测（请求体十六进制+头+路径，可能很大）。,UmaTool 注册项,observe,UmaToolTest
+107,uma_sniff_unity,uma_sniff_unity·SO观测桥只读命令,读 Unity 层请求观测。,UmaTool 注册项,observe,UmaToolTest
+108,uma_sniff_diag,uma_sniff_diag·SO观测桥只读命令,读嗅探 hook 诊断（压缩/解压/POST 链路）。,UmaTool 注册项,observe,UmaToolTest
+109,uma_md5log,uma_md5log·SO观测桥只读命令,读 MakeMd5 输入输出对（协议逆向用）。,UmaTool 注册项,observe,UmaToolTest
+110,uma_data,uma_data·SO观测桥只读命令,读游戏数据总览。,UmaTool 注册项,observe,UmaToolTest
+111,uma_scenario,uma_scenario·SO观测桥只读命令,读当前剧本信息。,UmaTool 注册项,observe,UmaToolTest
+112,uma_events,uma_events·SO观测桥只读命令,读事件列表。,UmaTool 注册项,observe,UmaToolTest
+113,uma_event_recommend,uma_event_recommend·SO观测桥只读命令,读事件推荐。,UmaTool 注册项,observe,UmaToolTest
+114,uma_action_latest,uma_action_latest·SO观测桥只读命令,读最新一次行动。,UmaTool 注册项,observe,UmaToolTest
+115,uma_training_result,uma_training_result·SO观测桥只读命令,读最近训练结果。,UmaTool 注册项,observe,UmaToolTest
+116,uma_log,uma_log·SO观测桥只读命令,读育成日志。,UmaTool 注册项,observe,UmaToolTest
+117,uma_log_turn,uma_log_turn·SO观测桥只读命令,读回合日志。,UmaTool 注册项,observe,UmaToolTest
+118,uma_ramen,uma_ramen·SO观测桥只读命令,读拉面对局总览。,UmaTool 注册项,observe,UmaToolTest
+119,uma_rameninfo,uma_rameninfo·SO观测桥只读命令,读拉面信息。,UmaTool 注册项,observe,UmaToolTest
+120,uma_ramengains,uma_ramengains·SO观测桥只读命令,读拉面增益。,UmaTool 注册项,observe,UmaToolTest
+121,uma_ramen_participants,uma_ramen_participants·SO观测桥只读命令,读拉面参与者。,UmaTool 注册项,observe,UmaToolTest
+122,uma_ramen_planner_state,uma_ramen_planner_state·SO观测桥只读命令,读拉面规划器状态（决策 AI 直接相关）。,UmaTool 注册项,observe,UmaToolTest
+123,uma_seed_history,uma_seed_history·SO观测桥只读命令,读种子历史。,UmaTool 注册项,observe,UmaToolTest
+124,uma_seed_stats,uma_seed_stats·SO观测桥只读命令,读种子统计。,UmaTool 注册项,observe,UmaToolTest
+125,uma_inherit_compat,uma_inherit_compat·SO观测桥只读命令,读继承兼容性。,UmaTool 注册项,observe,UmaToolTest
+126,uma_carddb,uma_carddb·SO观测桥只读命令,读卡牌数据库（可能很大）。,UmaTool 注册项,observe,UmaToolTest
+127,uma_skilldata,uma_skilldata·SO观测桥只读命令,读技能数据（可能很大）。,UmaTool 注册项,observe,UmaToolTest
+128,uma_mdb,uma_mdb·SO观测桥只读命令,读 MDB 数据库概览（可能很大）。,UmaTool 注册项,observe,UmaToolTest
+129,uma_mdb_schema,uma_mdb_schema·SO观测桥只读命令,读 MDB 表结构。,UmaTool 注册项,observe,UmaToolTest
+130,uma_singletons,uma_singletons·SO观测桥只读命令,读单例列表。,UmaTool 注册项,observe,UmaToolTest
+131,uma_tables,uma_tables·SO观测桥只读命令,读表列表。,UmaTool 注册项,observe,UmaToolTest
+132,uma_gauge,uma_gauge·SO观测桥只读命令,读量表一。,UmaTool 注册项,observe,UmaToolTest
+133,uma_gauge2,uma_gauge2·SO观测桥只读命令,读量表二。,UmaTool 注册项,observe,UmaToolTest
+134,uma_training_partners,uma_training_partners·SO观测桥只读命令,读训练伙伴。,UmaTool 注册项,observe,UmaToolTest
+135,uma_training_seed,uma_training_seed·SO观测桥只读命令,读训练种子。,UmaTool 注册项,observe,UmaToolTest
+136,uma_turn_probe,uma_turn_probe·SO观测桥只读命令,读回合探针。,UmaTool 注册项,observe,UmaToolTest
+137,uma_breeders,uma_breeders·SO观测桥只读命令,读育成师数据。,UmaTool 注册项,observe,UmaToolTest
 138,T:OnceNoticeTest#notice shows exactly once across recreates,App界面·noticeshowsexactlyonceacrossrecreates,App界面域「T:OnceNoticeTest」的独立行为：noticeshowsexactlyonceacrossrecreates（源用例 noticeShowsExactlyOnceAcrossRecreates）,用例,repotool,noticeShowsExactlyOnceAcrossRecreates
 139,T:OnceNoticeTest#empty notice never marks consumed,App界面·空值noticenevermarksconsumed,App界面域「T:OnceNoticeTest」的独立行为：空值noticenevermarksconsumed（源用例 emptyNoticeNeverMarksConsumed）,用例,repotool,emptyNoticeNeverMarksConsumed
 140,engine.github.GitHubRun#first sight announces and records,App界面·firstsightannouncesandrecords,App界面域「GitHubRun」的独立行为：firstsightannouncesandrecords（源用例 firstSightAnnouncesAndRecords）,用例,repotool/notify,firstSightAnnouncesAndRecords
@@ -803,20 +803,518 @@ feature_no,实装符号,功能名,用途,来源,模块,关联用例
 802,engine.api.LineSink#exec error path carries detail,engine·exec错误路径carriesdetail,engine域「LineSink」的独立行为：exec错误路径carriesdetail（源用例 execErrorPathCarriesDetail）,用例,engine/vision,execErrorPathCarriesDetail
 803,engine.api.LineSink#exec ollama fails cleanly,engine·execollamafailscleanly,engine域「LineSink」的独立行为：execollamafailscleanly（源用例 execOllamaFailsCleanly）,用例,engine/vision,execOllamaFailsCleanly
 804,engine.api.LineSink#exec text summary has no image,engine·exectextsummaryhasnoimage,engine域「LineSink」的独立行为：exectextsummaryhasnoimage（源用例 execTextSummaryHasNoImage）,用例,engine/vision,execTextSummaryHasNoImage
-805,生成参数页实装·修摆设,设置「生成参数」页真滑块/真选项组（温度0-2步进0.1、top_p、历史条数），温度/top_p 首次接进聊天请求体；替换 Slider(label=...) 字面量演示,实装,app/settings,PR#78 804后
-806,外观页主色切换·修摆设,主色四档（蓝青紫橙）落盘即切全界面；亮色单主题钉死（用户拍板无暗色）；Accent 响应式改造 58 引用零改动,实装,app/theme,PR#79
-807,关于页实装·修摆设,AboutCard 真卡：版本真值/检查更新真调 releases/latest/提issue真intent/开源许可弹层；崩溃留档开关全链（CrashObserver.keepLocal 内存门）,实装,app/settings,PR#84
-808,记忆页实装·修摆设,MemoryCard：memory_db 真统计+活动记忆原文+带确认删除（deleteFile 连 meta 清）,实装,app/settings,PR#85
-809,Actions监视页实装·修摆设,CiRunsCard：真调 GitHubCiClient.latestRuns 最近5条红绿；与后台通知双通道,实装,app/settings,PR#86
-810,定时任务页实装·修摆设,TaskStore 真任务表+TaskWorker（15min节拍到点开新会话发提示词，runLog 50条）+TasksCard 新建/启停/确认删除,实装,app/tasks,PR#92
-811,会话循环页实装·修摆设,LoopController 真调度（ChatRuntime.onSettled 驱动/按停还控制权/换会话清零）+循环条真读态+LoopCard；排队条诚实化,实装,app/loop,PR#93
-812,报告页三件套实装,数据分析（AI严格JSON+Canvas折线图）/汇报文档（Markdown渲染）/PPT大纲（页卡翻页）；NavTab 第六页+一次性chat通路,实装,app/reports,PR#94
-813,代理页实装·修摆设,ProxyCard：类型/地址/端口真存盘当场 installProxy（AI+GitHub API 出网口）；观测桥不经此口,实装,app/settings+engine/api,PR#95
-814,对话搜索页实装·修摆设,关键词逐会话搜+点行切会话；空库空词安静返回,实装,app/settings,PR#96
-815,图像转述页实装·修摆设,选图真调视觉模型（VisionTurns三协议）；三护栏：无模型明示/全链runCatching/4MB上限,实装,app/settings,PR#97
-816,二进制审计页实装·修摆设,复用工具页 ApkCheckCard 真组件（ApkInspector 引擎）,实装,app/settings,PR#98
-817,模型选择去硬编码,撤 DEFAULT_MODEL（无钥匙的默认=摆设）；视觉/图像生成页换已接入模型点选卡；清假模型清单,实装,app+engine,PR#99
-818,摆设清剿收官·撤三页,撤最后三页无后端演示页（语音转写/多智能体接力/Claude导入）；清 relayOn 摆设布尔与图标资源；24 设置页全真实,撤页,app/settings,PR#100
-819,IL2CPP立项第一刀·偏移试探器,OffsetProbe：旧新字段表四态对账+对齐规则穷举候选偏移（引用8/int4/short2/byte1，对象头16起）；13用例；外部三仓实证随docs/IL2CPP-OFFSET-STUDY.md,实装,engine/observe,PR#103
-820,IL2CPP第二三刀·字段卡仓+metadata分片搬运,FieldCardStore（版本目录存字段卡原子落盘）+MetadataSpool（32KB分片read_mem落盘+断点续传，解151MB双崩）+三工具：uma_fieldcard_save/uma_offset_diff/uma_metadata_spool,实装,engine/observe,PR#105
-821,IL2CPP第四刀·metadata离线解析器,MetadataParser：v31 段表+typeDefinitions 88字节流式迭代+按类查字段名；RandomAccessFile 按需 seek（151MB 内存<=几KB）；与观测桥 /fields 互补=名字全景×偏移真相,实装,engine/observe,PR#107
+805,生成参数页实装·修摆设,设置「生成参数」页真滑块/真选项组（温度0-2步进0.1、top_p、历史条数），温度/top_p 首次接进聊天请求体；替换 Slider(label=...) 字面量演示,实装,app/settings,PR#78 804后,
+806,外观页主色切换·修摆设,主色四档（蓝青紫橙）落盘即切全界面；亮色单主题钉死（用户拍板无暗色）；Accent 响应式改造 58 引用零改动,实装,app/theme,PR#79,
+807,关于页实装·修摆设,AboutCard 真卡：版本真值/检查更新真调 releases/latest/提issue真intent/开源许可弹层；崩溃留档开关全链（CrashObserver.keepLocal 内存门）,实装,app/settings,PR#84,
+808,记忆页实装·修摆设,MemoryCard：memory_db 真统计+活动记忆原文+带确认删除（deleteFile 连 meta 清）,实装,app/settings,PR#85,
+809,Actions监视页实装·修摆设,CiRunsCard：真调 GitHubCiClient.latestRuns 最近5条红绿；与后台通知双通道,实装,app/settings,PR#86,
+810,定时任务页实装·修摆设,TaskStore 真任务表+TaskWorker（15min节拍到点开新会话发提示词，runLog 50条）+TasksCard 新建/启停/确认删除,实装,app/tasks,PR#92,
+811,会话循环页实装·修摆设,LoopController 真调度（ChatRuntime.onSettled 驱动/按停还控制权/换会话清零）+循环条真读态+LoopCard；排队条诚实化,实装,app/loop,PR#93,
+812,报告页三件套实装,数据分析（AI严格JSON+Canvas折线图）/汇报文档（Markdown渲染）/PPT大纲（页卡翻页）；NavTab 第六页+一次性chat通路,实装,app/reports,PR#94,
+813,代理页实装·修摆设,ProxyCard：类型/地址/端口真存盘当场 installProxy（AI+GitHub API 出网口）；观测桥不经此口,实装,app/settings+engine/api,PR#95,
+814,对话搜索页实装·修摆设,关键词逐会话搜+点行切会话；空库空词安静返回,实装,app/settings,PR#96,
+815,图像转述页实装·修摆设,选图真调视觉模型（VisionTurns三协议）；三护栏：无模型明示/全链runCatching/4MB上限,实装,app/settings,PR#97,
+816,二进制审计页实装·修摆设,复用工具页 ApkCheckCard 真组件（ApkInspector 引擎）,实装,app/settings,PR#98,
+817,模型选择去硬编码,撤 DEFAULT_MODEL（无钥匙的默认=摆设）；视觉/图像生成页换已接入模型点选卡；清假模型清单,实装,app+engine,PR#99,
+818,摆设清剿收官·撤三页,撤最后三页无后端演示页（语音转写/多智能体接力/Claude导入）；清 relayOn 摆设布尔与图标资源；24 设置页全真实,撤页,app/settings,PR#100,
+819,IL2CPP立项第一刀·偏移试探器,OffsetProbe：旧新字段表四态对账+对齐规则穷举候选偏移（引用8/int4/short2/byte1，对象头16起）；13用例；外部三仓实证随docs/IL2CPP-OFFSET-STUDY.md,实装,engine/observe,PR#103,
+820,IL2CPP第二三刀·字段卡仓+metadata分片搬运,FieldCardStore（版本目录存字段卡原子落盘）+MetadataSpool（32KB分片read_mem落盘+断点续传，解151MB双崩）+三工具：uma_fieldcard_save/uma_offset_diff/uma_metadata_spool,实装,engine/observe,PR#105,
+821,IL2CPP第四刀·metadata离线解析器,MetadataParser：v31 段表+typeDefinitions 88字节流式迭代+按类查字段名；RandomAccessFile 按需 seek（151MB 内存<=几KB）；与观测桥 /fields 互补=名字全景×偏移真相,实装,engine/observe,PR#107,
+822,T:NestedScrollGateTest#noFileMixesVerticalScrollWithVerticalLazyList,engine·NestedScrollGateTest·noFileMixesVerticalScrol,engine 域「T:NestedScrollGateTest」的独立行为：noFileMixesVerticalScrollWithVerticalLaz（测试源码解析自动登记）,用例,engine,noFileMixesVerticalScrollWithVerticalLazyList
+823,T:NestedScrollGateTest#detectorBitesOnKnownBadSamples,engine·NestedScrollGateTest·detectorBitesOnKnownBadS,engine 域「T:NestedScrollGateTest」的独立行为：detectorBitesOnKnownBadSamples（测试源码解析自动登记）,用例,engine,detectorBitesOnKnownBadSamples
+824,T:EngineCoreTest#搬一小段内容能算出正确的字节数和校验和,engine·EngineCoreTest·搬一小段内容能算出正确的字节数和校验和,engine 域「T:EngineCoreTest」的独立行为：搬一小段内容能算出正确的字节数和校验和（测试源码解析自动登记）,用例,engine,搬一小段内容能算出正确的字节数和校验和
+825,T:EngineCoreTest#空内容不报错且字节数为零,engine·EngineCoreTest·空内容不报错且字节数为零,engine 域「T:EngineCoreTest」的独立行为：空内容不报错且字节数为零（测试源码解析自动登记）,用例,engine,空内容不报错且字节数为零
+826,T:EngineCoreTest#大内容只占一块缓冲区且进度递增最后等于总量,engine·EngineCoreTest·大内容只占一块缓冲区且进度递增最后等于总量,engine 域「T:EngineCoreTest」的独立行为：大内容只占一块缓冲区且进度递增最后等于总量（测试源码解析自动登记）,用例,engine,大内容只占一块缓冲区且进度递增最后等于总量
+827,T:EngineCoreTest#缓冲区大小写零或负数要当场拦住,engine·EngineCoreTest·缓冲区大小写零或负数要当场拦住,engine 域「T:EngineCoreTest」的独立行为：缓冲区大小写零或负数要当场拦住（测试源码解析自动登记）,用例,engine,缓冲区大小写零或负数要当场拦住
+828,T:EngineCoreTest#版本号能正常读出来,engine·EngineCoreTest·版本号能正常读出来,engine 域「T:EngineCoreTest」的独立行为：版本号能正常读出来（测试源码解析自动登记）,用例,engine,版本号能正常读出来
+829,T:EngineCoreTest#版本号写错时必须报错而不是偷偷用默认值,engine·EngineCoreTest·版本号写错时必须报错而不是偷偷用默认值,engine 域「T:EngineCoreTest」的独立行为：版本号写错时必须报错而不是偷偷用默认值（测试源码解析自动登记）,用例,engine,版本号写错时必须报错而不是偷偷用默认值
+830,T:EngineCoreTest#仓库根目录的版本号文件真的存在且读得通,engine·EngineCoreTest·仓库根目录的版本号文件真的存在且读得通,engine 域「T:EngineCoreTest」的独立行为：仓库根目录的版本号文件真的存在且读得通（测试源码解析自动登记）,用例,engine,仓库根目录的版本号文件真的存在且读得通
+831,T:ProviderSearchClientTest#braveSendsTokenHeaderAndReadsWebResults,engine·ProviderSearchClientTest·braveSendsTokenHeaderAnd,engine 域「T:ProviderSearchClientTest」的独立行为：braveSendsTokenHeaderAndReadsWebResults（测试源码解析自动登记）,用例,engine/search,braveSendsTokenHeaderAndReadsWebResults
+832,T:ProviderSearchClientTest#serperPostsJsonAndReadsOrganicSnippet,engine·ProviderSearchClientTest·serperPostsJsonAndReadsO,engine 域「T:ProviderSearchClientTest」的独立行为：serperPostsJsonAndReadsOrganicSnippet（测试源码解析自动登记）,用例,engine/search,serperPostsJsonAndReadsOrganicSnippet
+833,T:ProviderSearchClientTest#tavilyPostsKeyInBodyAndReadsContentField,engine·ProviderSearchClientTest·tavilyPostsKeyInBodyAndR,engine 域「T:ProviderSearchClientTest」的独立行为：tavilyPostsKeyInBodyAndReadsContentField（测试源码解析自动登记）,用例,engine/search,tavilyPostsKeyInBodyAndReadsContentField
+834,T:ProviderSearchClientTest#searxngUsesConfiguredInstanceAndFallsBackToPublic,engine·ProviderSearchClientTest·searxngUsesConfiguredIns,engine 域「T:ProviderSearchClientTest」的独立行为：searxngUsesConfiguredInstanceAndFallsBac（测试源码解析自动登记）,用例,engine/search,searxngUsesConfiguredInstanceAndFallsBackToPublic
+835,T:ProviderSearchClientTest#missingKeyFailsWithoutSendingAnything,engine·ProviderSearchClientTest·missingKeyFailsWithoutSe,engine 域「T:ProviderSearchClientTest」的独立行为：missingKeyFailsWithoutSendingAnything（测试源码解析自动登记）,用例,engine/search,missingKeyFailsWithoutSendingAnything
+836,T:ProviderSearchClientTest#unknownProviderFallsBackToTheFreeTier,engine·ProviderSearchClientTest·unknownProviderFallsBack,engine 域「T:ProviderSearchClientTest」的独立行为：unknownProviderFallsBackToTheFreeTier（测试源码解析自动登记）,用例,engine/search,unknownProviderFallsBackToTheFreeTier
+837,T:ProviderSearchClientTest#emptyAndGarbageResponsesFailHonestly,engine·ProviderSearchClientTest·emptyAndGarbageResponses,engine 域「T:ProviderSearchClientTest」的独立行为：emptyAndGarbageResponsesFailHonestly（测试源码解析自动登记）,用例,engine/search,emptyAndGarbageResponsesFailHonestly
+838,T:ProviderSearchClientTest#transportFailureCarriesStatusAndNeverLeaksTheKey,engine·ProviderSearchClientTest·transportFailureCarriesS,engine 域「T:ProviderSearchClientTest」的独立行为：transportFailureCarriesStatusAndNeverLea（测试源码解析自动登记）,用例,engine/search,transportFailureCarriesStatusAndNeverLeaksTheKey
+839,T:ProviderSearchClientTest#numResultsIsClampedAndHonoured,engine·ProviderSearchClientTest·numResultsIsClampedAndHo,engine 域「T:ProviderSearchClientTest」的独立行为：numResultsIsClampedAndHonoured（测试源码解析自动登记）,用例,engine/search,numResultsIsClampedAndHonoured
+840,T:ProviderSearchClientTest#blankQueryFailsBeforeAnyRequest,engine·ProviderSearchClientTest·blankQueryFailsBeforeAny,engine 域「T:ProviderSearchClientTest」的独立行为：blankQueryFailsBeforeAnyRequest（测试源码解析自动登记）,用例,engine/search,blankQueryFailsBeforeAnyRequest
+841,T:SearchProvidersTest#tableHasExactlyTheFiveProvidersInOrder,engine·SearchProvidersTest·tableHasExactlyTheFivePr,engine 域「T:SearchProvidersTest」的独立行为：tableHasExactlyTheFiveProvidersInOrder（测试源码解析自动登记）,用例,engine/search,tableHasExactlyTheFiveProvidersInOrder
+842,T:SearchProvidersTest#onlyTheThreeKeyProvidersNeedKeys,engine·SearchProvidersTest·onlyTheThreeKeyProviders,engine 域「T:SearchProvidersTest」的独立行为：onlyTheThreeKeyProvidersNeedKeys（测试源码解析自动登记）,用例,engine/search,onlyTheThreeKeyProvidersNeedKeys
+843,T:SearchProvidersTest#unknownOrBlankIdFallsBackToDefault,engine·SearchProvidersTest·unknownOrBlankIdFallsBac,engine 域「T:SearchProvidersTest」的独立行为：unknownOrBlankIdFallsBackToDefault（测试源码解析自动登记）,用例,engine/search,unknownOrBlankIdFallsBackToDefault
+844,T:SearchProvidersTest#configCleansAndClamps,engine·SearchProvidersTest·configCleansAndClamps,engine 域「T:SearchProvidersTest」的独立行为：configCleansAndClamps（测试源码解析自动登记）,用例,engine/search,configCleansAndClamps
+845,T:SearchProvidersTest#blankBaseUrlFallsBackToPublicInstance,engine·SearchProvidersTest·blankBaseUrlFallsBackToP,engine 域「T:SearchProvidersTest」的独立行为：blankBaseUrlFallsBackToPublicInstance（测试源码解析自动登记）,用例,engine/search,blankBaseUrlFallsBackToPublicInstance
+846,T:SearchProvidersTest#defaultsAreTheFreeTier,engine·SearchProvidersTest·defaultsAreTheFreeTier,engine 域「T:SearchProvidersTest」的独立行为：defaultsAreTheFreeTier（测试源码解析自动登记）,用例,engine/search,defaultsAreTheFreeTier
+847,T:VideoUrlPolicyTest#youtubeAllowed,engine·VideoUrlPolicyTest·youtubeAllowed,engine 域「T:VideoUrlPolicyTest」的独立行为：youtubeAllowed（测试源码解析自动登记）,用例,engine/vision,youtubeAllowed
+848,T:VideoUrlPolicyTest#directFileAllowed,engine·VideoUrlPolicyTest·directFileAllowed,engine 域「T:VideoUrlPolicyTest」的独立行为：directFileAllowed（测试源码解析自动登记）,用例,engine/vision,directFileAllowed
+849,T:VideoUrlPolicyTest#internalAndMetadataRejected,engine·VideoUrlPolicyTest·internalAndMetadataRejec,engine 域「T:VideoUrlPolicyTest」的独立行为：internalAndMetadataRejected（测试源码解析自动登记）,用例,engine/vision,internalAndMetadataRejected
+850,T:VideoUrlPolicyTest#webPagesAndPlatformPagesRejected,engine·VideoUrlPolicyTest·webPagesAndPlatformPages,engine 域「T:VideoUrlPolicyTest」的独立行为：webPagesAndPlatformPagesRejected（测试源码解析自动登记）,用例,engine/vision,webPagesAndPlatformPagesRejected
+851,T:VideoUrlPolicyTest#videoUrlRequestGeminiOnly,engine·VideoUrlPolicyTest·videoUrlRequestGeminiOnl,engine 域「T:VideoUrlPolicyTest」的独立行为：videoUrlRequestGeminiOnly（测试源码解析自动登记）,用例,engine/vision,videoUrlRequestGeminiOnly
+852,T:VideoUrlPolicyTest#execVideoUrlFailsCleanlyOnNonGemini,engine·VideoUrlPolicyTest·execVideoUrlFailsCleanly,engine 域「T:VideoUrlPolicyTest」的独立行为：execVideoUrlFailsCleanlyOnNonGemini（测试源码解析自动登记）,用例,engine/vision,execVideoUrlFailsCleanlyOnNonGemini
+853,T:VideoUrlPolicyTest#execVideoUrlParsesGeminiReply,engine·VideoUrlPolicyTest·execVideoUrlParsesGemini,engine 域「T:VideoUrlPolicyTest」的独立行为：execVideoUrlParsesGeminiReply（测试源码解析自动登记）,用例,engine/vision,execVideoUrlParsesGeminiReply
+854,T:VisionTurnsTest#openAiBodyShape,engine·VisionTurnsTest·openAiBodyShape,engine 域「T:VisionTurnsTest」的独立行为：openAiBodyShape（测试源码解析自动登记）,用例,engine/vision,openAiBodyShape
+855,T:VisionTurnsTest#geminiBodyShape,engine·VisionTurnsTest·geminiBodyShape,engine 域「T:VisionTurnsTest」的独立行为：geminiBodyShape（测试源码解析自动登记）,用例,engine/vision,geminiBodyShape
+856,T:VisionTurnsTest#anthropicBodyShape,engine·VisionTurnsTest·anthropicBodyShape,engine 域「T:VisionTurnsTest」的独立行为：anthropicBodyShape（测试源码解析自动登记）,用例,engine/vision,anthropicBodyShape
+857,T:VisionTurnsTest#ollamaRefusesVision,engine·VisionTurnsTest·ollamaRefusesVision,engine 域「T:VisionTurnsTest」的独立行为：ollamaRefusesVision（测试源码解析自动登记）,用例,engine/vision,ollamaRefusesVision
+858,T:VisionTurnsTest#emptyImagesBuildsNull,engine·VisionTurnsTest·emptyImagesBuildsNull,engine 域「T:VisionTurnsTest」的独立行为：emptyImagesBuildsNull（测试源码解析自动登记）,用例,engine/vision,emptyImagesBuildsNull
+859,T:VisionTurnsTest#extractTextThreeShapes,engine·VisionTurnsTest·extractTextThreeShapes,engine 域「T:VisionTurnsTest」的独立行为：extractTextThreeShapes（测试源码解析自动登记）,用例,engine/vision,extractTextThreeShapes
+860,T:VisionTurnsTest#extractTextGarbageIsEmpty,engine·VisionTurnsTest·extractTextGarbageIsEmpt,engine 域「T:VisionTurnsTest」的独立行为：extractTextGarbageIsEmpty（测试源码解析自动登记）,用例,engine/vision,extractTextGarbageIsEmpty
+861,T:VisionTurnsTest#extractErrorMessage,engine·VisionTurnsTest·extractErrorMessage,engine 域「T:VisionTurnsTest」的独立行为：extractErrorMessage（测试源码解析自动登记）,用例,engine/vision,extractErrorMessage
+862,T:VisionTurnsTest#frameTimesEvenlySpread,engine·VisionTurnsTest·frameTimesEvenlySpread,engine 域「T:VisionTurnsTest」的独立行为：frameTimesEvenlySpread（测试源码解析自动登记）,用例,engine/vision,frameTimesEvenlySpread
+863,T:VisionTurnsTest#frameTimesShortVideo,engine·VisionTurnsTest·frameTimesShortVideo,engine 域「T:VisionTurnsTest」的独立行为：frameTimesShortVideo（测试源码解析自动登记）,用例,engine/vision,frameTimesShortVideo
+864,T:VisionTurnsTest#batchesChunkByFour,engine·VisionTurnsTest·batchesChunkByFour,engine 域「T:VisionTurnsTest」的独立行为：batchesChunkByFour（测试源码解析自动登记）,用例,engine/vision,batchesChunkByFour
+865,T:VisionTurnsTest#promptsCarryContextAndHonestyRules,engine·VisionTurnsTest·promptsCarryContextAndHo,engine 域「T:VisionTurnsTest」的独立行为：promptsCarryContextAndHonestyRules（测试源码解析自动登记）,用例,engine/vision,promptsCarryContextAndHonestyRules
+866,T:VisionTurnsTest#execOkPath,engine·VisionTurnsTest·execOkPath,engine 域「T:VisionTurnsTest」的独立行为：execOkPath（测试源码解析自动登记）,用例,engine/vision,execOkPath
+867,T:VisionTurnsTest#execErrorPathCarriesDetail,engine·VisionTurnsTest·execErrorPathCarriesDeta,engine 域「T:VisionTurnsTest」的独立行为：execErrorPathCarriesDetail（测试源码解析自动登记）,用例,engine/vision,execErrorPathCarriesDetail
+868,T:VisionTurnsTest#execOllamaFailsCleanly,engine·VisionTurnsTest·execOllamaFailsCleanly,engine 域「T:VisionTurnsTest」的独立行为：execOllamaFailsCleanly（测试源码解析自动登记）,用例,engine/vision,execOllamaFailsCleanly
+869,T:VisionTurnsTest#execTextSummaryHasNoImage,engine·VisionTurnsTest·execTextSummaryHasNoImag,engine 域「T:VisionTurnsTest」的独立行为：execTextSummaryHasNoImage（测试源码解析自动登记）,用例,engine/vision,execTextSummaryHasNoImage
+870,T:FileCourierClientTest#emptyBatchFailsFast,engine·FileCourierClientTest·emptyBatchFailsFast,engine 域「T:FileCourierClientTest」的独立行为：emptyBatchFailsFast（测试源码解析自动登记）,用例,engine/transfer,emptyBatchFailsFast
+871,T:FileCourierClientTest#prefixMustEndWithSlash,engine·FileCourierClientTest·prefixMustEndWithSlash,engine 域「T:FileCourierClientTest」的独立行为：prefixMustEndWithSlash（测试源码解析自动登记）,用例,engine/transfer,prefixMustEndWithSlash
+872,T:FileCourierClientTest#smallBatchIsOneVolumePlusManifest,engine·FileCourierClientTest·smallBatchIsOneVolumePlu,engine 域「T:FileCourierClientTest」的独立行为：smallBatchIsOneVolumePlusManifest（测试源码解析自动登记）,用例,engine/transfer,smallBatchIsOneVolumePlusManifest
+873,T:FileCourierClientTest#volumesSplitOnFileBoundaries,engine·FileCourierClientTest·volumesSplitOnFileBounda,engine 域「T:FileCourierClientTest」的独立行为：volumesSplitOnFileBoundaries（测试源码解析自动登记）,用例,engine/transfer,volumesSplitOnFileBoundaries
+874,T:FileCourierClientTest#bigFileGetsItsOwnVolumeWithoutSplitting,engine·FileCourierClientTest·bigFileGetsItsOwnVolumeW,engine 域「T:FileCourierClientTest」的独立行为：bigFileGetsItsOwnVolumeWithoutSplitting（测试源码解析自动登记）,用例,engine/transfer,bigFileGetsItsOwnVolumeWithoutSplitting
+875,T:FileCourierClientTest#volumeUploadRetriesThenStopsOnSuccess,engine·FileCourierClientTest·volumeUploadRetriesThenS,engine 域「T:FileCourierClientTest」的独立行为：volumeUploadRetriesThenStopsOnSuccess（测试源码解析自动登记）,用例,engine/transfer,volumeUploadRetriesThenStopsOnSuccess
+876,T:FileCourierClientTest#retriesExhaustedFailsNamingTheVolume,engine·FileCourierClientTest·retriesExhaustedFailsNam,engine 域「T:FileCourierClientTest」的独立行为：retriesExhaustedFailsNamingTheVolume（测试源码解析自动登记）,用例,engine/transfer,retriesExhaustedFailsNamingTheVolume
+877,T:FileCourierClientTest#tooManyVolumesIsRejectedUpFront,engine·FileCourierClientTest·tooManyVolumesIsRejected,engine 域「T:FileCourierClientTest」的独立行为：tooManyVolumesIsRejectedUpFront（测试源码解析自动登记）,用例,engine/transfer,tooManyVolumesIsRejectedUpFront
+878,T:FileCourierClientTest#manifestFailureSaysDataVolumesAreSafe,engine·FileCourierClientTest·manifestFailureSaysDataV,engine 域「T:FileCourierClientTest」的独立行为：manifestFailureSaysDataVolumesAreSafe（测试源码解析自动登记）,用例,engine/transfer,manifestFailureSaysDataVolumesAreSafe
+879,T:FileCourierClientTest#duplicateEntryNamesInsideOneVolumeDoNotCrash,engine·FileCourierClientTest·duplicateEntryNamesInsid,engine 域「T:FileCourierClientTest」的独立行为：duplicateEntryNamesInsideOneVolumeDoNotC（测试源码解析自动登记）,用例,engine/transfer,duplicateEntryNamesInsideOneVolumeDoNotCrash
+880,T:MemoryToolTest#noStoreMeansNoTools,engine·MemoryToolTest·noStoreMeansNoTools,engine 域「T:MemoryToolTest」的独立行为：noStoreMeansNoTools（测试源码解析自动登记）,用例,engine/toolcalls,noStoreMeansNoTools
+881,T:MemoryToolTest#sixToolsRegisteredWithStore,engine·MemoryToolTest·sixToolsRegisteredWithSt,engine 域「T:MemoryToolTest」的独立行为：sixToolsRegisteredWithStore（测试源码解析自动登记）,用例,engine/toolcalls,sixToolsRegisteredWithStore
+882,T:MemoryToolTest#createReadListFullChain,engine·MemoryToolTest·createReadListFullChain,engine 域「T:MemoryToolTest」的独立行为：createReadListFullChain（测试源码解析自动登记）,用例,engine/toolcalls,createReadListFullChain
+883,T:MemoryToolTest#patchViaToolRequiresUnique,engine·MemoryToolTest·patchViaToolRequiresUniq,engine 域「T:MemoryToolTest」的独立行为：patchViaToolRequiresUnique（测试源码解析自动登记）,用例,engine/toolcalls,patchViaToolRequiresUnique
+884,T:MemoryToolTest#activeMemoryAppendAndPatch,engine·MemoryToolTest·activeMemoryAppendAndPat,engine 域「T:MemoryToolTest」的独立行为：activeMemoryAppendAndPatch（测试源码解析自动登记）,用例,engine/toolcalls,activeMemoryAppendAndPatch
+885,T:SandboxToolFamilyTest#readonlyToolsExistWithoutGate,engine·SandboxToolFamilyTest·readonlyToolsExistWithou,engine 域「T:SandboxToolFamilyTest」的独立行为：readonlyToolsExistWithoutGate（测试源码解析自动登记）,用例,engine/toolcalls,readonlyToolsExistWithoutGate
+886,T:SandboxToolFamilyTest#writeToolsExistOnlyWithGateAndPreviewShowsFullCommand,engine·SandboxToolFamilyTest·writeToolsExistOnlyWithG,engine 域「T:SandboxToolFamilyTest」的独立行为：writeToolsExistOnlyWithGateAndPreviewSho（测试源码解析自动登记）,用例,engine/toolcalls,writeToolsExistOnlyWithGateAndPreviewShowsFullCommand
+887,T:SandboxToolFamilyTest#rejectedGateMeansNothingHappened,engine·SandboxToolFamilyTest·rejectedGateMeansNothing,engine 域「T:SandboxToolFamilyTest」的独立行为：rejectedGateMeansNothingHappened（测试源码解析自动登记）,用例,engine/toolcalls,rejectedGateMeansNothingHappened
+888,T:SandboxToolFamilyTest#installViaToolsRunsFullVerifyChain,engine·SandboxToolFamilyTest·installViaToolsRunsFullV,engine 域「T:SandboxToolFamilyTest」的独立行为：installViaToolsRunsFullVerifyChain（测试源码解析自动登记）,用例,engine/toolcalls,installViaToolsRunsFullVerifyChain
+889,T:GitHubWriteToolTest#approvedWriteGoesThroughAndReportsCommit,engine·GitHubWriteToolTest·approvedWriteGoesThrough,engine 域「T:GitHubWriteToolTest」的独立行为：approvedWriteGoesThroughAndReportsCommit（测试源码解析自动登记）,用例,engine/toolcalls,approvedWriteGoesThroughAndReportsCommit
+890,T:GitHubWriteToolTest#rejectedWriteTouchesNothing,engine·GitHubWriteToolTest·rejectedWriteTouchesNoth,engine 域「T:GitHubWriteToolTest」的独立行为：rejectedWriteTouchesNothing（测试源码解析自动登记）,用例,engine/toolcalls,rejectedWriteTouchesNothing
+891,T:GitHubWriteToolTest#confirmerThrowIsTreatedAsReject,engine·GitHubWriteToolTest·confirmerThrowIsTreatedA,engine 域「T:GitHubWriteToolTest」的独立行为：confirmerThrowIsTreatedAsReject（测试源码解析自动登记）,用例,engine/toolcalls,confirmerThrowIsTreatedAsReject
+892,T:GitHubWriteToolTest#missingMessageFailsBeforeConfirmation,engine·GitHubWriteToolTest·missingMessageFailsBefor,engine 域「T:GitHubWriteToolTest」的独立行为：missingMessageFailsBeforeConfirmation（测试源码解析自动登记）,用例,engine/toolcalls,missingMessageFailsBeforeConfirmation
+893,T:GitHubWriteToolTest#oversizedContentRefusedBeforeConfirmation,engine·GitHubWriteToolTest·oversizedContentRefusedB,engine 域「T:GitHubWriteToolTest」的独立行为：oversizedContentRefusedBeforeConfirmatio（测试源码解析自动登记）,用例,engine/toolcalls,oversizedContentRefusedBeforeConfirmation
+894,T:GitHubWriteToolTest#missingTokenFailsBeforeConfirmation,engine·GitHubWriteToolTest·missingTokenFailsBeforeC,engine 域「T:GitHubWriteToolTest」的独立行为：missingTokenFailsBeforeConfirmation（测试源码解析自动登记）,用例,engine/toolcalls,missingTokenFailsBeforeConfirmation
+895,T:GitHubWriteToolTest#proposalCarriesWhatTheChipNeeds,engine·GitHubWriteToolTest·proposalCarriesWhatTheCh,engine 域「T:GitHubWriteToolTest」的独立行为：proposalCarriesWhatTheChipNeeds（测试源码解析自动登记）,用例,engine/toolcalls,proposalCarriesWhatTheChipNeeds
+896,T:GitHubWriteToolTest#githubConflictErrorIsPassedThrough,engine·GitHubWriteToolTest·githubConflictErrorIsPas,engine 域「T:GitHubWriteToolTest」的独立行为：githubConflictErrorIsPassedThrough（测试源码解析自动登记）,用例,engine/toolcalls,githubConflictErrorIsPassedThrough
+897,T:GitHubToolFamilyTest#familyRegistersTheReadToolsOnly,engine·GitHubToolFamilyTest·familyRegistersTheReadTo,engine 域「T:GitHubToolFamilyTest」的独立行为：familyRegistersTheReadToolsOnly（测试源码解析自动登记）,用例,engine/toolcalls,familyRegistersTheReadToolsOnly
+898,T:GitHubToolFamilyTest#listMyReposWithoutTokenStaysOffline,engine·GitHubToolFamilyTest·listMyReposWithoutTokenS,engine 域「T:GitHubToolFamilyTest」的独立行为：listMyReposWithoutTokenStaysOffline（测试源码解析自动登记）,用例,engine/toolcalls,listMyReposWithoutTokenStaysOffline
+899,T:GitHubToolFamilyTest#browseFallsBackToDefaultRepoAndSendsToken,engine·GitHubToolFamilyTest·browseFallsBackToDefault,engine 域「T:GitHubToolFamilyTest」的独立行为：browseFallsBackToDefaultRepoAndSendsToke（测试源码解析自动登记）,用例,engine/toolcalls,browseFallsBackToDefaultRepoAndSendsToken
+900,T:GitHubToolFamilyTest#browseWithoutRepoAndWithoutDefaultFailsOffline,engine·GitHubToolFamilyTest·browseWithoutRepoAndWith,engine 域「T:GitHubToolFamilyTest」的独立行为：browseWithoutRepoAndWithoutDefaultFailsO（测试源码解析自动登记）,用例,engine/toolcalls,browseWithoutRepoAndWithoutDefaultFailsOffline
+901,T:GitHubToolFamilyTest#readFileWithoutPathFailsOffline,engine·GitHubToolFamilyTest·readFileWithoutPathFails,engine 域「T:GitHubToolFamilyTest」的独立行为：readFileWithoutPathFailsOffline（测试源码解析自动登记）,用例,engine/toolcalls,readFileWithoutPathFailsOffline
+902,T:GitHubToolFamilyTest#garbageArgumentsTreatedAsEmptyObject,engine·GitHubToolFamilyTest·garbageArgumentsTreatedA,engine 域「T:GitHubToolFamilyTest」的独立行为：garbageArgumentsTreatedAsEmptyObject（测试源码解析自动登记）,用例,engine/toolcalls,garbageArgumentsTreatedAsEmptyObject
+903,T:GitHubToolFamilyTest#tokenIsReadAtExecutionTimeNotAtBuildTime,engine·GitHubToolFamilyTest·tokenIsReadAtExecutionTi,engine 域「T:GitHubToolFamilyTest」的独立行为：tokenIsReadAtExecutionTimeNotAtBuildTime（测试源码解析自动登记）,用例,engine/toolcalls,tokenIsReadAtExecutionTimeNotAtBuildTime
+904,T:GitHubToolFamilyTest#ciJobsWithoutRunIdFailsOffline,engine·GitHubToolFamilyTest·ciJobsWithoutRunIdFailsO,engine 域「T:GitHubToolFamilyTest」的独立行为：ciJobsWithoutRunIdFailsOffline（测试源码解析自动登记）,用例,engine/toolcalls,ciJobsWithoutRunIdFailsOffline
+905,T:GitHubToolFamilyTest#jobLogShowsTruncationOutLoud,engine·GitHubToolFamilyTest·jobLogShowsTruncationOut,engine 域「T:GitHubToolFamilyTest」的独立行为：jobLogShowsTruncationOutLoud（测试源码解析自动登记）,用例,engine/toolcalls,jobLogShowsTruncationOutLoud
+906,T:GitHubToolFamilyTest#searchWithoutTokenStaysOffline,engine·GitHubToolFamilyTest·searchWithoutTokenStaysO,engine 域「T:GitHubToolFamilyTest」的独立行为：searchWithoutTokenStaysOffline（测试源码解析自动登记）,用例,engine/toolcalls,searchWithoutTokenStaysOffline
+907,T:GitHubToolFamilyTest#search403CarriesQuotaAttribution,engine·GitHubToolFamilyTest·search403CarriesQuotaAtt,engine 域「T:GitHubToolFamilyTest」的独立行为：search403CarriesQuotaAttribution（测试源码解析自动登记）,用例,engine/toolcalls,search403CarriesQuotaAttribution
+908,T:GitHubToolFamilyTest#browseCountsBadEntriesOutLoud,engine·GitHubToolFamilyTest·browseCountsBadEntriesOu,engine 域「T:GitHubToolFamilyTest」的独立行为：browseCountsBadEntriesOutLoud（测试源码解析自动登记）,用例,engine/toolcalls,browseCountsBadEntriesOutLoud
+909,T:TaskToolTest#noStoreMeansNoTools,engine·TaskToolTest·noStoreMeansNoTools,engine 域「T:TaskToolTest」的独立行为：noStoreMeansNoTools（测试源码解析自动登记）,用例,engine/toolcalls,noStoreMeansNoTools
+910,T:TaskToolTest#fiveToolsRegistered,engine·TaskToolTest·fiveToolsRegistered,engine 域「T:TaskToolTest」的独立行为：fiveToolsRegistered（测试源码解析自动登记）,用例,engine/toolcalls,fiveToolsRegistered
+911,T:TaskToolTest#createThenListShowsIt,engine·TaskToolTest·createThenListShowsIt,engine 域「T:TaskToolTest」的独立行为：createThenListShowsIt（测试源码解析自动登记）,用例,engine/toolcalls,createThenListShowsIt
+912,T:TaskToolTest#badCronRejectedAtCreate,engine·TaskToolTest·badCronRejectedAtCreate,engine 域「T:TaskToolTest」的独立行为：badCronRejectedAtCreate（测试源码解析自动登记）,用例,engine/toolcalls,badCronRejectedAtCreate
+913,T:TaskToolTest#disableEnableDeleteRoundtrip,engine·TaskToolTest·disableEnableDeleteRound,engine 域「T:TaskToolTest」的独立行为：disableEnableDeleteRoundtrip（测试源码解析自动登记）,用例,engine/toolcalls,disableEnableDeleteRoundtrip
+914,T:TaskToolTest#missingTaskFailsCleanly,engine·TaskToolTest·missingTaskFailsCleanly,engine 域「T:TaskToolTest」的独立行为：missingTaskFailsCleanly（测试源码解析自动登记）,用例,engine/toolcalls,missingTaskFailsCleanly
+915,T:GitHubActionToolTest#withoutConfirmerNothingRegisters,engine·GitHubActionToolTest·withoutConfirmerNothingR,engine 域「T:GitHubActionToolTest」的独立行为：withoutConfirmerNothingRegisters（测试源码解析自动登记）,用例,engine/toolcalls,withoutConfirmerNothingRegisters
+916,T:GitHubActionToolTest#withConfirmerExactlySixToolsRegister,engine·GitHubActionToolTest·withConfirmerExactlySixT,engine 域「T:GitHubActionToolTest」的独立行为：withConfirmerExactlySixToolsRegister（测试源码解析自动登记）,用例,engine/toolcalls,withConfirmerExactlySixToolsRegister
+917,T:GitHubActionToolTest#shakenGateDoesNothingAndSaysSo,engine·GitHubActionToolTest·shakenGateDoesNothingAnd,engine 域「T:GitHubActionToolTest」的独立行为：shakenGateDoesNothingAndSaysSo（测试源码解析自动登记）,用例,engine/toolcalls,shakenGateDoesNothingAndSaysSo
+918,T:GitHubActionToolTest#badBranchNameIsRejectedBeforeGate,engine·GitHubActionToolTest·badBranchNameIsRejectedB,engine 域「T:GitHubActionToolTest」的独立行为：badBranchNameIsRejectedBeforeGate（测试源码解析自动登记）,用例,engine/toolcalls,badBranchNameIsRejectedBeforeGate
+919,T:VideoToolTest#gatedByEyeModel,engine·VideoToolTest·gatedByEyeModel,engine 域「T:VideoToolTest」的独立行为：gatedByEyeModel（测试源码解析自动登记）,用例,engine/toolcalls,gatedByEyeModel
+920,T:VideoToolTest#listVideosReadsManifests,engine·VideoToolTest·listVideosReadsManifests,engine 域「T:VideoToolTest」的独立行为：listVideosReadsManifests（测试源码解析自动登记）,用例,engine/toolcalls,listVideosReadsManifests
+921,T:VideoToolTest#listEmptyLibrarySaysSo,engine·VideoToolTest·listEmptyLibrarySaysSo,engine 域「T:VideoToolTest」的独立行为：listEmptyLibrarySaysSo（测试源码解析自动登记）,用例,engine/toolcalls,listEmptyLibrarySaysSo
+922,T:VideoToolTest#watchReturnsTextSummary,engine·VideoToolTest·watchReturnsTextSummary,engine 域「T:VideoToolTest」的独立行为：watchReturnsTextSummary（测试源码解析自动登记）,用例,engine/toolcalls,watchReturnsTextSummary
+923,T:VideoToolTest#watchUnknownNameListsWhatExists,engine·VideoToolTest·watchUnknownNameListsWha,engine 域「T:VideoToolTest」的独立行为：watchUnknownNameListsWhatExists（测试源码解析自动登记）,用例,engine/toolcalls,watchUnknownNameListsWhatExists
+924,T:VideoToolTest#watchBatchFailureStillReturnsNotes,engine·VideoToolTest·watchBatchFailureStillRe,engine 域「T:VideoToolTest」的独立行为：watchBatchFailureStillReturnsNotes（测试源码解析自动登记）,用例,engine/toolcalls,watchBatchFailureStillReturnsNotes
+925,T:VideoToolTest#watchSummaryFailureStillReturnsNotes,engine·VideoToolTest·watchSummaryFailureStill,engine 域「T:VideoToolTest」的独立行为：watchSummaryFailureStillReturnsNotes（测试源码解析自动登记）,用例,engine/toolcalls,watchSummaryFailureStillReturnsNotes
+926,T:VideoToolTest#missingFrameFilesSkippedNotFatal,engine·VideoToolTest·missingFrameFilesSkipped,engine 域「T:VideoToolTest」的独立行为：missingFrameFilesSkippedNotFatal（测试源码解析自动登记）,用例,engine/toolcalls,missingFrameFilesSkippedNotFatal
+927,T:GitHubPrToolTest#noGateMeansNoPrTools,engine·GitHubPrToolTest·noGateMeansNoPrTools,engine 域「T:GitHubPrToolTest」的独立行为：noGateMeansNoPrTools（测试源码解析自动登记）,用例,engine/toolcalls,noGateMeansNoPrTools
+928,T:GitHubPrToolTest#createPrGoesThroughGateAndReportsVerbatim,engine·GitHubPrToolTest·createPrGoesThroughGateA,engine 域「T:GitHubPrToolTest」的独立行为：createPrGoesThroughGateAndReportsVerbati（测试源码解析自动登记）,用例,engine/toolcalls,createPrGoesThroughGateAndReportsVerbatim
+929,T:GitHubPrToolTest#rejectedGateMeansNothingCreated,engine·GitHubPrToolTest·rejectedGateMeansNothing,engine 域「T:GitHubPrToolTest」的独立行为：rejectedGateMeansNothingCreated（测试源码解析自动登记）,用例,engine/toolcalls,rejectedGateMeansNothingCreated
+930,T:GitHubPrToolTest#headEqualsBaseIsRejectedBeforeGate,engine·GitHubPrToolTest·headEqualsBaseIsRejected,engine 域「T:GitHubPrToolTest」的独立行为：headEqualsBaseIsRejectedBeforeGate（测试源码解析自动登记）,用例,engine/toolcalls,headEqualsBaseIsRejectedBeforeGate
+931,T:GitHubPrToolTest#badRefNameIsRejectedBeforeAnything,engine·GitHubPrToolTest·badRefNameIsRejectedBefo,engine 域「T:GitHubPrToolTest」的独立行为：badRefNameIsRejectedBeforeAnything（测试源码解析自动登记）,用例,engine/toolcalls,badRefNameIsRejectedBeforeAnything
+932,T:GitHubPrToolTest#mergePrPinsShaIntoRequestBody,engine·GitHubPrToolTest·mergePrPinsShaIntoReques,engine 域「T:GitHubPrToolTest」的独立行为：mergePrPinsShaIntoRequestBody（测试源码解析自动登记）,用例,engine/toolcalls,mergePrPinsShaIntoRequestBody
+933,T:GitHubPrToolTest#mergeWithBadShaFormatIsRejectedBeforeGate,engine·GitHubPrToolTest·mergeWithBadShaFormatIsR,engine 域「T:GitHubPrToolTest」的独立行为：mergeWithBadShaFormatIsRejectedBeforeGat（测试源码解析自动登记）,用例,engine/toolcalls,mergeWithBadShaFormatIsRejectedBeforeGate
+934,T:GitHubPrToolTest#providerFailureCarriesVerbatimMessage,engine·GitHubPrToolTest·providerFailureCarriesVe,engine 域「T:GitHubPrToolTest」的独立行为：providerFailureCarriesVerbatimMessage（测试源码解析自动登记）,用例,engine/toolcalls,providerFailureCarriesVerbatimMessage
+935,T:SkillToolTest#noStoreMeansNoTools,engine·SkillToolTest·noStoreMeansNoTools,engine 域「T:SkillToolTest」的独立行为：noStoreMeansNoTools（测试源码解析自动登记）,用例,engine/toolcalls,noStoreMeansNoTools
+936,T:SkillToolTest#fiveToolsRegistered,engine·SkillToolTest·fiveToolsRegistered,engine 域「T:SkillToolTest」的独立行为：fiveToolsRegistered（测试源码解析自动登记）,用例,engine/toolcalls,fiveToolsRegistered
+937,T:SkillToolTest#skillLibraryHasNoActiveMemory,engine·SkillToolTest·skillLibraryHasNoActiveM,engine 域「T:SkillToolTest」的独立行为：skillLibraryHasNoActiveMemory（测试源码解析自动登记）,用例,engine/toolcalls,skillLibraryHasNoActiveMemory
+938,T:SkillToolTest#createReadEditRoundtrip,engine·SkillToolTest·createReadEditRoundtrip,engine 域「T:SkillToolTest」的独立行为：createReadEditRoundtrip（测试源码解析自动登记）,用例,engine/toolcalls,createReadEditRoundtrip
+939,T:SkillToolTest#catalogListsNamesAndDescriptionsOnly,engine·SkillToolTest·catalogListsNamesAndDesc,engine 域「T:SkillToolTest」的独立行为：catalogListsNamesAndDescriptionsOnly（测试源码解析自动登记）,用例,engine/toolcalls,catalogListsNamesAndDescriptionsOnly
+940,T:SkillToolTest#emptyCatalogIsEmptyString,engine·SkillToolTest·emptyCatalogIsEmptyStrin,engine 域「T:SkillToolTest」的独立行为：emptyCatalogIsEmptyString（测试源码解析自动登记）,用例,engine/toolcalls,emptyCatalogIsEmptyString
+941,T:WebToolTest#twoToolsRegistered,engine·WebToolTest·twoToolsRegistered,engine 域「T:WebToolTest」的独立行为：twoToolsRegistered（测试源码解析自动登记）,用例,engine/toolcalls,twoToolsRegistered
+942,T:WebToolTest#searchParsesAndCaps,engine·WebToolTest·searchParsesAndCaps,engine 域「T:WebToolTest」的独立行为：searchParsesAndCaps（测试源码解析自动登记）,用例,engine/toolcalls,searchParsesAndCaps
+943,T:WebToolTest#fetchExtractsTextAndTruncationAccounting,engine·WebToolTest·fetchExtractsTextAndTrun,engine 域「T:WebToolTest」的独立行为：fetchExtractsTextAndTruncationAccounting（测试源码解析自动登记）,用例,engine/toolcalls,fetchExtractsTextAndTruncationAccounting
+944,T:WebToolTest#fetchRejectsNonHttpAndReportsErrors,engine·WebToolTest·fetchRejectsNonHttpAndRe,engine 域「T:WebToolTest」的独立行为：fetchRejectsNonHttpAndReportsErrors（测试源码解析自动登记）,用例,engine/toolcalls,fetchRejectsNonHttpAndReportsErrors
+945,T:WebToolTest#visibilityGateHidesFromSpecsAndBlocksExecute,engine·WebToolTest·visibilityGateHidesFromS,engine 域「T:WebToolTest」的独立行为：visibilityGateHidesFromSpecsAndBlocksExe（测试源码解析自动登记）,用例,engine/toolcalls,visibilityGateHidesFromSpecsAndBlocksExecute
+946,T:WebToolTest#entityDecodingCoversNamedAndNumeric,engine·WebToolTest·entityDecodingCoversName,engine 域「T:WebToolTest」的独立行为：entityDecodingCoversNamedAndNumeric（测试源码解析自动登记）,用例,engine/toolcalls,entityDecodingCoversNamedAndNumeric
+947,T:RagToolTest#noStoreMeansNoTools,engine·RagToolTest·noStoreMeansNoTools,engine 域「T:RagToolTest」的独立行为：noStoreMeansNoTools（测试源码解析自动登记）,用例,engine/toolcalls,noStoreMeansNoTools
+948,T:RagToolTest#threeToolsRegisteredWithStore,engine·RagToolTest·threeToolsRegisteredWith,engine 域「T:RagToolTest」的独立行为：threeToolsRegisteredWithStore（测试源码解析自动登记）,用例,engine/toolcalls,threeToolsRegisteredWithStore
+949,T:RagToolTest#searchFindsAndWindowsAcrossMessages,engine·RagToolTest·searchFindsAndWindowsAcr,engine 域「T:RagToolTest」的独立行为：searchFindsAndWindowsAcrossMessages（测试源码解析自动登记）,用例,engine/toolcalls,searchFindsAndWindowsAcrossMessages
+950,T:RagToolTest#searchAndSemanticsRequiresAllTerms,engine·RagToolTest·searchAndSemanticsRequir,engine 域「T:RagToolTest」的独立行为：searchAndSemanticsRequiresAllTerms（测试源码解析自动登记）,用例,engine/toolcalls,searchAndSemanticsRequiresAllTerms
+951,T:RagToolTest#searchNoResultsReportsScanned,engine·RagToolTest·searchNoResultsReportsSc,engine 域「T:RagToolTest」的独立行为：searchNoResultsReportsScanned（测试源码解析自动登记）,用例,engine/toolcalls,searchNoResultsReportsScanned
+952,T:RagToolTest#listOrdersAndPaginates,engine·RagToolTest·listOrdersAndPaginates,engine 域「T:RagToolTest」的独立行为：listOrdersAndPaginates（测试源码解析自动登记）,用例,engine/toolcalls,listOrdersAndPaginates
+953,T:RagToolTest#readConversationPaginatesAndReportsTotal,engine·RagToolTest·readConversationPaginate,engine 域「T:RagToolTest」的独立行为：readConversationPaginatesAndReportsTotal（测试源码解析自动登记）,用例,engine/toolcalls,readConversationPaginatesAndReportsTotal
+954,T:RagToolTest#readMissingConversationFailsCleanly,engine·RagToolTest·readMissingConversationF,engine 域「T:RagToolTest」的独立行为：readMissingConversationFailsCleanly（测试源码解析自动登记）,用例,engine/toolcalls,readMissingConversationFailsCleanly
+955,T:ModelSettingsCodecTest#roundTripKeepsProvidersModelsEnabledAndAliases,engine·ModelSettingsCodecTest·roundTripKeepsProvidersM,engine 域「T:ModelSettingsCodecTest」的独立行为：roundTripKeepsProvidersModelsEnabledAndA（测试源码解析自动登记）,用例,engine/settings,roundTripKeepsProvidersModelsEnabledAndAliases
+956,T:ModelSettingsCodecTest#customModelsRoundTripAndMergeIntoAvailable,engine·ModelSettingsCodecTest·customModelsRoundTripAnd,engine 域「T:ModelSettingsCodecTest」的独立行为：customModelsRoundTripAndMergeIntoAvailab（测试源码解析自动登记）,用例,engine/settings,customModelsRoundTripAndMergeIntoAvailable
+957,T:ModelSettingsCodecTest#legacyFormatWithoutCustomModelsStillLoads,engine·ModelSettingsCodecTest·legacyFormatWithoutCusto,engine 域「T:ModelSettingsCodecTest」的独立行为：legacyFormatWithoutCustomModelsStillLoad（测试源码解析自动登记）,用例,engine/settings,legacyFormatWithoutCustomModelsStillLoads
+958,T:ModelSettingsCodecTest#legacyProviderIsImportedWithoutBeingLost,engine·ModelSettingsCodecTest·legacyProviderIsImported,engine 域「T:ModelSettingsCodecTest」的独立行为：legacyProviderIsImportedWithoutBeingLost（测试源码解析自动登记）,用例,engine/settings,legacyProviderIsImportedWithoutBeingLost
+959,T:ModelSettingsCodecTest#modelReferenceKeepsProviderAndBareModel,engine·ModelSettingsCodecTest·modelReferenceKeepsProvi,engine 域「T:ModelSettingsCodecTest」的独立行为：modelReferenceKeepsProviderAndBareModel（测试源码解析自动登记）,用例,engine/settings,modelReferenceKeepsProviderAndBareModel
+960,T:ModelSettingsCodecTest#badJsonFallsBackToDefaults,engine·ModelSettingsCodecTest·badJsonFallsBackToDefaul,engine 域「T:ModelSettingsCodecTest」的独立行为：badJsonFallsBackToDefaults（测试源码解析自动登记）,用例,engine/settings,badJsonFallsBackToDefaults
+961,T:PackExtractorTest#happyPathExtractsEntryAndRenamesAtomically,engine·PackExtractorTest·happyPathExtractsEntryAn,engine 域「T:PackExtractorTest」的独立行为：happyPathExtractsEntryAndRenamesAtomical（测试源码解析自动登记）,用例,engine/lsp,happyPathExtractsEntryAndRenamesAtomically
+962,T:PackExtractorTest#missingEntryFileIsRejectedAndStagingCleaned,engine·PackExtractorTest·missingEntryFileIsReject,engine 域「T:PackExtractorTest」的独立行为：missingEntryFileIsRejectedAndStagingClea（测试源码解析自动登记）,用例,engine/lsp,missingEntryFileIsRejectedAndStagingCleaned
+963,T:PackExtractorTest#zeroByteEntryIsRejected,engine·PackExtractorTest·zeroByteEntryIsRejected,engine 域「T:PackExtractorTest」的独立行为：zeroByteEntryIsRejected（测试源码解析自动登记）,用例,engine/lsp,zeroByteEntryIsRejected
+964,T:PackExtractorTest#traversalEntryNameIsStoppedByGuard,engine·PackExtractorTest·traversalEntryNameIsStop,engine 域「T:PackExtractorTest」的独立行为：traversalEntryNameIsStoppedByGuard（测试源码解析自动登记）,用例,engine/lsp,traversalEntryNameIsStoppedByGuard
+965,T:PackExtractorTest#entryCountLimitIsEnforced,engine·PackExtractorTest·entryCountLimitIsEnforce,engine 域「T:PackExtractorTest」的独立行为：entryCountLimitIsEnforced（测试源码解析自动登记）,用例,engine/lsp,entryCountLimitIsEnforced
+966,T:PackExtractorTest#entrySizeLimitIsEnforced,engine·PackExtractorTest·entrySizeLimitIsEnforced,engine 域「T:PackExtractorTest」的独立行为：entrySizeLimitIsEnforced（测试源码解析自动登记）,用例,engine/lsp,entrySizeLimitIsEnforced
+967,T:PackExtractorTest#emptyZipIsRejected,engine·PackExtractorTest·emptyZipIsRejected,engine 域「T:PackExtractorTest」的独立行为：emptyZipIsRejected（测试源码解析自动登记）,用例,engine/lsp,emptyZipIsRejected
+968,T:PackExtractorTest#nonZipBytesAreRejected,engine·PackExtractorTest·nonZipBytesAreRejected,engine 域「T:PackExtractorTest」的独立行为：nonZipBytesAreRejected（测试源码解析自动登记）,用例,engine/lsp,nonZipBytesAreRejected
+969,T:PackExtractorTest#missingPackFileIsRejectedWithDirection,engine·PackExtractorTest·missingPackFileIsRejecte,engine 域「T:PackExtractorTest」的独立行为：missingPackFileIsRejectedWithDirection（测试源码解析自动登记）,用例,engine/lsp,missingPackFileIsRejectedWithDirection
+970,T:PackExtractorTest#secondExtractReplacesOldTargetDir,engine·PackExtractorTest·secondExtractReplacesOld,engine 域「T:PackExtractorTest」的独立行为：secondExtractReplacesOldTargetDir（测试源码解析自动登记）,用例,engine/lsp,secondExtractReplacesOldTargetDir
+971,T:PackExtractorTest#staleStagingFromPreviousRunIsCleared,engine·PackExtractorTest·staleStagingFromPrevious,engine 域「T:PackExtractorTest」的独立行为：staleStagingFromPreviousRunIsCleared（测试源码解析自动登记）,用例,engine/lsp,staleStagingFromPreviousRunIsCleared
+972,T:PackInstallerTest#downloadsVerifiesAndRenamesAtomically,engine·PackInstallerTest·downloadsVerifiesAndRena,engine 域「T:PackInstallerTest」的独立行为：downloadsVerifiesAndRenamesAtomically（测试源码解析自动登记）,用例,engine/lsp,downloadsVerifiesAndRenamesAtomically
+973,T:PackInstallerTest#hashMismatchRejectsAndCleansUp,engine·PackInstallerTest·hashMismatchRejectsAndCl,engine 域「T:PackInstallerTest」的独立行为：hashMismatchRejectsAndCleansUp（测试源码解析自动登记）,用例,engine/lsp,hashMismatchRejectsAndCleansUp
+974,T:PackInstallerTest#oversizeIsRejectedBeforeTheCrossingChunkLands,engine·PackInstallerTest·oversizeIsRejectedBefore,engine 域「T:PackInstallerTest」的独立行为：oversizeIsRejectedBeforeTheCrossingChunk（测试源码解析自动登记）,用例,engine/lsp,oversizeIsRejectedBeforeTheCrossingChunkLands
+975,T:PackInstallerTest#emptyDownloadIsRejected,engine·PackInstallerTest·emptyDownloadIsRejected,engine 域「T:PackInstallerTest」的独立行为：emptyDownloadIsRejected（测试源码解析自动登记）,用例,engine/lsp,emptyDownloadIsRejected
+976,T:PackInstallerTest#networkFailureBecomesChineseRejectWithCleanup,engine·PackInstallerTest·networkFailureBecomesChi,engine 域「T:PackInstallerTest」的独立行为：networkFailureBecomesChineseRejectWithCl（测试源码解析自动登记）,用例,engine/lsp,networkFailureBecomesChineseRejectWithCleanup
+977,T:PackInstallerTest#fetchAccountingLieIsCaught,engine·PackInstallerTest·fetchAccountingLieIsCaug,engine 域「T:PackInstallerTest」的独立行为：fetchAccountingLieIsCaught（测试源码解析自动登记）,用例,engine/lsp,fetchAccountingLieIsCaught
+978,T:PackInstallerTest#localHitSkipsNetworkEntirely,engine·PackInstallerTest·localHitSkipsNetworkEnti,engine 域「T:PackInstallerTest」的独立行为：localHitSkipsNetworkEntirely（测试源码解析自动登记）,用例,engine/lsp,localHitSkipsNetworkEntirely
+979,T:PackInstallerTest#badLocalCopyIsReplacedByAFreshDownload,engine·PackInstallerTest·badLocalCopyIsReplacedBy,engine 域「T:PackInstallerTest」的独立行为：badLocalCopyIsReplacedByAFreshDownload（测试源码解析自动登记）,用例,engine/lsp,badLocalCopyIsReplacedByAFreshDownload
+980,T:PackInstallerTest#stalePartFileIsClearedBeforeInstall,engine·PackInstallerTest·stalePartFileIsClearedBe,engine 域「T:PackInstallerTest」的独立行为：stalePartFileIsClearedBeforeInstall（测试源码解析自动登记）,用例,engine/lsp,stalePartFileIsClearedBeforeInstall
+981,T:PackInstallerTest#progressReportsMonotonicCumulativeBytes,engine·PackInstallerTest·progressReportsMonotonic,engine 域「T:PackInstallerTest」的独立行为：progressReportsMonotonicCumulativeBytes（测试源码解析自动登记）,用例,engine/lsp,progressReportsMonotonicCumulativeBytes
+982,T:PackInstallerTest#unusableTargetDirectoryIsRejected,engine·PackInstallerTest·unusableTargetDirectoryI,engine 域「T:PackInstallerTest」的独立行为：unusableTargetDirectoryIsRejected（测试源码解析自动登记）,用例,engine/lsp,unusableTargetDirectoryIsRejected
+983,T:PackInstallerTest#limitsMustBePositive,engine·PackInstallerTest·limitsMustBePositive,engine 域「T:PackInstallerTest」的独立行为：limitsMustBePositive（测试源码解析自动登记）,用例,engine/lsp,limitsMustBePositive
+984,T:OpenAiCompatClientTest#chatRequestHasOpenAiShapeAndSendsStreamFlag,engine·OpenAiCompatClientTest·chatRequestHasOpenAiShap,engine 域「T:OpenAiCompatClientTest」的独立行为：chatRequestHasOpenAiShapeAndSendsStreamF（测试源码解析自动登记）,用例,engine/api,chatRequestHasOpenAiShapeAndSendsStreamFlag
+985,T:OpenAiCompatClientTest#baseUrlWithVersionSegmentIsNotPaddedAgain,engine·OpenAiCompatClientTest·baseUrlWithVersionSegmen,engine 域「T:OpenAiCompatClientTest」的独立行为：baseUrlWithVersionSegmentIsNotPaddedAgai（测试源码解析自动登记）,用例,engine/api,baseUrlWithVersionSegmentIsNotPaddedAgain
+986,T:OpenAiCompatClientTest#optionalParamsAppearOnlyWhenGiven,engine·OpenAiCompatClientTest·optionalParamsAppearOnly,engine 域「T:OpenAiCompatClientTest」的独立行为：optionalParamsAppearOnlyWhenGiven（测试源码解析自动登记）,用例,engine/api,optionalParamsAppearOnlyWhenGiven
+987,T:OpenAiCompatClientTest#authHeaderCarriesBearerOnlyWhenKeyPresent,engine·OpenAiCompatClientTest·authHeaderCarriesBearerO,engine 域「T:OpenAiCompatClientTest」的独立行为：authHeaderCarriesBearerOnlyWhenKeyPresen（测试源码解析自动登记）,用例,engine/api,authHeaderCarriesBearerOnlyWhenKeyPresent
+988,T:OpenAiCompatClientTest#listModelsAcceptsDataArrayShape,engine·OpenAiCompatClientTest·listModelsAcceptsDataArr,engine 域「T:OpenAiCompatClientTest」的独立行为：listModelsAcceptsDataArrayShape（测试源码解析自动登记）,用例,engine/api,listModelsAcceptsDataArrayShape
+989,T:OpenAiCompatClientTest#listModelsAcceptsModelsFieldAndBareArrayShapes,engine·OpenAiCompatClientTest·listModelsAcceptsModelsF,engine 域「T:OpenAiCompatClientTest」的独立行为：listModelsAcceptsModelsFieldAndBareArray（测试源码解析自动登记）,用例,engine/api,listModelsAcceptsModelsFieldAndBareArrayShapes
+990,T:OpenAiCompatClientTest#listModelsOnGibbageSaysEmptyRatherThanInventingNames,engine·OpenAiCompatClientTest·listModelsOnGibbageSaysE,engine 域「T:OpenAiCompatClientTest」的独立行为：listModelsOnGibbageSaysEmptyRatherThanIn（测试源码解析自动登记）,用例,engine/api,listModelsOnGibbageSaysEmptyRatherThanInventingNames
+991,T:OpenAiCompatClientTest#listModelsRetriesFreeEndpointButChatStaysCostlyGuarded,engine·OpenAiCompatClientTest·listModelsRetriesFreeEnd,engine 域「T:OpenAiCompatClientTest」的独立行为：listModelsRetriesFreeEndpointButChatStay（测试源码解析自动登记）,用例,engine/api,listModelsRetriesFreeEndpointButChatStaysCostlyGuarded
+992,T:OpenAiCompatClientTest#chatRefusesLocallyWhenBaseUrlOrHistoryEmpty,engine·OpenAiCompatClientTest·chatRefusesLocallyWhenBa,engine 域「T:OpenAiCompatClientTest」的独立行为：chatRefusesLocallyWhenBaseUrlOrHistoryEm（测试源码解析自动登记）,用例,engine/api,chatRefusesLocallyWhenBaseUrlOrHistoryEmpty
+993,T:OpenAiCompatClientTest#listModelsSurfacesProviderErrorShape,engine·OpenAiCompatClientTest·listModelsSurfacesProvid,engine 域「T:OpenAiCompatClientTest」的独立行为：listModelsSurfacesProviderErrorShape（测试源码解析自动登记）,用例,engine/api,listModelsSurfacesProviderErrorShape
+994,T:OpenAiCompatClientTest#endpointJoinNeverDoublesSlash,engine·OpenAiCompatClientTest·endpointJoinNeverDoubles,engine 域「T:OpenAiCompatClientTest」的独立行为：endpointJoinNeverDoublesSlash（测试源码解析自动登记）,用例,engine/api,endpointJoinNeverDoublesSlash
+995,T:GatewayBodyAttributionTest#gatewayFiftyTwoWrappingOverflowBodyNeverRetriesAndNamesTheWayOut,engine·GatewayBodyAttributionTest·gatewayFiftyTwoWrappingO,engine 域「T:GatewayBodyAttributionTest」的独立行为：gatewayFiftyTwoWrappingOverflowBodyNever（测试源码解析自动登记）,用例,engine/api,gatewayFiftyTwoWrappingOverflowBodyNeverRetriesAndNamesTheWayOut
+996,T:GatewayBodyAttributionTest#inStreamErrorBlockWithOverflowEvidenceBecomesContextOverflowTransport,engine·GatewayBodyAttributionTest·inStreamErrorBlockWithOv,engine 域「T:GatewayBodyAttributionTest」的独立行为：inStreamErrorBlockWithOverflowEvidenceBe（测试源码解析自动登记）,用例,engine/api,inStreamErrorBlockWithOverflowEvidenceBecomesContextOverflowTransport
+997,T:GatewayBodyAttributionTest#inStreamErrorBlockWithCodeOnlyOverflowIsStillCaught,engine·GatewayBodyAttributionTest·inStreamErrorBlockWithCo,engine 域「T:GatewayBodyAttributionTest」的独立行为：inStreamErrorBlockWithCodeOnlyOverflowIs（测试源码解析自动登记）,用例,engine/api,inStreamErrorBlockWithCodeOnlyOverflowIsStillCaught
+998,T:GatewayBodyAttributionTest#inStreamErrorBlockCarriesSecretLookingTextVerbatim,engine·GatewayBodyAttributionTest·inStreamErrorBlockCarrie,engine 域「T:GatewayBodyAttributionTest」的独立行为：inStreamErrorBlockCarriesSecretLookingTe（测试源码解析自动登记）,用例,engine/api,inStreamErrorBlockCarriesSecretLookingTextVerbatim
+999,T:GatewayBodyAttributionTest#plainInStreamErrorKeepsCodeAndType,engine·GatewayBodyAttributionTest·plainInStreamErrorKeepsC,engine 域「T:GatewayBodyAttributionTest」的独立行为：plainInStreamErrorKeepsCodeAndType（测试源码解析自动登记）,用例,engine/api,plainInStreamErrorKeepsCodeAndType
+1000,T:ProviderClientTest#geminiUsesNativeUrlHeadersAndStreamsText,engine·ProviderClientTest·geminiUsesNativeUrlHeade,engine 域「T:ProviderClientTest」的独立行为：geminiUsesNativeUrlHeadersAndStreamsText（测试源码解析自动登记）,用例,engine/api,geminiUsesNativeUrlHeadersAndStreamsText
+1001,T:ProviderClientTest#anthropicAssemblesStreamingToolCall,engine·ProviderClientTest·anthropicAssemblesStream,engine 域「T:ProviderClientTest」的独立行为：anthropicAssemblesStreamingToolCall（测试源码解析自动登记）,用例,engine/api,anthropicAssemblesStreamingToolCall
+1002,T:ProviderClientTest#ollamaUsesTagsAndChatEndpoints,engine·ProviderClientTest·ollamaUsesTagsAndChatEnd,engine 域「T:ProviderClientTest」的独立行为：ollamaUsesTagsAndChatEndpoints（测试源码解析自动登记）,用例,engine/api,ollamaUsesTagsAndChatEndpoints
+1003,T:ProviderClientTest#incompleteNativeStreamIsNotReportedAsSuccess,engine·ProviderClientTest·incompleteNativeStreamIs,engine 域「T:ProviderClientTest」的独立行为：incompleteNativeStreamIsNotReportedAsSuc（测试源码解析自动登记）,用例,engine/api,incompleteNativeStreamIsNotReportedAsSuccess
+1004,T:GenerationErrorTest#httpStatusCodesLeadToDifferentNextSteps,engine·GenerationErrorTest·httpStatusCodesLeadToDif,engine 域「T:GenerationErrorTest」的独立行为：httpStatusCodesLeadToDifferentNextSteps（测试源码解析自动登记）,用例,engine/api,httpStatusCodesLeadToDifferentNextSteps
+1005,T:GenerationErrorTest#unknownStatusStillSaysSomethingUseful,engine·GenerationErrorTest·unknownStatusStillSaysSo,engine 域「T:GenerationErrorTest」的独立行为：unknownStatusStillSaysSomethingUseful（测试源码解析自动登记）,用例,engine/api,unknownStatusStillSaysSomethingUseful
+1006,T:GenerationErrorTest#apiErrorCombinesCodeAndTypeWithoutLeadingJunk,engine·GenerationErrorTest·apiErrorCombinesCodeAndT,engine 域「T:GenerationErrorTest」的独立行为：apiErrorCombinesCodeAndTypeWithoutLeadin（测试源码解析自动登记）,用例,engine/api,apiErrorCombinesCodeAndTypeWithoutLeadingJunk
+1007,T:GenerationErrorTest#sseParseKeepsAnExcerptInsteadOfSwallowingIt,engine·GenerationErrorTest·sseParseKeepsAnExcerptIn,engine 域「T:GenerationErrorTest」的独立行为：sseParseKeepsAnExcerptInsteadOfSwallowin（测试源码解析自动登记）,用例,engine/api,sseParseKeepsAnExcerptInsteadOfSwallowingIt
+1008,T:GenerationErrorTest#incompleteStreamSaysProvablyIncomplete,engine·GenerationErrorTest·incompleteStreamSaysProv,engine 域「T:GenerationErrorTest」的独立行为：incompleteStreamSaysProvablyIncomplete（测试源码解析自动登记）,用例,engine/api,incompleteStreamSaysProvablyIncomplete
+1009,T:GenerationErrorTest#truncatedSaysWhichKnobToTurn,engine·GenerationErrorTest·truncatedSaysWhichKnobTo,engine 域「T:GenerationErrorTest」的独立行为：truncatedSaysWhichKnobToTurn（测试源码解析自动登记）,用例,engine/api,truncatedSaysWhichKnobToTurn
+1010,T:GenerationErrorTest#transcriptionNamesItsOwnKind,engine·GenerationErrorTest·transcriptionNamesItsOwn,engine 域「T:GenerationErrorTest」的独立行为：transcriptionNamesItsOwnKind（测试源码解析自动登记）,用例,engine/api,transcriptionNamesItsOwnKind
+1011,T:GenerationErrorTest#configAndCancelledReadLikeHumanSpeech,engine·GenerationErrorTest·configAndCancelledReadLi,engine 域「T:GenerationErrorTest」的独立行为：configAndCancelledReadLikeHumanSpeech（测试源码解析自动登记）,用例,engine/api,configAndCancelledReadLikeHumanSpeech
+1012,T:GenerationErrorTest#unknownExceptionCarriesTheKeyItCarried,engine·GenerationErrorTest·unknownExceptionCarriesT,engine 域「T:GenerationErrorTest」的独立行为：unknownExceptionCarriesTheKeyItCarried（测试源码解析自动登记）,用例,engine/api,unknownExceptionCarriesTheKeyItCarried
+1013,T:GenerationErrorTest#longProviderMessagesGetFoldedAndTruncated,engine·GenerationErrorTest·longProviderMessagesGetF,engine 域「T:GenerationErrorTest」的独立行为：longProviderMessagesGetFoldedAndTruncate（测试源码解析自动登记）,用例,engine/api,longProviderMessagesGetFoldedAndTruncated
+1014,T:GenerationErrorTest#plaintextPassesThroughVerbatim,engine·GenerationErrorTest·plaintextPassesThroughVe,engine 域「T:GenerationErrorTest」的独立行为：plaintextPassesThroughVerbatim（测试源码解析自动登记）,用例,engine/api,plaintextPassesThroughVerbatim
+1015,T:GenerationErrorTest#datedModelNamePassesThroughVerbatim,engine·GenerationErrorTest·datedModelNamePassesThro,engine 域「T:GenerationErrorTest」的独立行为：datedModelNamePassesThroughVerbatim（测试源码解析自动登记）,用例,engine/api,datedModelNamePassesThroughVerbatim
+1016,T:GenerationErrorTest#gatewayContextOverflowGetsChineseGuidanceAndKeepsEvidence,engine·GenerationErrorTest·gatewayContextOverflowGe,engine 域「T:GenerationErrorTest」的独立行为：gatewayContextOverflowGetsChineseGuidanc（测试源码解析自动登记）,用例,engine/api,gatewayContextOverflowGetsChineseGuidanceAndKeepsEvidence
+1017,T:GenerationErrorTest#contextOverflowWithoutEvidenceStillSaysTheWayOut,engine·GenerationErrorTest·contextOverflowWithoutEv,engine 域「T:GenerationErrorTest」的独立行为：contextOverflowWithoutEvidenceStillSaysT（测试源码解析自动登记）,用例,engine/api,contextOverflowWithoutEvidenceStillSaysTheWayOut
+1018,T:ToolCallsWireTest#toolsArrayGoesIntoRequestBodyAndSchemaStaysIntact,engine·ToolCallsWireTest·toolsArrayGoesIntoReques,engine 域「T:ToolCallsWireTest」的独立行为：toolsArrayGoesIntoRequestBodyAndSchemaSt（测试源码解析自动登记）,用例,engine/api,toolsArrayGoesIntoRequestBodyAndSchemaStaysIntact
+1019,T:ToolCallsWireTest#toolCallTurnsKeepIdsAndShapes,engine·ToolCallsWireTest·toolCallTurnsKeepIdsAndS,engine 域「T:ToolCallsWireTest」的独立行为：toolCallTurnsKeepIdsAndShapes（测试源码解析自动登记）,用例,engine/api,toolCallTurnsKeepIdsAndShapes
+1020,T:ToolCallsWireTest#streamedFragmentsAssembleIntoToolCallsOutcome,engine·ToolCallsWireTest·streamedFragmentsAssembl,engine 域「T:ToolCallsWireTest」的独立行为：streamedFragmentsAssembleIntoToolCallsOu（测试源码解析自动登记）,用例,engine/api,streamedFragmentsAssembleIntoToolCallsOutcome
+1021,T:ToolCallsWireTest#lengthTruncationBeatsToolCalls,engine·ToolCallsWireTest·lengthTruncationBeatsToo,engine 域「T:ToolCallsWireTest」的独立行为：lengthTruncationBeatsToolCalls（测试源码解析自动登记）,用例,engine/api,lengthTruncationBeatsToolCalls
+1022,T:ToolCallsWireTest#brokenStreamWhileWritingToolCallSaysSoInEvidence,engine·ToolCallsWireTest·brokenStreamWhileWriting,engine 域「T:ToolCallsWireTest」的独立行为：brokenStreamWhileWritingToolCallSaysSoIn（测试源码解析自动登记）,用例,engine/api,brokenStreamWhileWritingToolCallSaysSoInEvidence
+1023,T:ToolCallsWireTest#nonStreamingMessageShapeAlsoCarriesToolCalls,engine·ToolCallsWireTest·nonStreamingMessageShape,engine 域「T:ToolCallsWireTest」的独立行为：nonStreamingMessageShapeAlsoCarriesToolC（测试源码解析自动登记）,用例,engine/api,nonStreamingMessageShapeAlsoCarriesToolCalls
+1024,T:ToolCallsWireTest#legacyChatWithoutToolsRefusesToolCallReplies,engine·ToolCallsWireTest·legacyChatWithoutToolsRe,engine 域「T:ToolCallsWireTest」的独立行为：legacyChatWithoutToolsRefusesToolCallRep（测试源码解析自动登记）,用例,engine/api,legacyChatWithoutToolsRefusesToolCallReplies
+1025,T:ToolCallsWireTest#badSchemaFallsBackToEmptyObjectInsteadOfKillingTheRequest,engine·ToolCallsWireTest·badSchemaFallsBackToEmpt,engine 域「T:ToolCallsWireTest」的独立行为：badSchemaFallsBackToEmptyObjectInsteadOf（测试源码解析自动登记）,用例,engine/api,badSchemaFallsBackToEmptyObjectInsteadOfKillingTheRequest
+1026,T:ToolCallsWireTest#emptyToolsListKeepsOldRequestShape,engine·ToolCallsWireTest·emptyToolsListKeepsOldRe,engine 域「T:ToolCallsWireTest」的独立行为：emptyToolsListKeepsOldRequestShape（测试源码解析自动登记）,用例,engine/api,emptyToolsListKeepsOldRequestShape
+1027,T:ToolCallsWireTest#plainTextOutcomeStaysTextEvenWithToolsOffered,engine·ToolCallsWireTest·plainTextOutcomeStaysTex,engine 域「T:ToolCallsWireTest」的独立行为：plainTextOutcomeStaysTextEvenWithToolsOf（测试源码解析自动登记）,用例,engine/api,plainTextOutcomeStaysTextEvenWithToolsOffered
+1028,T:ChatWireRunnerTest#happyPathStreamsTextAndFreesSlot,engine·ChatWireRunnerTest·happyPathStreamsTextAndF,engine 域「T:ChatWireRunnerTest」的独立行为：happyPathStreamsTextAndFreesSlot（测试源码解析自动登记）,用例,engine/api,happyPathStreamsTextAndFreesSlot
+1029,T:ChatWireRunnerTest#streamWithoutDoneMarkerIsProvablyIncomplete,engine·ChatWireRunnerTest·streamWithoutDoneMarkerI,engine 域「T:ChatWireRunnerTest」的独立行为：streamWithoutDoneMarkerIsProvablyIncompl（测试源码解析自动登记）,用例,engine/api,streamWithoutDoneMarkerIsProvablyIncomplete
+1030,T:ChatWireRunnerTest#lengthFinishReasonBecomesOutputTruncated,engine·ChatWireRunnerTest·lengthFinishReasonBecome,engine 域「T:ChatWireRunnerTest」的独立行为：lengthFinishReasonBecomesOutputTruncated（测试源码解析自动登记）,用例,engine/api,lengthFinishReasonBecomesOutputTruncated
+1031,T:ChatWireRunnerTest#rateLimitedWaitsRetryAfterThenSucceeds,engine·ChatWireRunnerTest·rateLimitedWaitsRetryAft,engine 域「T:ChatWireRunnerTest」的独立行为：rateLimitedWaitsRetryAfterThenSucceeds（测试源码解析自动登记）,用例,engine/api,rateLimitedWaitsRetryAfterThenSucceeds
+1032,T:ChatWireRunnerTest#costlyPartialStreamNeverBlindRetries,engine·ChatWireRunnerTest·costlyPartialStreamNever,engine 域「T:ChatWireRunnerTest」的独立行为：costlyPartialStreamNeverBlindRetries（测试源码解析自动登记）,用例,engine/api,costlyPartialStreamNeverBlindRetries
+1033,T:ChatWireRunnerTest#freeRequestThatBreaksMidStreamIsRetried,engine·ChatWireRunnerTest·freeRequestThatBreaksMid,engine 域「T:ChatWireRunnerTest」的独立行为：freeRequestThatBreaksMidStreamIsRetried（测试源码解析自动登记）,用例,engine/api,freeRequestThatBreaksMidStreamIsRetried
+1034,T:ChatWireRunnerTest#contextOverflowGivesUpWithActionableAdvice,engine·ChatWireRunnerTest·contextOverflowGivesUpWi,engine 域「T:ChatWireRunnerTest」的独立行为：contextOverflowGivesUpWithActionableAdvi（测试源码解析自动登记）,用例,engine/api,contextOverflowGivesUpWithActionableAdvice
+1035,T:ChatWireRunnerTest#userStopMidStreamIsCancelledNotFailure,engine·ChatWireRunnerTest·userStopMidStreamIsCance,engine 域「T:ChatWireRunnerTest」的独立行为：userStopMidStreamIsCancelledNotFailure（测试源码解析自动登记）,用例,engine/api,userStopMidStreamIsCancelledNotFailure
+1036,T:ChatWireRunnerTest#busySlotRefusesWithoutTouchingNetwork,engine·ChatWireRunnerTest·busySlotRefusesWithoutTo,engine 域「T:ChatWireRunnerTest」的独立行为：busySlotRefusesWithoutTouchingNetwork（测试源码解析自动登记）,用例,engine/api,busySlotRefusesWithoutTouchingNetwork
+1037,T:ChatWireRunnerTest#midStreamErrorChunkIsNotSuccess,engine·ChatWireRunnerTest·midStreamErrorChunkIsNot,engine 域「T:ChatWireRunnerTest」的独立行为：midStreamErrorChunkIsNotSuccess（测试源码解析自动登记）,用例,engine/api,midStreamErrorChunkIsNotSuccess
+1038,T:ChatWireRunnerTest#oversizeLineSurfacesSseParseInsteadOfHanging,engine·ChatWireRunnerTest·oversizeLineSurfacesSseP,engine 域「T:ChatWireRunnerTest」的独立行为：oversizeLineSurfacesSseParseInsteadOfHan（测试源码解析自动登记）,用例,engine/api,oversizeLineSurfacesSseParseInsteadOfHanging
+1039,T:ChatWireRunnerTest#retryBudgetSpendsThenStopsAndCounts,engine·ChatWireRunnerTest·retryBudgetSpendsThenSto,engine 域「T:ChatWireRunnerTest」的独立行为：retryBudgetSpendsThenStopsAndCounts（测试源码解析自动登记）,用例,engine/api,retryBudgetSpendsThenStopsAndCounts
+1040,T:ChatWireRunnerTest#silentReadTimeoutOnCostlyStreamSaysOneRetryAway,engine·ChatWireRunnerTest·silentReadTimeoutOnCostl,engine 域「T:ChatWireRunnerTest」的独立行为：silentReadTimeoutOnCostlyStreamSaysOneRe（测试源码解析自动登记）,用例,engine/api,silentReadTimeoutOnCostlyStreamSaysOneRetryAway
+1041,T:ChatWireRunnerTest#requestsReachTransportUnchanged,engine·ChatWireRunnerTest·requestsReachTransportUn,engine 域「T:ChatWireRunnerTest」的独立行为：requestsReachTransportUnchanged（测试源码解析自动登记）,用例,engine/api,requestsReachTransportUnchanged
+1042,T:AgoraImportTest#fullPlanMapsProviderFlagsPromptAndSessionsWithHonestNotes,engine·AgoraImportTest·fullPlanMapsProviderFlag,engine 域「T:AgoraImportTest」的独立行为：fullPlanMapsProviderFlagsPromptAndSessio（测试源码解析自动登记）,用例,engine/backup,fullPlanMapsProviderFlagsPromptAndSessionsWithHonestNotes
+1043,T:AgoraImportTest#nonAgoraZipIsRefusedWithoutTouchingAnything,engine·AgoraImportTest·nonAgoraZipIsRefusedWith,engine 域「T:AgoraImportTest」的独立行为：nonAgoraZipIsRefusedWithoutTouchingAnyth（测试源码解析自动登记）,用例,engine/backup,nonAgoraZipIsRefusedWithoutTouchingAnything
+1044,T:AgoraImportTest#duplicateConversationIdsGetSuffixesInsteadOfOverwriting,engine·AgoraImportTest·duplicateConversationIds,engine 域「T:AgoraImportTest」的独立行为：duplicateConversationIdsGetSuffixesInste（测试源码解析自动登记）,用例,engine/backup,duplicateConversationIdsGetSuffixesInsteadOfOverwriting
+1045,T:AgoraWebSearchImportTest#knownProviderAndItsKeyAreRedeemed,engine·AgoraWebSearchImportTest·knownProviderAndItsKeyAr,engine 域「T:AgoraWebSearchImportTest」的独立行为：knownProviderAndItsKeyAreRedeemed（测试源码解析自动登记）,用例,engine/backup,knownProviderAndItsKeyAreRedeemed
+1046,T:AgoraWebSearchImportTest#keysOfSeveralProvidersStaySeparated,engine·AgoraWebSearchImportTest·keysOfSeveralProvidersSt,engine 域「T:AgoraWebSearchImportTest」的独立行为：keysOfSeveralProvidersStaySeparated（测试源码解析自动登记）,用例,engine/backup,keysOfSeveralProvidersStaySeparated
+1047,T:AgoraWebSearchImportTest#unknownProviderIsReportedAndNotSwitched,engine·AgoraWebSearchImportTest·unknownProviderIsReporte,engine 域「T:AgoraWebSearchImportTest」的独立行为：unknownProviderIsReportedAndNotSwitched（测试源码解析自动登记）,用例,engine/backup,unknownProviderIsReportedAndNotSwitched
+1048,T:AgoraWebSearchImportTest#legacyEncryptedKeysAreNamedNotSilentlyBlanked,engine·AgoraWebSearchImportTest·legacyEncryptedKeysAreNa,engine 域「T:AgoraWebSearchImportTest」的独立行为：legacyEncryptedKeysAreNamedNotSilentlyBl（测试源码解析自动登记）,用例,engine/backup,legacyEncryptedKeysAreNamedNotSilentlyBlanked
+1049,T:AgoraWebSearchImportTest#baseUrlOnlyLandsWhenThatProviderUsesOne,engine·AgoraWebSearchImportTest·baseUrlOnlyLandsWhenThat,engine 域「T:AgoraWebSearchImportTest」的独立行为：baseUrlOnlyLandsWhenThatProviderUsesOne（测试源码解析自动登记）,用例,engine/backup,baseUrlOnlyLandsWhenThatProviderUsesOne
+1050,T:AgoraWebSearchImportTest#packageWithoutSearchSettingsLeavesEveryFieldEmpty,engine·AgoraWebSearchImportTest·packageWithoutSearchSett,engine 域「T:AgoraWebSearchImportTest」的独立行为：packageWithoutSearchSettingsLeavesEveryF（测试源码解析自动登记）,用例,engine/backup,packageWithoutSearchSettingsLeavesEveryFieldEmpty
+1051,T:SandboxManagerTest#installRootfsMakesEnvironmentReadyAndWritesSnapshot,engine·SandboxManagerTest·installRootfsMakesEnviro,engine 域「T:SandboxManagerTest」的独立行为：installRootfsMakesEnvironmentReadyAndWri（测试源码解析自动登记）,用例,engine/sandbox,installRootfsMakesEnvironmentReadyAndWritesSnapshot
+1052,T:SandboxManagerTest#installPackagesVerifiesRealEntryNotJustExitCode,engine·SandboxManagerTest·installPackagesVerifiesR,engine 域「T:SandboxManagerTest」的独立行为：installPackagesVerifiesRealEntryNotJustE（测试源码解析自动登记）,用例,engine/sandbox,installPackagesVerifiesRealEntryNotJustExitCode
+1053,T:SandboxManagerTest#planEmptyButNotVerifiedIsHonestFailure,engine·SandboxManagerTest·planEmptyButNotVerifiedI,engine 域「T:SandboxManagerTest」的独立行为：planEmptyButNotVerifiedIsHonestFailure（测试源码解析自动登记）,用例,engine/sandbox,planEmptyButNotVerifiedIsHonestFailure
+1054,T:SandboxManagerTest#unknownPackageReportsNotSilent,engine·SandboxManagerTest·unknownPackageReportsNot,engine 域「T:SandboxManagerTest」的独立行为：unknownPackageReportsNotSilent（测试源码解析自动登记）,用例,engine/sandbox,unknownPackageReportsNotSilent
+1055,T:SandboxManagerTest#busyGateRejectsConcurrentMutableOps,engine·SandboxManagerTest·busyGateRejectsConcurren,engine 域「T:SandboxManagerTest」的独立行为：busyGateRejectsConcurrentMutableOps（测试源码解析自动登记）,用例,engine/sandbox,busyGateRejectsConcurrentMutableOps
+1056,T:SandboxManagerTest#packageNameWithInjectionCharsIsRejected,engine·SandboxManagerTest·packageNameWithInjection,engine 域「T:SandboxManagerTest」的独立行为：packageNameWithInjectionCharsIsRejected（测试源码解析自动登记）,用例,engine/sandbox,packageNameWithInjectionCharsIsRejected
+1057,T:SandboxManagerTest#removePackageThenListIsHonest,engine·SandboxManagerTest·removePackageThenListIsH,engine 域「T:SandboxManagerTest」的独立行为：removePackageThenListIsHonest（测试源码解析自动登记）,用例,engine/sandbox,removePackageThenListIsHonest
+1058,T:ExtractGuardTest#绝对路径条目名必须被拒绝,engine·ExtractGuardTest·绝对路径条目名必须被拒绝,engine 域「T:ExtractGuardTest」的独立行为：绝对路径条目名必须被拒绝（测试源码解析自动登记）,用例,engine/io,绝对路径条目名必须被拒绝
+1059,T:ExtractGuardTest#反斜杠伪装和盘符写法也拦得住,engine·ExtractGuardTest·反斜杠伪装和盘符写法也拦得住,engine 域「T:ExtractGuardTest」的独立行为：反斜杠伪装和盘符写法也拦得住（测试源码解析自动登记）,用例,engine/io,反斜杠伪装和盘符写法也拦得住
+1060,T:ExtractGuardTest#百分号编码藏住的穿越拦得住且双层编码也拦得住,engine·ExtractGuardTest·百分号编码藏住的穿越拦得住且双层编码也拦得住,engine 域「T:ExtractGuardTest」的独立行为：百分号编码藏住的穿越拦得住且双层编码也拦得住（测试源码解析自动登记）,用例,engine/io,百分号编码藏住的穿越拦得住且双层编码也拦得住
+1061,T:ExtractGuardTest#中文条目名被百分号编码时能还原,engine·ExtractGuardTest·中文条目名被百分号编码时能还原,engine 域「T:ExtractGuardTest」的独立行为：中文条目名被百分号编码时能还原（测试源码解析自动登记）,用例,engine/io,中文条目名被百分号编码时能还原
+1062,T:ExtractGuardTest#正常子目录能落在根目录里面,engine·ExtractGuardTest·正常子目录能落在根目录里面,engine 域「T:ExtractGuardTest」的独立行为：正常子目录能落在根目录里面（测试源码解析自动登记）,用例,engine/io,正常子目录能落在根目录里面
+1063,T:ExtractGuardTest#反斜杠开头与网络共享路径都算绝对路径,engine·ExtractGuardTest·反斜杠开头与网络共享路径都算绝对路径,engine 域「T:ExtractGuardTest」的独立行为：反斜杠开头与网络共享路径都算绝对路径（测试源码解析自动登记）,用例,engine/io,反斜杠开头与网络共享路径都算绝对路径
+1064,T:ExtractGuardTest#中间层是符号链接时也要拦住,engine·ExtractGuardTest·中间层是符号链接时也要拦住,engine 域「T:ExtractGuardTest」的独立行为：中间层是符号链接时也要拦住（测试源码解析自动登记）,用例,engine/io,中间层是符号链接时也要拦住
+1065,T:ExtractGuardTest#异常消息里的原始名控制字符可视化且不截断,engine·ExtractGuardTest·异常消息里的原始名控制字符可视化且不截断,engine 域「T:ExtractGuardTest」的独立行为：异常消息里的原始名控制字符可视化且不截断（测试源码解析自动登记）,用例,engine/io,异常消息里的原始名控制字符可视化且不截断
+1066,T:ExtractGuardTest#条目数超限时报错消息说得清,engine·ExtractGuardTest·条目数超限时报错消息说得清,engine 域「T:ExtractGuardTest」的独立行为：条目数超限时报错消息说得清（测试源码解析自动登记）,用例,engine/io,条目数超限时报错消息说得清
+1067,T:ExtractGuardTest#单条目体积超限当场断,engine·ExtractGuardTest·单条目体积超限当场断,engine 域「T:ExtractGuardTest」的独立行为：单条目体积超限当场断（测试源码解析自动登记）,用例,engine/io,单条目体积超限当场断
+1068,T:ExtractGuardTest#整包总量超限当场断,engine·ExtractGuardTest·整包总量超限当场断,engine 域「T:ExtractGuardTest」的独立行为：整包总量超限当场断（测试源码解析自动登记）,用例,engine/io,整包总量超限当场断
+1069,T:ExtractGuardTest#压缩比超限当场断,engine·ExtractGuardTest·压缩比超限当场断,engine 域「T:ExtractGuardTest」的独立行为：压缩比超限当场断（测试源码解析自动登记）,用例,engine/io,压缩比超限当场断
+1070,T:ExtractGuardTest#零字节条目不会被误判成炸弹,engine·ExtractGuardTest·零字节条目不会被误判成炸弹,engine 域「T:ExtractGuardTest」的独立行为：零字节条目不会被误判成炸弹（测试源码解析自动登记）,用例,engine/io,零字节条目不会被误判成炸弹
+1071,T:ExtractGuardTest#上限写零或负数当场就被拦住,engine·ExtractGuardTest·上限写零或负数当场就被拦住,engine 域「T:ExtractGuardTest」的独立行为：上限写零或负数当场就被拦住（测试源码解析自动登记）,用例,engine/io,上限写零或负数当场就被拦住
+1072,T:ExtractGuardTest#记账字节数为负要报参数错,engine·ExtractGuardTest·记账字节数为负要报参数错,engine 域「T:ExtractGuardTest」的独立行为：记账字节数为负要报参数错（测试源码解析自动登记）,用例,engine/io,记账字节数为负要报参数错
+1073,T:ArchiveFormatTest#内置解不了的那几种格式必须被标成不可直接动手,engine·ArchiveFormatTest·内置解不了的那几种格式必须被标成不可直接动手,engine 域「T:ArchiveFormatTest」的独立行为：内置解不了的那几种格式必须被标成不可直接动手（测试源码解析自动登记）,用例,engine/io,内置解不了的那几种格式必须被标成不可直接动手
+1074,T:ArchiveFormatTest#魔数写歪一格就不该被认成tar,engine·ArchiveFormatTest·魔数写歪一格就不该被认成tar,engine 域「T:ArchiveFormatTest」的独立行为：魔数写歪一格就不该被认成tar（测试源码解析自动登记）,用例,engine/io,魔数写歪一格就不该被认成tar
+1075,T:ArchiveFormatTest#字节数不够长时不许越界读,engine·ArchiveFormatTest·字节数不够长时不许越界读,engine 域「T:ArchiveFormatTest」的独立行为：字节数不够长时不许越界读（测试源码解析自动登记）,用例,engine/io,字节数不够长时不许越界读
+1076,T:ArchiveFormatTest#扩展名撒谎时以文件头为准并报告不一致,engine·ArchiveFormatTest·扩展名撒谎时以文件头为准并报告不一致,engine 域「T:ArchiveFormatTest」的独立行为：扩展名撒谎时以文件头为准并报告不一致（测试源码解析自动登记）,用例,engine/io,扩展名撒谎时以文件头为准并报告不一致
+1077,T:ArchiveFormatTest#扩展名与文件头一致时不报警,engine·ArchiveFormatTest·扩展名与文件头一致时不报警,engine 域「T:ArchiveFormatTest」的独立行为：扩展名与文件头一致时不报警（测试源码解析自动登记）,用例,engine/io,扩展名与文件头一致时不报警
+1078,T:ArchiveFormatTest#没有后缀也能认出格式并且不硬编一个来源,engine·ArchiveFormatTest·没有后缀也能认出格式并且不硬编一个来源,engine 域「T:ArchiveFormatTest」的独立行为：没有后缀也能认出格式并且不硬编一个来源（测试源码解析自动登记）,用例,engine/io,没有后缀也能认出格式并且不硬编一个来源
+1079,T:ArchiveFormatTest#安装包与依赖包这类后缀本质上都是压缩包,engine·ArchiveFormatTest·安装包与依赖包这类后缀本质上都是压缩包,engine 域「T:ArchiveFormatTest」的独立行为：安装包与依赖包这类后缀本质上都是压缩包（测试源码解析自动登记）,用例,engine/io,安装包与依赖包这类后缀本质上都是压缩包
+1080,T:ArchiveFormatTest#认不出来的字节就说不出来且不给出可执行动作,engine·ArchiveFormatTest·认不出来的字节就说不出来且不给出可执行动作,engine 域「T:ArchiveFormatTest」的独立行为：认不出来的字节就说不出来且不给出可执行动作（测试源码解析自动登记）,用例,engine/io,认不出来的字节就说不出来且不给出可执行动作
+1081,T:ArchiveFormatTest#空字节数组不崩且结论是认不出来,engine·ArchiveFormatTest·空字节数组不崩且结论是认不出来,engine 域「T:ArchiveFormatTest」的独立行为：空字节数组不崩且结论是认不出来（测试源码解析自动登记）,用例,engine/io,空字节数组不崩且结论是认不出来
+1082,T:ArchiveFormatTest#带偏移探测能从复合流中间接着认,engine·ArchiveFormatTest·带偏移探测能从复合流中间接着认,engine 域「T:ArchiveFormatTest」的独立行为：带偏移探测能从复合流中间接着认（测试源码解析自动登记）,用例,engine/io,带偏移探测能从复合流中间接着认
+1083,T:ObserveStateTest#初始未连接，探测许可后进 CONNECTING,engine·ObserveStateTest·初始未连接，探测许可后进 CONNECTING,engine 域「T:ObserveStateTest」的独立行为：初始未连接，探测许可后进 CONNECTING（测试源码解析自动登记）,用例,engine/observe,初始未连接，探测许可后进 CONNECTING
+1084,T:ObserveStateTest#单并发：探测中再抢被拒,engine·ObserveStateTest·单并发：探测中再抢被拒,engine 域「T:ObserveStateTest」的独立行为：单并发：探测中再抢被拒（测试源码解析自动登记）,用例,engine/observe,单并发：探测中再抢被拒
+1085,T:ObserveStateTest#全通转 READY 且清冷却,engine·ObserveStateTest·全通转 READY 且清冷却,engine 域「T:ObserveStateTest」的独立行为：全通转 READY 且清冷却（测试源码解析自动登记）,用例,engine/observe,全通转 READY 且清冷却
+1086,T:ObserveStateTest#health 败转 DISCONNECTED 并进退避,engine·ObserveStateTest·health 败转 DISCONNECTED 并,engine 域「T:ObserveStateTest」的独立行为：health 败转 DISCONNECTED 并进退避（测试源码解析自动登记）,用例,engine/observe,health 败转 DISCONNECTED 并进退避
+1087,T:ObserveStateTest#过载转 OVERLOADED 且冷却更长,engine·ObserveStateTest·过载转 OVERLOADED 且冷却更长,engine 域「T:ObserveStateTest」的独立行为：过载转 OVERLOADED 且冷却更长（测试源码解析自动登记）,用例,engine/observe,过载转 OVERLOADED 且冷却更长
+1088,T:ObserveStateTest#status 败转 DEGRADED 且可继续调用,engine·ObserveStateTest·status 败转 DEGRADED 且可继续调,engine 域「T:ObserveStateTest」的独立行为：status 败转 DEGRADED 且可继续调用（测试源码解析自动登记）,用例,engine/observe,status 败转 DEGRADED 且可继续调用
+1089,T:ObserveStateTest#冷却过后可再探测,engine·ObserveStateTest·冷却过后可再探测,engine 域「T:ObserveStateTest」的独立行为：冷却过后可再探测（测试源码解析自动登记）,用例,engine/observe,冷却过后可再探测
+1090,T:ObserveStateTest#DISCONNECTED 态拒工具调用,engine·ObserveStateTest·DISCONNECTED 态拒工具调用,engine 域「T:ObserveStateTest」的独立行为：DISCONNECTED 态拒工具调用（测试源码解析自动登记）,用例,engine/observe,DISCONNECTED 态拒工具调用
+1091,T:ObserveStateTest#READY 态工具失败不打断 READY,engine·ObserveStateTest·READY 态工具失败不打断 READY,engine 域「T:ObserveStateTest」的独立行为：READY 态工具失败不打断 READY（测试源码解析自动登记）,用例,engine/observe,READY 态工具失败不打断 READY
+1092,T:ObserveStateTest#六态中文显示名,engine·ObserveStateTest·六态中文显示名,engine 域「T:ObserveStateTest」的独立行为：六态中文显示名（测试源码解析自动登记）,用例,engine/observe,六态中文显示名
+1093,T:BoardReaderTest#解板全字段,engine·BoardReaderTest·解板全字段,engine 域「T:BoardReaderTest」的独立行为：解板全字段（测试源码解析自动登记）,用例,engine/observe,解板全字段
+1094,T:BoardReaderTest#缺必需字段如实报,engine·BoardReaderTest·缺必需字段如实报,engine 域「T:BoardReaderTest」的独立行为：缺必需字段如实报（测试源码解析自动登记）,用例,engine/observe,缺必需字段如实报
+1095,T:BoardReaderTest#singleton_hint 缺省用短名,engine·BoardReaderTest·singleton_hint 缺省用短名,engine 域「T:BoardReaderTest」的独立行为：singleton_hint 缺省用短名（测试源码解析自动登记）,用例,engine/observe,singleton_hint 缺省用短名
+1096,T:BoardReaderTest#切值 int float bool 指针,engine·BoardReaderTest·切值 int float bool 指针,engine 域「T:BoardReaderTest」的独立行为：切值 int float bool 指针（测试源码解析自动登记）,用例,engine/observe,切值 int float bool 指针
+1097,T:BoardReaderTest#disappeared 跳过且不算尺寸,engine·BoardReaderTest·disappeared 跳过且不算尺寸,engine 域「T:BoardReaderTest」的独立行为：disappeared 跳过且不算尺寸（测试源码解析自动登记）,用例,engine/observe,disappeared 跳过且不算尺寸
+1098,T:BoardReaderTest#越界如实报不炸,engine·BoardReaderTest·越界如实报不炸,engine 域「T:BoardReaderTest」的独立行为：越界如实报不炸（测试源码解析自动登记）,用例,engine/observe,越界如实报不炸
+1099,T:BoardReaderTest#requiredBytes 封顶 65536,engine·BoardReaderTest·requiredBytes 封顶 65536,engine 域「T:BoardReaderTest」的独立行为：requiredBytes 封顶 65536（测试源码解析自动登记）,用例,engine/observe,requiredBytes 封顶 65536
+1100,T:BoardReaderTest#全链 read_mem 文本到值,engine·BoardReaderTest·全链 read_mem 文本到值,engine 域「T:BoardReaderTest」的独立行为：全链 read_mem 文本到值（测试源码解析自动登记）,用例,engine/observe,全链 read_mem 文本到值
+1101,T:UmaToolTest#全族注册且桥在时可见,engine·UmaToolTest·全族注册且桥在时可见,engine 域「T:UmaToolTest」的独立行为：全族注册且桥在时可见（测试源码解析自动登记）,用例,engine/observe,全族注册且桥在时可见
+1102,T:UmaToolTest#桥缺席如实报账,engine·UmaToolTest·桥缺席如实报账,engine 域「T:UmaToolTest」的独立行为：桥缺席如实报账（测试源码解析自动登记）,用例,engine/observe,桥缺席如实报账
+1103,T:UmaToolTest#health 端点映射与原文回传,engine·UmaToolTest·health 端点映射与原文回传,engine 域「T:UmaToolTest」的独立行为：health 端点映射与原文回传（测试源码解析自动登记）,用例,engine/observe,health 端点映射与原文回传
+1104,T:UmaToolTest#search_classes 关键词 URL 编码,engine·UmaToolTest·search_classes 关键词 URL 编,engine 域「T:UmaToolTest」的独立行为：search_classes 关键词 URL 编码（测试源码解析自动登记）,用例,engine/observe,search_classes 关键词 URL 编码
+1105,T:UmaToolTest#observations 带 after_id 且负数归零,engine·UmaToolTest·observations 带 after_id ,engine 域「T:UmaToolTest」的独立行为：observations 带 after_id 且负数归零（测试源码解析自动登记）,用例,engine/observe,observations 带 after_id 且负数归零
+1106,T:UmaToolTest#read_endpoint 缺路径报错,engine·UmaToolTest·read_endpoint 缺路径报错,engine 域「T:UmaToolTest」的独立行为：read_endpoint 缺路径报错（测试源码解析自动登记）,用例,engine/observe,read_endpoint 缺路径报错
+1107,T:UmaToolTest#状态机拒：DISCONNECTED 态工具被挡,engine·UmaToolTest·状态机拒：DISCONNECTED 态工具被挡,engine 域「T:UmaToolTest」的独立行为：状态机拒：DISCONNECTED 态工具被挡（测试源码解析自动登记）,用例,engine/observe,状态机拒：DISCONNECTED 态工具被挡
+1108,T:UmaToolTest#READY 态 HTTP 500 报账不炸,engine·UmaToolTest·READY 态 HTTP 500 报账不炸,engine 域「T:UmaToolTest」的独立行为：READY 态 HTTP 500 报账不炸（测试源码解析自动登记）,用例,engine/observe,READY 态 HTTP 500 报账不炸
+1109,T:UmaToolTest#单并发：busy 中再调被挡,engine·UmaToolTest·单并发：busy 中再调被挡,engine 域「T:UmaToolTest」的独立行为：单并发：busy 中再调被挡（测试源码解析自动登记）,用例,engine/observe,单并发：busy 中再调被挡
+1110,T:UmaToolTest#报错带中文人话不甩裸码,engine·UmaToolTest·报错带中文人话不甩裸码,engine 域「T:UmaToolTest」的独立行为：报错带中文人话不甩裸码（测试源码解析自动登记）,用例,engine/observe,报错带中文人话不甩裸码
+1111,T:UmaToolTest#连不上报人话指路探测,engine·UmaToolTest·连不上报人话指路探测,engine 域「T:UmaToolTest」的独立行为：连不上报人话指路探测（测试源码解析自动登记）,用例,engine/observe,连不上报人话指路探测
+1112,T:UmaToolTest#无参工具 schema 显式无需参数,engine·UmaToolTest·无参工具 schema 显式无需参数,engine 域「T:UmaToolTest」的独立行为：无参工具 schema 显式无需参数（测试源码解析自动登记）,用例,engine/observe,无参工具 schema 显式无需参数
+1113,T:FieldCardAndSpoolTest#存取闭环同版本同类,engine·FieldCardAndSpoolTest·存取闭环同版本同类,engine 域「T:FieldCardAndSpoolTest」的独立行为：存取闭环同版本同类（测试源码解析自动登记）,用例,engine/observe,存取闭环同版本同类
+1114,T:FieldCardAndSpoolTest#不同版本各存各的互不覆盖,engine·FieldCardAndSpoolTest·不同版本各存各的互不覆盖,engine 域「T:FieldCardAndSpoolTest」的独立行为：不同版本各存各的互不覆盖（测试源码解析自动登记）,用例,engine/observe,不同版本各存各的互不覆盖
+1115,T:FieldCardAndSpoolTest#坏卡如实报错不静默,engine·FieldCardAndSpoolTest·坏卡如实报错不静默,engine 域「T:FieldCardAndSpoolTest」的独立行为：坏卡如实报错不静默（测试源码解析自动登记）,用例,engine/observe,坏卡如实报错不静默
+1116,T:FieldCardAndSpoolTest#路径分隔符类名直接拒,engine·FieldCardAndSpoolTest·路径分隔符类名直接拒,engine 域「T:FieldCardAndSpoolTest」的独立行为：路径分隔符类名直接拒（测试源码解析自动登记）,用例,engine/observe,路径分隔符类名直接拒
+1117,T:FieldCardAndSpoolTest#没有的卡给null,engine·FieldCardAndSpoolTest·没有的卡给null,engine 域「T:FieldCardAndSpoolTest」的独立行为：没有的卡给null（测试源码解析自动登记）,用例,engine/observe,没有的卡给null
+1118,T:FieldCardAndSpoolTest#hexdump解析吃真实形状,engine·FieldCardAndSpoolTest·hexdump解析吃真实形状,engine 域「T:FieldCardAndSpoolTest」的独立行为：hexdump解析吃真实形状（测试源码解析自动登记）,用例,engine/observe,hexdump解析吃真实形状
+1119,T:FieldCardAndSpoolTest#hexdump满行后ASCII区hex状词不误吃,engine·FieldCardAndSpoolTest·hexdump满行后ASCII区hex状词不误吃,engine 域「T:FieldCardAndSpoolTest」的独立行为：hexdump满行后ASCII区hex状词不误吃（测试源码解析自动登记）,用例,engine/observe,hexdump满行后ASCII区hex状词不误吃
+1120,T:FieldCardAndSpoolTest#分片搬运与断点续传,engine·FieldCardAndSpoolTest·分片搬运与断点续传,engine 域「T:FieldCardAndSpoolTest」的独立行为：分片搬运与断点续传（测试源码解析自动登记）,用例,engine/observe,分片搬运与断点续传
+1121,T:FieldCardAndSpoolTest#addr参数不合法直接拒,engine·FieldCardAndSpoolTest·addr参数不合法直接拒,engine 域「T:FieldCardAndSpoolTest」的独立行为：addr参数不合法直接拒（测试源码解析自动登记）,用例,engine/observe,addr参数不合法直接拒
+1122,T:MetadataParserTest#header解析版本31与段表,engine·MetadataParserTest·header解析版本31与段表,engine 域「T:MetadataParserTest」的独立行为：header解析版本31与段表（测试源码解析自动登记）,用例,engine/observe,header解析版本31与段表
+1123,T:MetadataParserTest#类清单流式迭代,engine·MetadataParserTest·类清单流式迭代,engine 域「T:MetadataParserTest」的独立行为：类清单流式迭代（测试源码解析自动登记）,用例,engine/observe,类清单流式迭代
+1124,T:MetadataParserTest#按简名与全名查类字段,engine·MetadataParserTest·按简名与全名查类字段,engine 域「T:MetadataParserTest」的独立行为：按简名与全名查类字段（测试源码解析自动登记）,用例,engine/observe,按简名与全名查类字段
+1125,T:MetadataParserTest#坏魔数如实拒,engine·MetadataParserTest·坏魔数如实拒,engine 域「T:MetadataParserTest」的独立行为：坏魔数如实拒（测试源码解析自动登记）,用例,engine/observe,坏魔数如实拒
+1126,T:MetadataParserTest#不支持版本如实拒并列清单,engine·MetadataParserTest·不支持版本如实拒并列清单,engine 域「T:MetadataParserTest」的独立行为：不支持版本如实拒并列清单（测试源码解析自动登记）,用例,engine/observe,不支持版本如实拒并列清单
+1127,T:ObserveClientTest#get 拼 2xx 原文并带事实账,engine·ObserveClientTest·get 拼 2xx 原文并带事实账,engine 域「T:ObserveClientTest」的独立行为：get 拼 2xx 原文并带事实账（测试源码解析自动登记）,用例,engine/observe,get 拼 2xx 原文并带事实账
+1128,T:ObserveClientTest#非 2xx 报错误体不炸,engine·ObserveClientTest·非 2xx 报错误体不炸,engine 域「T:ObserveClientTest」的独立行为：非 2xx 报错误体不炸（测试源码解析自动登记）,用例,engine/observe,非 2xx 报错误体不炸
+1129,T:ObserveClientTest#连接失败转成账,engine·ObserveClientTest·连接失败转成账,engine 域「T:ObserveClientTest」的独立行为：连接失败转成账（测试源码解析自动登记）,用例,engine/observe,连接失败转成账
+1130,T:ObserveClientTest#超限断流报账不炸,engine·ObserveClientTest·超限断流报账不炸,engine 域「T:ObserveClientTest」的独立行为：超限断流报账不炸（测试源码解析自动登记）,用例,engine/observe,超限断流报账不炸
+1131,T:ObserveClientTest#路径校验拒绝注入与坏形状,engine·ObserveClientTest·路径校验拒绝注入与坏形状,engine 域「T:ObserveClientTest」的独立行为：路径校验拒绝注入与坏形状（测试源码解析自动登记）,用例,engine/observe,路径校验拒绝注入与坏形状
+1132,T:ObserveClientTest#safeSegment URL 编码防斜杠注入,engine·ObserveClientTest·safeSegment URL 编码防斜杠注入,engine 域「T:ObserveClientTest」的独立行为：safeSegment URL 编码防斜杠注入（测试源码解析自动登记）,用例,engine/observe,safeSegment URL 编码防斜杠注入
+1133,T:ObserveClientTest#读超时按端点分档,engine·ObserveClientTest·读超时按端点分档,engine 域「T:ObserveClientTest」的独立行为：读超时按端点分档（测试源码解析自动登记）,用例,engine/observe,读超时按端点分档
+1134,T:ObserveClientTest#probe 全通 = READY 序列,engine·ObserveClientTest·probe 全通 = READY 序列,engine 域「T:ObserveClientTest」的独立行为：probe 全通 = READY 序列（测试源码解析自动登记）,用例,engine/observe,probe 全通 = READY 序列
+1135,T:ObserveClientTest#probe health 败只发 health,engine·ObserveClientTest·probe health 败只发 health,engine 域「T:ObserveClientTest」的独立行为：probe health 败只发 health（测试源码解析自动登记）,用例,engine/observe,probe health 败只发 health
+1136,T:ObserveClientTest#probe health 通 status 败 = 降级素材,engine·ObserveClientTest·probe health 通 status 败 ,engine 域「T:ObserveClientTest」的独立行为：probe health 通 status 败 = 降级素材（测试源码解析自动登记）,用例,engine/observe,probe health 通 status 败 = 降级素材
+1137,T:ObserveClientTest#probe 非 JSON 原文 = 疑似非 hlpatch 素材,engine·ObserveClientTest·probe 非 JSON 原文 = 疑似非 hl,engine 域「T:ObserveClientTest」的独立行为：probe 非 JSON 原文 = 疑似非 hlpatch 素材（测试源码解析自动登记）,用例,engine/observe,probe 非 JSON 原文 = 疑似非 hlpatch 素材
+1138,T:OffsetProbeTest#引用与long按8字节对齐穷举,engine·OffsetProbeTest·引用与long按8字节对齐穷举,engine 域「T:OffsetProbeTest」的独立行为：引用与long按8字节对齐穷举（测试源码解析自动登记）,用例,engine/observe,引用与long按8字节对齐穷举
+1139,T:OffsetProbeTest#int按4字节对齐穷举,engine·OffsetProbeTest·int按4字节对齐穷举,engine 域「T:OffsetProbeTest」的独立行为：int按4字节对齐穷举（测试源码解析自动登记）,用例,engine/observe,int按4字节对齐穷举
+1140,T:OffsetProbeTest#short按2字节对齐,engine·OffsetProbeTest·short按2字节对齐,engine 域「T:OffsetProbeTest」的独立行为：short按2字节对齐（测试源码解析自动登记）,用例,engine/observe,short按2字节对齐
+1141,T:OffsetProbeTest#未知类型按引用档8兜底宁可少候选不误报,engine·OffsetProbeTest·未知类型按引用档8兜底宁可少候选不误报,engine 域「T:OffsetProbeTest」的独立行为：未知类型按引用档8兜底宁可少候选不误报（测试源码解析自动登记）,用例,engine/observe,未知类型按引用档8兜底宁可少候选不误报
+1142,T:OffsetProbeTest#非对齐旧偏移不在格点上时如实给空表,engine·OffsetProbeTest·非对齐旧偏移不在格点上时如实给空表,engine 域「T:OffsetProbeTest」的独立行为：非对齐旧偏移不在格点上时如实给空表（测试源码解析自动登记）,用例,engine/observe,非对齐旧偏移不在格点上时如实给空表
+1143,T:OffsetProbeTest#窗口与类大小裁剪候选,engine·OffsetProbeTest·窗口与类大小裁剪候选,engine 域「T:OffsetProbeTest」的独立行为：窗口与类大小裁剪候选（测试源码解析自动登记）,用例,engine/observe,窗口与类大小裁剪候选
+1144,T:OffsetProbeTest#名字没变偏移没变记保留,engine·OffsetProbeTest·名字没变偏移没变记保留,engine 域「T:OffsetProbeTest」的独立行为：名字没变偏移没变记保留（测试源码解析自动登记）,用例,engine/observe,名字没变偏移没变记保留
+1145,T:OffsetProbeTest#同名不同偏移记平移并给候选,engine·OffsetProbeTest·同名不同偏移记平移并给候选,engine 域「T:OffsetProbeTest」的独立行为：同名不同偏移记平移并给候选（测试源码解析自动登记）,用例,engine/observe,同名不同偏移记平移并给候选
+1146,T:OffsetProbeTest#新表多出的字段记新增,engine·OffsetProbeTest·新表多出的字段记新增,engine 域「T:OffsetProbeTest」的独立行为：新表多出的字段记新增（测试源码解析自动登记）,用例,engine/observe,新表多出的字段记新增
+1147,T:OffsetProbeTest#旧表有新表没有记消失并穷举候选,engine·OffsetProbeTest·旧表有新表没有记消失并穷举候选,engine 域「T:OffsetProbeTest」的独立行为：旧表有新表没有记消失并穷举候选（测试源码解析自动登记）,用例,engine/observe,旧表有新表没有记消失并穷举候选
+1148,T:OffsetProbeTest#改名按相似度给候选,engine·OffsetProbeTest·改名按相似度给候选,engine 域「T:OffsetProbeTest」的独立行为：改名按相似度给候选（测试源码解析自动登记）,用例,engine/observe,改名按相似度给候选
+1149,T:OffsetProbeTest#完全无关的名字不硬凑改名候选,engine·OffsetProbeTest·完全无关的名字不硬凑改名候选,engine 域「T:OffsetProbeTest」的独立行为：完全无关的名字不硬凑改名候选（测试源码解析自动登记）,用例,engine/observe,完全无关的名字不硬凑改名候选
+1150,T:OffsetProbeTest#静态字段负偏移不进对账,engine·OffsetProbeTest·静态字段负偏移不进对账,engine 域「T:OffsetProbeTest」的独立行为：静态字段负偏移不进对账（测试源码解析自动登记）,用例,engine/observe,静态字段负偏移不进对账
+1151,T:OffsetProbeTest#空表对空表不炸,engine·OffsetProbeTest·空表对空表不炸,engine 域「T:OffsetProbeTest」的独立行为：空表对空表不炸（测试源码解析自动登记）,用例,engine/observe,空表对空表不炸
+1152,T:OffsetProbeTest#解析fields端点真实形状,engine·OffsetProbeTest·解析fields端点真实形状,engine 域「T:OffsetProbeTest」的独立行为：解析fields端点真实形状（测试源码解析自动登记）,用例,engine/observe,解析fields端点真实形状
+1153,T:OffsetProbeTest#坏JSON明示报错不静默,engine·OffsetProbeTest·坏JSON明示报错不静默,engine 域「T:OffsetProbeTest」的独立行为：坏JSON明示报错不静默（测试源码解析自动登记）,用例,engine/observe,坏JSON明示报错不静默
+1154,T:OffsetProbeTest#render出平移与消失明细,engine·OffsetProbeTest·render出平移与消失明细,engine 域「T:OffsetProbeTest」的独立行为：render出平移与消失明细（测试源码解析自动登记）,用例,engine/observe,render出平移与消失明细
+1155,T:BoardAndParseToolTest#概要与按类查,engine·BoardAndParseToolTest·概要与按类查,engine 域「T:BoardAndParseToolTest」的独立行为：概要与按类查（测试源码解析自动登记）,用例,engine/observe,概要与按类查
+1156,T:BoardAndParseToolTest#文件不存在人话指路,engine·BoardAndParseToolTest·文件不存在人话指路,engine 域「T:BoardAndParseToolTest」的独立行为：文件不存在人话指路（测试源码解析自动登记）,用例,engine/observe,文件不存在人话指路
+1157,T:BoardAndParseToolTest#板不存在人话指路,engine·BoardAndParseToolTest·板不存在人话指路,engine 域「T:BoardAndParseToolTest」的独立行为：板不存在人话指路（测试源码解析自动登记）,用例,engine/observe,板不存在人话指路
+1158,T:BoardAndParseToolTest#全链单例寻址切值,engine·BoardAndParseToolTest·全链单例寻址切值,engine 域「T:BoardAndParseToolTest」的独立行为：全链单例寻址切值（测试源码解析自动登记）,用例,engine/observe,全链单例寻址切值
+1159,T:BoardAndParseToolTest#单例没加载如实跳过,engine·BoardAndParseToolTest·单例没加载如实跳过,engine 域「T:BoardAndParseToolTest」的独立行为：单例没加载如实跳过（测试源码解析自动登记）,用例,engine/observe,单例没加载如实跳过
+1160,T:LangRegistryTest#标记与数据格式,engine·LangRegistryTest·标记与数据格式,engine 域「T:LangRegistryTest」的独立行为：标记与数据格式（测试源码解析自动登记）,用例,engine/language,标记与数据格式
+1161,T:LangRegistryTest#冷门语言也在,engine·LangRegistryTest·冷门语言也在,engine 域「T:LangRegistryTest」的独立行为：冷门语言也在（测试源码解析自动登记）,用例,engine/language,冷门语言也在
+1162,T:LangRegistryTest#未知扩展名落纯文本兜底——不省略任何格式,engine·LangRegistryTest·未知扩展名落纯文本兜底——不省略任何格式,engine 域「T:LangRegistryTest」的独立行为：未知扩展名落纯文本兜底——不省略任何格式（测试源码解析自动登记）,用例,engine/language,未知扩展名落纯文本兜底——不省略任何格式
+1163,T:LangRegistryTest#大小写与点号前缀都吃,engine·LangRegistryTest·大小写与点号前缀都吃,engine 域「T:LangRegistryTest」的独立行为：大小写与点号前缀都吃（测试源码解析自动登记）,用例,engine/language,大小写与点号前缀都吃
+1164,T:LangRegistryTest#无扩展名文件名映射,engine·LangRegistryTest·无扩展名文件名映射,engine 域「T:LangRegistryTest」的独立行为：无扩展名文件名映射（测试源码解析自动登记）,用例,engine/language,无扩展名文件名映射
+1165,T:LangRegistryTest#表规模钉住：映射不能悄悄缩水,engine·LangRegistryTest·表规模钉住：映射不能悄悄缩水,engine 域「T:LangRegistryTest」的独立行为：表规模钉住：映射不能悄悄缩水（测试源码解析自动登记）,用例,engine/language,表规模钉住：映射不能悄悄缩水
+1166,T:HexDumpTest#dump 行三栏,engine·HexDumpTest·dump 行三栏,engine 域「T:HexDumpTest」的独立行为：dump 行三栏（测试源码解析自动登记）,用例,engine/language,dump 行三栏
+1167,T:HexDumpTest#可打印字符进 ASCII 栏,engine·HexDumpTest·可打印字符进 ASCII 栏,engine 域「T:HexDumpTest」的独立行为：可打印字符进 ASCII 栏（测试源码解析自动登记）,用例,engine/language,可打印字符进 ASCII 栏
+1168,T:HexDumpTest#四进制换算,engine·HexDumpTest·四进制换算,engine 域「T:HexDumpTest」的独立行为：四进制换算（测试源码解析自动登记）,用例,engine/language,四进制换算
+1169,T:HexDumpTest#前缀识别,engine·HexDumpTest·前缀识别,engine 域「T:HexDumpTest」的独立行为：前缀识别（测试源码解析自动登记）,用例,engine/language,前缀识别
+1170,T:HexDumpTest#位分组账,engine·HexDumpTest·位分组账,engine 域「T:HexDumpTest」的独立行为：位分组账（测试源码解析自动登记）,用例,engine/language,位分组账
+1171,T:HexDumpTest#浮点分解,engine·HexDumpTest·浮点分解,engine 域「T:HexDumpTest」的独立行为：浮点分解（测试源码解析自动登记）,用例,engine/language,浮点分解
+1172,T:HexDumpTest#字节人话,engine·HexDumpTest·字节人话,engine 域「T:HexDumpTest」的独立行为：字节人话（测试源码解析自动登记）,用例,engine/language,字节人话
+1173,T:HexDumpTest#坏输入给 null 不炸,engine·HexDumpTest·坏输入给 null 不炸,engine 域「T:HexDumpTest」的独立行为：坏输入给 null 不炸（测试源码解析自动登记）,用例,engine/language,坏输入给 null 不炸
+1174,T:HexDumpTest#分卷数边界,engine·HexDumpTest·分卷数边界,engine 域「T:HexDumpTest」的独立行为：分卷数边界（测试源码解析自动登记）,用例,engine/language,分卷数边界
+1175,T:LanguageHighlightMatrixTest#_cCase,engine·LanguageHighlightMatrixTest·_cCase,engine 域「T:LanguageHighlightMatrixTest」的独立行为：_cCase（测试源码解析自动登记）,用例,engine/language,_cCase
+1176,T:LanguageHighlightMatrixTest#_cppCase,engine·LanguageHighlightMatrixTest·_cppCase,engine 域「T:LanguageHighlightMatrixTest」的独立行为：_cppCase（测试源码解析自动登记）,用例,engine/language,_cppCase
+1177,T:LanguageHighlightMatrixTest#_csharpCase,engine·LanguageHighlightMatrixTest·_csharpCase,engine 域「T:LanguageHighlightMatrixTest」的独立行为：_csharpCase（测试源码解析自动登记）,用例,engine/language,_csharpCase
+1178,T:LanguageHighlightMatrixTest#_javascriptCase,engine·LanguageHighlightMatrixTest·_javascriptCase,engine 域「T:LanguageHighlightMatrixTest」的独立行为：_javascriptCase（测试源码解析自动登记）,用例,engine/language,_javascriptCase
+1179,T:LanguageHighlightMatrixTest#_typescriptCase,engine·LanguageHighlightMatrixTest·_typescriptCase,engine 域「T:LanguageHighlightMatrixTest」的独立行为：_typescriptCase（测试源码解析自动登记）,用例,engine/language,_typescriptCase
+1180,T:LanguageHighlightMatrixTest#aliasTableCoversTheThreeLongNames,engine·LanguageHighlightMatrixTest·aliasTableCoversTheThree,engine 域「T:LanguageHighlightMatrixTest」的独立行为：aliasTableCoversTheThreeLongNames（测试源码解析自动登记）,用例,engine/language,aliasTableCoversTheThreeLongNames
+1181,T:LanguageHighlightMatrixTest#wiringIsActuallyPluggedIn,engine·LanguageHighlightMatrixTest·wiringIsActuallyPluggedI,engine 域「T:LanguageHighlightMatrixTest」的独立行为：wiringIsActuallyPluggedIn（测试源码解析自动登记）,用例,engine/language,wiringIsActuallyPluggedIn
+1182,T:HighlightTest#行内注释后半段灰,engine·HighlightTest·行内注释后半段灰,engine 域「T:HighlightTest」的独立行为：行内注释后半段灰（测试源码解析自动登记）,用例,engine/language,行内注释后半段灰
+1183,T:HighlightTest#字符串整段,engine·HighlightTest·字符串整段,engine 域「T:HighlightTest」的独立行为：字符串整段（测试源码解析自动登记）,用例,engine/language,字符串整段
+1184,T:HighlightTest#数字与关键词,engine·HighlightTest·数字与关键词,engine 域「T:HighlightTest」的独立行为：数字与关键词（测试源码解析自动登记）,用例,engine/language,数字与关键词
+1185,T:HighlightTest#块注释跨行状态机,engine·HighlightTest·块注释跨行状态机,engine 域「T:HighlightTest」的独立行为：块注释跨行状态机（测试源码解析自动登记）,用例,engine/language,块注释跨行状态机
+1186,T:HighlightTest#python 单双引号不炸就行,engine·HighlightTest·python 单双引号不炸就行,engine 域「T:HighlightTest」的独立行为：python 单双引号不炸就行（测试源码解析自动登记）,用例,engine/language,python 单双引号不炸就行
+1187,T:HighlightTest#未知语言退化为注释与字符串也能看,engine·HighlightTest·未知语言退化为注释与字符串也能看,engine 域「T:HighlightTest」的独立行为：未知语言退化为注释与字符串也能看（测试源码解析自动登记）,用例,engine/language,未知语言退化为注释与字符串也能看
+1188,T:GitHubRepoClientTest#readFile 404 自愈：main 不存在探默认分支 master 重试成功,engine·GitHubRepoClientTest·readFile 404 自愈：main 不存在,engine 域「T:GitHubRepoClientTest」的独立行为：readFile 404 自愈：main 不存在探默认分支 master 重试成（测试源码解析自动登记）,用例,engine/github,readFile 404 自愈：main 不存在探默认分支 master 重试成功
+1189,T:GitHubRepoClientTest#readFile 404 且 ref 恰是默认分支：不重试，文案带默认分支,engine·GitHubRepoClientTest·readFile 404 且 ref 恰是默认分,engine 域「T:GitHubRepoClientTest」的独立行为：readFile 404 且 ref 恰是默认分支：不重试，文案带默认分支（测试源码解析自动登记）,用例,engine/github,readFile 404 且 ref 恰是默认分支：不重试，文案带默认分支
+1190,T:GitHubRepoClientTest#browse 404 自愈：同 main 病自动切默认分支,engine·GitHubRepoClientTest·browse 404 自愈：同 main 病自动,engine 域「T:GitHubRepoClientTest」的独立行为：browse 404 自愈：同 main 病自动切默认分支（测试源码解析自动登记）,用例,engine/github,browse 404 自愈：同 main 病自动切默认分支
+1191,T:GitHubRepoClientTest#listCommits 404 自愈：切默认分支重取,engine·GitHubRepoClientTest·listCommits 404 自愈：切默认分支,engine 域「T:GitHubRepoClientTest」的独立行为：listCommits 404 自愈：切默认分支重取（测试源码解析自动登记）,用例,engine/github,listCommits 404 自愈：切默认分支重取
+1192,T:AxmlManifestTest#手拼 AXML 抽出包名与版本,engine·AxmlManifestTest·手拼 AXML 抽出包名与版本,engine 域「T:AxmlManifestTest」的独立行为：手拼 AXML 抽出包名与版本（测试源码解析自动登记）,用例,engine/apk,手拼 AXML 抽出包名与版本
+1193,T:AxmlManifestTest#UTF16 串池路径同样抽出包名与版本,engine·AxmlManifestTest·UTF16 串池路径同样抽出包名与版本,engine 域「T:AxmlManifestTest」的独立行为：UTF16 串池路径同样抽出包名与版本（测试源码解析自动登记）,用例,engine/apk,UTF16 串池路径同样抽出包名与版本
+1194,T:AxmlManifestTest#截断与越界串池不炸如实返回空,engine·AxmlManifestTest·截断与越界串池不炸如实返回空,engine 域「T:AxmlManifestTest」的独立行为：截断与越界串池不炸如实返回空（测试源码解析自动登记）,用例,engine/apk,截断与越界串池不炸如实返回空
+1195,T:ApkSignatureTest#自造 v2 块抽出证书 subject 与指纹,engine·ApkSignatureTest·自造 v2 块抽出证书 subject 与指纹,engine 域「T:ApkSignatureTest」的独立行为：自造 v2 块抽出证书 subject 与指纹（测试源码解析自动登记）,用例,engine/apk,自造 v2 块抽出证书 subject 与指纹
+1196,T:ApkSignatureTest#自造 v3 块走 V3_ID 路径,engine·ApkSignatureTest·自造 v3 块走 V3_ID 路径,engine 域「T:ApkSignatureTest」的独立行为：自造 v3 块走 V3_ID 路径（测试源码解析自动登记）,用例,engine/apk,自造 v3 块走 V3_ID 路径
+1197,T:ApkSignatureTest#多证书计数走满 certificates 数组,engine·ApkSignatureTest·多证书计数走满 certificates 数组,engine 域「T:ApkSignatureTest」的独立行为：多证书计数走满 certificates 数组（测试源码解析自动登记）,用例,engine/apk,多证书计数走满 certificates 数组
+1198,T:ApkSignatureTest#中央目录贴零如实报无签名空间,engine·ApkSignatureTest·中央目录贴零如实报无签名空间,engine 域「T:ApkSignatureTest」的独立行为：中央目录贴零如实报无签名空间（测试源码解析自动登记）,用例,engine/apk,中央目录贴零如实报无签名空间
+1199,T:ApkSignatureTest#魔数错位如实报没有签名块,engine·ApkSignatureTest·魔数错位如实报没有签名块,engine 域「T:ApkSignatureTest」的独立行为：魔数错位如实报没有签名块（测试源码解析自动登记）,用例,engine/apk,魔数错位如实报没有签名块
+1200,T:ApkSignatureTest#非 APK 文件如实报错不猜,engine·ApkSignatureTest·非 APK 文件如实报错不猜,engine 域「T:ApkSignatureTest」的独立行为：非 APK 文件如实报错不猜（测试源码解析自动登记）,用例,engine/apk,非 APK 文件如实报错不猜
+1201,T:CiNotifyDeciderTest#firstSightAnnouncesAndRecords,engine·CiNotifyDeciderTest·firstSightAnnouncesAndRe,engine 域「T:CiNotifyDeciderTest」的独立行为：firstSightAnnouncesAndRecords（测试源码解析自动登记）,用例,repotool/notify,firstSightAnnouncesAndRecords
+1202,T:CiNotifyDeciderTest#sameIdStaysSilent,engine·CiNotifyDeciderTest·sameIdStaysSilent,engine 域「T:CiNotifyDeciderTest」的独立行为：sameIdStaysSilent（测试源码解析自动登记）,用例,repotool/notify,sameIdStaysSilent
+1203,T:CiNotifyDeciderTest#newerRunAnnounces,engine·CiNotifyDeciderTest·newerRunAnnounces,engine 域「T:CiNotifyDeciderTest」的独立行为：newerRunAnnounces（测试源码解析自动登记）,用例,repotool/notify,newerRunAnnounces
+1204,T:CiNotifyDeciderTest#stillRunningNeitherRingsNorRecords,engine·CiNotifyDeciderTest·stillRunningNeitherRings,engine 域「T:CiNotifyDeciderTest」的独立行为：stillRunningNeitherRingsNorRecords（测试源码解析自动登记）,用例,repotool/notify,stillRunningNeitherRingsNorRecords
+1205,T:CiNotifyDeciderTest#nothingToLookAtStaysSilent,engine·CiNotifyDeciderTest·nothingToLookAtStaysSile,engine 域「T:CiNotifyDeciderTest」的独立行为：nothingToLookAtStaysSilent（测试源码解析自动登记）,用例,repotool/notify,nothingToLookAtStaysSilent
+1206,T:CiNotifyDeciderTest#garbageLastSeenIdDoesNotCrashAndTreatsAsFirstSight,engine·CiNotifyDeciderTest·garbageLastSeenIdDoesNot,engine 域「T:CiNotifyDeciderTest」的独立行为：garbageLastSeenIdDoesNotCrashAndTreatsAs（测试源码解析自动登记）,用例,repotool/notify,garbageLastSeenIdDoesNotCrashAndTreatsAsFirstSight
+1207,T:WriteConfirmGateTest#approveLetsTheWriteThrough,engine·WriteConfirmGateTest·approveLetsTheWriteThrou,engine 域「T:WriteConfirmGateTest」的独立行为：approveLetsTheWriteThrough（测试源码解析自动登记）,用例,repotool/ui/state,approveLetsTheWriteThrough
+1208,T:WriteConfirmGateTest#rejectKeepsEverythingUnwritten,engine·WriteConfirmGateTest·rejectKeepsEverythingUnw,engine 域「T:WriteConfirmGateTest」的独立行为：rejectKeepsEverythingUnwritten（测试源码解析自动登记）,用例,repotool/ui/state,rejectKeepsEverythingUnwritten
+1209,T:WriteConfirmGateTest#timeoutMeansReject,engine·WriteConfirmGateTest·timeoutMeansReject,engine 域「T:WriteConfirmGateTest」的独立行为：timeoutMeansReject（测试源码解析自动登记）,用例,repotool/ui/state,timeoutMeansReject
+1210,T:WriteConfirmGateTest#secondProposalWhileOneIsPendingIsRefused,engine·WriteConfirmGateTest·secondProposalWhileOneIs,engine 域「T:WriteConfirmGateTest」的独立行为：secondProposalWhileOneIsPendingIsRefused（测试源码解析自动登记）,用例,repotool/ui/state,secondProposalWhileOneIsPendingIsRefused
+1211,T:RepoWorkbenchSearchTest#gateBlocksWhenNotBrowsing,engine·RepoWorkbenchSearchTest·gateBlocksWhenNotBrowsin,engine 域「T:RepoWorkbenchSearchTest」的独立行为：gateBlocksWhenNotBrowsing（测试源码解析自动登记）,用例,repotool/ui/state,gateBlocksWhenNotBrowsing
+1212,T:RepoWorkbenchSearchTest#gateBlocksOnNonDefaultBranchAndNamesTheBranch,engine·RepoWorkbenchSearchTest·gateBlocksOnNonDefaultBr,engine 域「T:RepoWorkbenchSearchTest」的独立行为：gateBlocksOnNonDefaultBranchAndNamesTheB（测试源码解析自动登记）,用例,repotool/ui/state,gateBlocksOnNonDefaultBranchAndNamesTheBranch
+1213,T:RepoWorkbenchSearchTest#gateBlocksBlankQuery,engine·RepoWorkbenchSearchTest·gateBlocksBlankQuery,engine 域「T:RepoWorkbenchSearchTest」的独立行为：gateBlocksBlankQuery（测试源码解析自动登记）,用例,repotool/ui/state,gateBlocksBlankQuery
+1214,T:RepoWorkbenchSearchTest#gateBlocksMissingToken,engine·RepoWorkbenchSearchTest·gateBlocksMissingToken,engine 域「T:RepoWorkbenchSearchTest」的独立行为：gateBlocksMissingToken（测试源码解析自动登记）,用例,repotool/ui/state,gateBlocksMissingToken
+1215,T:RepoWorkbenchSearchTest#gatePassesWhenEverythingInPlace,engine·RepoWorkbenchSearchTest·gatePassesWhenEverything,engine 域「T:RepoWorkbenchSearchTest」的独立行为：gatePassesWhenEverythingInPlace（测试源码解析自动登记）,用例,repotool/ui/state,gatePassesWhenEverythingInPlace
+1216,T:RepoWorkbenchSearchTest#runSearchWithoutBrowseStaysOffline,engine·RepoWorkbenchSearchTest·runSearchWithoutBrowseSt,engine 域「T:RepoWorkbenchSearchTest」的独立行为：runSearchWithoutBrowseStaysOffline（测试源码解析自动登记）,用例,repotool/ui/state,runSearchWithoutBrowseStaysOffline
+1217,T:RepoWorkbenchSearchTest#runSearchBlankQuerySaysWriteSomething,engine·RepoWorkbenchSearchTest·runSearchBlankQuerySaysW,engine 域「T:RepoWorkbenchSearchTest」的独立行为：runSearchBlankQuerySaysWriteSomething（测试源码解析自动登记）,用例,repotool/ui/state,runSearchBlankQuerySaysWriteSomething
+1218,T:RepoWorkbenchSearchTest#openSearchHitWithoutBrowseIsBlockedWithoutTouch,engine·RepoWorkbenchSearchTest·openSearchHitWithoutBrow,engine 域「T:RepoWorkbenchSearchTest」的独立行为：openSearchHitWithoutBrowseIsBlockedWitho（测试源码解析自动登记）,用例,repotool/ui/state,openSearchHitWithoutBrowseIsBlockedWithoutTouch
+1219,T:RepoWorkbenchSearchTest#exitBrowseClearsSearchResults,engine·RepoWorkbenchSearchTest·exitBrowseClearsSearchRe,engine 域「T:RepoWorkbenchSearchTest」的独立行为：exitBrowseClearsSearchResults（测试源码解析自动登记）,用例,repotool/ui/state,exitBrowseClearsSearchResults
+1220,T:ContextFeedingTest#systemPromptLeadsTheRequestAndIsNotCountedAgainstHistory,engine·ContextFeedingTest·systemPromptLeadsTheRequ,engine 域「T:ContextFeedingTest」的独立行为：systemPromptLeadsTheRequestAndIsNotCount（测试源码解析自动登记）,用例,repotool/ui/state,systemPromptLeadsTheRequestAndIsNotCountedAgainstHistory
+1221,T:ContextFeedingTest#blankSystemPromptSendsNothingExtra,engine·ContextFeedingTest·blankSystemPromptSendsNo,engine 域「T:ContextFeedingTest」的独立行为：blankSystemPromptSendsNothingExtra（测试源码解析自动登记）,用例,repotool/ui/state,blankSystemPromptSendsNothingExtra
+1222,T:ContextFeedingTest#overlongHistoryTrimsOldestAndAnnouncesTheCount,engine·ContextFeedingTest·overlongHistoryTrimsOlde,engine 域「T:ContextFeedingTest」的独立行为：overlongHistoryTrimsOldestAndAnnouncesTh（测试源码解析自动登记）,用例,repotool/ui/state,overlongHistoryTrimsOldestAndAnnouncesTheCount
+1223,T:ContextFeedingTest#turnLimitIsClampedToOneToFiveHundred,engine·ContextFeedingTest·turnLimitIsClampedToOneT,engine 域「T:ContextFeedingTest」的独立行为：turnLimitIsClampedToOneToFiveHundred（测试源码解析自动登记）,用例,repotool/ui/state,turnLimitIsClampedToOneToFiveHundred
+1224,T:ToolWiringTest#withoutConfirmerTheWriteToolDoesNotExist,engine·ToolWiringTest·withoutConfirmerTheWrite,engine 域「T:ToolWiringTest」的独立行为：withoutConfirmerTheWriteToolDoesNotExist（测试源码解析自动登记）,用例,repotool/ui/state,withoutConfirmerTheWriteToolDoesNotExist
+1225,T:ToolWiringTest#withConfirmerTheWriteToolIsRegistered,engine·ToolWiringTest·withConfirmerTheWriteToo,engine 域「T:ToolWiringTest」的独立行为：withConfirmerTheWriteToolIsRegistered（测试源码解析自动登记）,用例,repotool/ui/state,withConfirmerTheWriteToolIsRegistered
+1226,T:ToolWiringTest#readToolsAreRegisteredEitherWay,engine·ToolWiringTest·readToolsAreRegisteredEi,engine 域「T:ToolWiringTest」的独立行为：readToolsAreRegisteredEitherWay（测试源码解析自动登记）,用例,repotool/ui/state,readToolsAreRegisteredEitherWay
+1227,T:RetrySettingsTest#switchDefaultsToOff,engine·RetrySettingsTest·switchDefaultsToOff,engine 域「T:RetrySettingsTest」的独立行为：switchDefaultsToOff（测试源码解析自动登记）,用例,repotool/ui/state,switchDefaultsToOff
+1228,T:RetrySettingsTest#offMeansNoAutoResendForCostlyGatewayFailure,engine·RetrySettingsTest·offMeansNoAutoResendForC,engine 域「T:RetrySettingsTest」的独立行为：offMeansNoAutoResendForCostlyGatewayFail（测试源码解析自动登记）,用例,repotool/ui/state,offMeansNoAutoResendForCostlyGatewayFailure
+1229,T:RetrySettingsTest#onMeansAutoResendForCostlyGatewayFailure,engine·RetrySettingsTest·onMeansAutoResendForCost,engine 域「T:RetrySettingsTest」的独立行为：onMeansAutoResendForCostlyGatewayFailure（测试源码解析自动登记）,用例,repotool/ui/state,onMeansAutoResendForCostlyGatewayFailure
+1230,T:RetrySettingsTest#noSwitchSettingResendsAPartialStream,engine·RetrySettingsTest·noSwitchSettingResendsAP,engine 域「T:RetrySettingsTest」的独立行为：noSwitchSettingResendsAPartialStream（测试源码解析自动登记）,用例,repotool/ui/state,noSwitchSettingResendsAPartialStream
+1231,T:RetrySettingsTest#noSwitchSettingResendsContextOverflow,engine·RetrySettingsTest·noSwitchSettingResendsCo,engine 域「T:RetrySettingsTest」的独立行为：noSwitchSettingResendsContextOverflow（测试源码解析自动登记）,用例,repotool/ui/state,noSwitchSettingResendsContextOverflow
+1232,T:RetrySettingsTest#freeDownloadRetriesRegardlessOfTheSwitch,engine·RetrySettingsTest·freeDownloadRetriesRegar,engine 域「T:RetrySettingsTest」的独立行为：freeDownloadRetriesRegardlessOfTheSwitch（测试源码解析自动登记）,用例,repotool/ui/state,freeDownloadRetriesRegardlessOfTheSwitch
+1233,T:RetrySettingsTest#flagWritesThroughToTheSettingsFileAndSurvivesRestart,engine·RetrySettingsTest·flagWritesThroughToTheSe,engine 域「T:RetrySettingsTest」的独立行为：flagWritesThroughToTheSettingsFileAndSur（测试源码解析自动登记）,用例,repotool/ui/state,flagWritesThroughToTheSettingsFileAndSurvivesRestart
+1234,T:RetrySettingsTest#flagReadsStoredValueAndFallsBackToCallerDefault,engine·RetrySettingsTest·flagReadsStoredValueAndF,engine 域「T:RetrySettingsTest」的独立行为：flagReadsStoredValueAndFallsBackToCaller（测试源码解析自动登记）,用例,repotool/ui/state,flagReadsStoredValueAndFallsBackToCallerDefault
+1235,T:RetrySettingsTest#readingFlagsAloneWritesNothing,engine·RetrySettingsTest·readingFlagsAloneWritesN,engine 域「T:RetrySettingsTest」的独立行为：readingFlagsAloneWritesNothing（测试源码解析自动登记）,用例,repotool/ui/state,readingFlagsAloneWritesNothing
+1236,T:RetrySettingsTest#nothingIsOrphanedFromTheDemoSections,engine·RetrySettingsTest·nothingIsOrphanedFromThe,engine 域「T:RetrySettingsTest」的独立行为：nothingIsOrphanedFromTheDemoSections（测试源码解析自动登记）,用例,repotool/ui/state,nothingIsOrphanedFromTheDemoSections
+1237,T:RetrySettingsTest#realItemIsAppendedAfterDemoItemsInTheSameGroup,engine·RetrySettingsTest·realItemIsAppendedAfterD,engine 域「T:RetrySettingsTest」的独立行为：realItemIsAppendedAfterDemoItemsInTheSam（测试源码解析自动登记）,用例,repotool/ui/state,realItemIsAppendedAfterDemoItemsInTheSameGroup
+1238,T:RetrySettingsTest#mergingDoesNotMutateTheDemoTable,engine·RetrySettingsTest·mergingDoesNotMutateTheD,engine 域「T:RetrySettingsTest」的独立行为：mergingDoesNotMutateTheDemoTable（测试源码解析自动登记）,用例,repotool/ui/state,mergingDoesNotMutateTheDemoTable
+1239,T:RetrySettingsTest#subPageLookupPrefersRealTableThenFallsBackToDemo,engine·RetrySettingsTest·subPageLookupPrefersReal,engine 域「T:RetrySettingsTest」的独立行为：subPageLookupPrefersRealTableThenFallsBa（测试源码解析自动登记）,用例,repotool/ui/state,subPageLookupPrefersRealTableThenFallsBackToDemo
+1240,T:RetrySettingsTest#retryPageUsesThePersistedSwitchNotTheDemoOne,engine·RetrySettingsTest·retryPageUsesThePersiste,engine 域「T:RetrySettingsTest」的独立行为：retryPageUsesThePersistedSwitchNotTheDem（测试源码解析自动登记）,用例,repotool/ui/state,retryPageUsesThePersistedSwitchNotTheDemoOne
+1241,T:RetrySettingsTest#stateWithoutPersistenceStillAnswersFlags,engine·RetrySettingsTest·stateWithoutPersistenceS,engine 域「T:RetrySettingsTest」的独立行为：stateWithoutPersistenceStillAnswersFlags（测试源码解析自动登记）,用例,repotool/ui/state,stateWithoutPersistenceStillAnswersFlags
+1242,T:RetrySettingsTest#flushFailureStillReachesTheToggle,engine·RetrySettingsTest·flushFailureStillReaches,engine 域「T:RetrySettingsTest」的独立行为：flushFailureStillReachesTheToggle（测试源码解析自动登记）,用例,repotool/ui/state,flushFailureStillReachesTheToggle
+1243,T:AgoraImportApplyTest#recognizedPlanReportsCountsAndNotes,engine·AgoraImportApplyTest·recognizedPlanReportsCou,engine 域「T:AgoraImportApplyTest」的独立行为：recognizedPlanReportsCountsAndNotes（测试源码解析自动登记）,用例,repotool/ui/state,recognizedPlanReportsCountsAndNotes
+1244,T:AgoraImportApplyTest#unrecognizedPlanImportsNothingAndSaysWhy,engine·AgoraImportApplyTest·unrecognizedPlanImportsN,engine 域「T:AgoraImportApplyTest」的独立行为：unrecognizedPlanImportsNothingAndSaysWhy（测试源码解析自动登记）,用例,repotool/ui/state,unrecognizedPlanImportsNothingAndSaysWhy
+1245,T:AgoraImportApplyTest#emptyFieldsAreCountedAsNotAppliedRatherThanOverwriting,engine·AgoraImportApplyTest·emptyFieldsAreCountedAsN,engine 域「T:AgoraImportApplyTest」的独立行为：emptyFieldsAreCountedAsNotAppliedRatherT（测试源码解析自动登记）,用例,repotool/ui/state,emptyFieldsAreCountedAsNotAppliedRatherThanOverwriting
+1246,T:ModelLabelsTest#aliasWinsOverTheRawId,engine·ModelLabelsTest·aliasWinsOverTheRawId,engine 域「T:ModelLabelsTest」的独立行为：aliasWinsOverTheRawId（测试源码解析自动登记）,用例,repotool/ui/state,aliasWinsOverTheRawId
+1247,T:ModelLabelsTest#providerAndModelsPrefixesAreStripped,engine·ModelLabelsTest·providerAndModelsPrefixe,engine 域「T:ModelLabelsTest」的独立行为：providerAndModelsPrefixesAreStripped（测试源码解析自动登记）,用例,repotool/ui/state,providerAndModelsPrefixesAreStripped
+1248,T:ModelLabelsTest#emptyIdSaysUnpickedInsteadOfBlank,engine·ModelLabelsTest·emptyIdSaysUnpickedInste,engine 域「T:ModelLabelsTest」的独立行为：emptyIdSaysUnpickedInsteadOfBlank（测试源码解析自动登记）,用例,repotool/ui/state,emptyIdSaysUnpickedInsteadOfBlank
+1249,T:ModelLabelsTest#providerIsAppendedOnlyWhenThereIsOne,engine·ModelLabelsTest·providerIsAppendedOnlyWh,engine 域「T:ModelLabelsTest」的独立行为：providerIsAppendedOnlyWhenThereIsOne（测试源码解析自动登记）,用例,repotool/ui/state,providerIsAppendedOnlyWhenThereIsOne
+1250,T:ModelLabelsTest#longNamesAreTruncatedSoTheSendButtonStaysOnScreen,engine·ModelLabelsTest·longNamesAreTruncatedSoT,engine 域「T:ModelLabelsTest」的独立行为：longNamesAreTruncatedSoTheSendButtonStay（测试源码解析自动登记）,用例,repotool/ui/state,longNamesAreTruncatedSoTheSendButtonStaysOnScreen
+1251,T:ModelLabelsTest#shortNamesAreLeftAlone,engine·ModelLabelsTest·shortNamesAreLeftAlone,engine 域「T:ModelLabelsTest」的独立行为：shortNamesAreLeftAlone（测试源码解析自动登记）,用例,repotool/ui/state,shortNamesAreLeftAlone
+1252,T:ModelLabelsTest#sillyMaxCharsDoNotProduceGarbage,engine·ModelLabelsTest·sillyMaxCharsDoNotProduc,engine 域「T:ModelLabelsTest」的独立行为：sillyMaxCharsDoNotProduceGarbage（测试源码解析自动登记）,用例,repotool/ui/state,sillyMaxCharsDoNotProduceGarbage
+1253,T:ModelLabelsTest#chipTextUsesTheTighterLimitThanRows,engine·ModelLabelsTest·chipTextUsesTheTighterLi,engine 域「T:ModelLabelsTest」的独立行为：chipTextUsesTheTighterLimitThanRows（测试源码解析自动登记）,用例,repotool/ui/state,chipTextUsesTheTighterLimitThanRows
+1254,T:BackupImportTest#settingsFlowThroughTheLiveChannel,engine·BackupImportTest·settingsFlowThroughTheLi,engine 域「T:BackupImportTest」的独立行为：settingsFlowThroughTheLiveChannel（测试源码解析自动登记）,用例,repotool/ui/state,settingsFlowThroughTheLiveChannel
+1255,T:BackupImportTest#foreignFormatIsRefusedWithoutTouchingAnything,engine·BackupImportTest·foreignFormatIsRefusedWi,engine 域「T:BackupImportTest」的独立行为：foreignFormatIsRefusedWithoutTouchingAny（测试源码解析自动登记）,用例,repotool/ui/state,foreignFormatIsRefusedWithoutTouchingAnything
+1256,T:BackupImportTest#unreadableSettingsDoNotBlockSessions,engine·BackupImportTest·unreadableSettingsDoNotB,engine 域「T:BackupImportTest」的独立行为：unreadableSettingsDoNotBlockSessions（测试源码解析自动登记）,用例,repotool/ui/state,unreadableSettingsDoNotBlockSessions
+1257,T:WebSearchStateTest#freshInstallUsesTheFreeTier,engine·WebSearchStateTest·freshInstallUsesTheFreeT,engine 域「T:WebSearchStateTest」的独立行为：freshInstallUsesTheFreeTier（测试源码解析自动登记）,用例,repotool/ui/state,freshInstallUsesTheFreeTier
+1258,T:WebSearchStateTest#switchingProviderKeepsOtherProvidersKeys,engine·WebSearchStateTest·switchingProviderKeepsOt,engine 域「T:WebSearchStateTest」的独立行为：switchingProviderKeepsOtherProvidersKeys（测试源码解析自动登记）,用例,repotool/ui/state,switchingProviderKeepsOtherProvidersKeys
+1259,T:WebSearchStateTest#missingKeyIsSaidOutLoudInsteadOfPretendingReady,engine·WebSearchStateTest·missingKeyIsSaidOutLoudI,engine 域「T:WebSearchStateTest」的独立行为：missingKeyIsSaidOutLoudInsteadOfPretendi（测试源码解析自动登记）,用例,repotool/ui/state,missingKeyIsSaidOutLoudInsteadOfPretendingReady
+1260,T:WebSearchStateTest#searxngShowsTheInstanceFieldAndTrimsIt,engine·WebSearchStateTest·searxngShowsTheInstanceF,engine 域「T:WebSearchStateTest」的独立行为：searxngShowsTheInstanceFieldAndTrimsIt（测试源码解析自动登记）,用例,repotool/ui/state,searxngShowsTheInstanceFieldAndTrimsIt
+1261,T:WebSearchStateTest#numResultsIsClampedOnBothEnds,engine·WebSearchStateTest·numResultsIsClampedOnBot,engine 域「T:WebSearchStateTest」的独立行为：numResultsIsClampedOnBothEnds（测试源码解析自动登记）,用例,repotool/ui/state,numResultsIsClampedOnBothEnds
+1262,T:WebSearchStateTest#garbageInSettingsFallsBackInsteadOfBreakingSearch,engine·WebSearchStateTest·garbageInSettingsFallsBa,engine 域「T:WebSearchStateTest」的独立行为：garbageInSettingsFallsBackInsteadOfBreak（测试源码解析自动登记）,用例,repotool/ui/state,garbageInSettingsFallsBackInsteadOfBreakingSearch
+1263,T:WebSearchStateTest#configIsReadFreshEveryTimeSoSettingsTakeEffectImmediately,engine·WebSearchStateTest·configIsReadFreshEveryTi,engine 域「T:WebSearchStateTest」的独立行为：configIsReadFreshEveryTimeSoSettingsTake（测试源码解析自动登记）,用例,repotool/ui/state,configIsReadFreshEveryTimeSoSettingsTakeEffectImmediately
+1264,T:WebSearchStateTest#agoraImportWritesSearchKeysIntoTheLiveChannel,engine·WebSearchStateTest·agoraImportWritesSearchK,engine 域「T:WebSearchStateTest」的独立行为：agoraImportWritesSearchKeysIntoTheLiveCh（测试源码解析自动登记）,用例,repotool/ui/state,agoraImportWritesSearchKeysIntoTheLiveChannel
+1265,T:WebSearchStateTest#agoraImportWithoutSearchFieldsWritesNothing,engine·WebSearchStateTest·agoraImportWithoutSearch,engine 域「T:WebSearchStateTest」的独立行为：agoraImportWithoutSearchFieldsWritesNoth（测试源码解析自动登记）,用例,repotool/ui/state,agoraImportWithoutSearchFieldsWritesNothing
+1266,T:ChatRuntimeTest#sendWithoutBaseUrlProducesErrorCardAndTouchesNoNetwork,engine·ChatRuntimeTest·sendWithoutBaseUrlProduc,engine 域「T:ChatRuntimeTest」的独立行为：sendWithoutBaseUrlProducesErrorCardAndTo（测试源码解析自动登记）,用例,repotool/ui/state,sendWithoutBaseUrlProducesErrorCardAndTouchesNoNetwork
+1267,T:ChatRuntimeTest#happyPathStreamsIntoAssistantCard,engine·ChatRuntimeTest·happyPathStreamsIntoAssi,engine 域「T:ChatRuntimeTest」的独立行为：happyPathStreamsIntoAssistantCard（测试源码解析自动登记）,用例,repotool/ui/state,happyPathStreamsIntoAssistantCard
+1268,T:ChatRuntimeTest#errorCardsStayOutOfHistory,engine·ChatRuntimeTest·errorCardsStayOutOfHisto,engine 域「T:ChatRuntimeTest」的独立行为：errorCardsStayOutOfHistory（测试源码解析自动登记）,用例,repotool/ui/state,errorCardsStayOutOfHistory
+1269,T:ChatRuntimeTest#secondSendWhileBusyIsIgnoredNotQueued,engine·ChatRuntimeTest·secondSendWhileBusyIsIgn,engine 域「T:ChatRuntimeTest」的独立行为：secondSendWhileBusyIsIgnoredNotQueued（测试源码解析自动登记）,用例,repotool/ui/state,secondSendWhileBusyIsIgnoredNotQueued
+1270,T:ChatRuntimeTest#stopWhenIdleIsHarmless,engine·ChatRuntimeTest·stopWhenIdleIsHarmless,engine 域「T:ChatRuntimeTest」的独立行为：stopWhenIdleIsHarmless（测试源码解析自动登记）,用例,repotool/ui/state,stopWhenIdleIsHarmless
+1271,T:ChatRuntimeTest#refreshModelsLandsRemoteList,engine·ChatRuntimeTest·refreshModelsLandsRemote,engine 域「T:ChatRuntimeTest」的独立行为：refreshModelsLandsRemoteList（测试源码解析自动登记）,用例,repotool/ui/state,refreshModelsLandsRemoteList
+1272,T:ChatRuntimeTest#refreshModelsErrorKeepsWayOut,engine·ChatRuntimeTest·refreshModelsErrorKeepsW,engine 域「T:ChatRuntimeTest」的独立行为：refreshModelsErrorKeepsWayOut（测试源码解析自动登记）,用例,repotool/ui/state,refreshModelsErrorKeepsWayOut
+1273,T:ChatRuntimeTest#refreshModelsEmptyListingSaysSoNotSilence,engine·ChatRuntimeTest·refreshModelsEmptyListin,engine 域「T:ChatRuntimeTest」的独立行为：refreshModelsEmptyListingSaysSoNotSilenc（测试源码解析自动登记）,用例,repotool/ui/state,refreshModelsEmptyListingSaysSoNotSilence
+1274,T:SessionWiringTest#settledTurnsLandOnDiskAndReloadIdentically,engine·SessionWiringTest·settledTurnsLandOnDiskAn,engine 域「T:SessionWiringTest」的独立行为：settledTurnsLandOnDiskAndReloadIdentical（测试源码解析自动登记）,用例,repotool/ui/state,settledTurnsLandOnDiskAndReloadIdentically
+1275,T:SessionWiringTest#errorCardsStoredButNeverFedBack,engine·SessionWiringTest·errorCardsStoredButNever,engine 域「T:SessionWiringTest」的独立行为：errorCardsStoredButNeverFedBack（测试源码解析自动登记）,用例,repotool/ui/state,errorCardsStoredButNeverFedBack
+1276,T:SessionWiringTest#halfAnswerStoredWithIncompleteFlag,engine·SessionWiringTest·halfAnswerStoredWithInco,engine 域「T:SessionWiringTest」的独立行为：halfAnswerStoredWithIncompleteFlag（测试源码解析自动登记）,用例,repotool/ui/state,halfAnswerStoredWithIncompleteFlag
+1277,T:SessionWiringTest#appUiStateWiresLatestSessionAndRealCreateAndDelete,engine·SessionWiringTest·appUiStateWiresLatestSes,engine 域「T:SessionWiringTest」的独立行为：appUiStateWiresLatestSessionAndRealCreat（测试源码解析自动登记）,用例,repotool/ui/state,appUiStateWiresLatestSessionAndRealCreateAndDelete
+1278,T:SessionWiringTest#unreadableLinesCountOutLoudNotSilentlyDropped,engine·SessionWiringTest·unreadableLinesCountOutL,engine 域「T:SessionWiringTest」的独立行为：unreadableLinesCountOutLoudNotSilentlyDr（测试源码解析自动登记）,用例,repotool/ui/state,unreadableLinesCountOutLoudNotSilentlyDropped
+1279,T:AppUiStatePersistenceTest#defaultsHoldWhenNothingWasStored,engine·AppUiStatePersistenceTest·defaultsHoldWhenNothingW,engine 域「T:AppUiStatePersistenceTest」的独立行为：defaultsHoldWhenNothingWasStored（测试源码解析自动登记）,用例,repotool/ui/state,defaultsHoldWhenNothingWasStored
+1280,T:AppUiStatePersistenceTest#storedValuesBecomeInitialValues,engine·AppUiStatePersistenceTest·storedValuesBecomeInitia,engine 域「T:AppUiStatePersistenceTest」的独立行为：storedValuesBecomeInitialValues（测试源码解析自动登记）,用例,repotool/ui/state,storedValuesBecomeInitialValues
+1281,T:AppUiStatePersistenceTest#changesSurviveProcessRestart,engine·AppUiStatePersistenceTest·changesSurviveProcessRes,engine 域「T:AppUiStatePersistenceTest」的独立行为：changesSurviveProcessRestart（测试源码解析自动登记）,用例,repotool/ui/state,changesSurviveProcessRestart
+1282,T:AppUiStatePersistenceTest#sameValueDoesNotRewriteTheFile,engine·AppUiStatePersistenceTest·sameValueDoesNotRewriteT,engine 域「T:AppUiStatePersistenceTest」的独立行为：sameValueDoesNotRewriteTheFile（测试源码解析自动登记）,用例,repotool/ui/state,sameValueDoesNotRewriteTheFile
+1283,T:AppUiStatePersistenceTest#failedFlushReturnsReasonForTheToast,engine·AppUiStatePersistenceTest·failedFlushReturnsReason,engine 域「T:AppUiStatePersistenceTest」的独立行为：failedFlushReturnsReasonForTheToast（测试源码解析自动登记）,用例,repotool/ui/state,failedFlushReturnsReasonForTheToast
+1284,T:AppUiStatePersistenceTest#loneSurrogateInDraftIsVoicedNotCrashing,engine·AppUiStatePersistenceTest·loneSurrogateInDraftIsVo,engine 域「T:AppUiStatePersistenceTest」的独立行为：loneSurrogateInDraftIsVoicedNotCrashing（测试源码解析自动登记）,用例,repotool/ui/state,loneSurrogateInDraftIsVoicedNotCrashing
+1285,T:AppUiStatePersistenceTest#unreadableTabFallsBackToChatSilently,engine·AppUiStatePersistenceTest·unreadableTabFallsBackTo,engine 域「T:AppUiStatePersistenceTest」的独立行为：unreadableTabFallsBackToChatSilently（测试源码解析自动登记）,用例,repotool/ui/state,unreadableTabFallsBackToChatSilently
+1286,T:AppUiStatePersistenceTest#nonePersistenceKeepsOldBehaviour,engine·AppUiStatePersistenceTest·nonePersistenceKeepsOldB,engine 域「T:AppUiStatePersistenceTest」的独立行为：nonePersistenceKeepsOldBehaviour（测试源码解析自动登记）,用例,repotool/ui/state,nonePersistenceKeepsOldBehaviour
+1287,T:AppUiStatePersistenceTest#persistenceRoundTripsThroughStoreText,engine·AppUiStatePersistenceTest·persistenceRoundTripsThr,engine 域「T:AppUiStatePersistenceTest」的独立行为：persistenceRoundTripsThroughStoreText（测试源码解析自动登记）,用例,repotool/ui/state,persistenceRoundTripsThroughStoreText
+1288,T:OldInstallStartupTest#只有Legacy三键的旧设置走兑换路径不炸,engine·OldInstallStartupTest·只有Legacy三键的旧设置走兑换路径不炸,engine 域「T:OldInstallStartupTest」的独立行为：只有Legacy三键的旧设置走兑换路径不炸（测试源码解析自动登记）,用例,repotool/ui/state,只有Legacy三键的旧设置走兑换路径不炸
+1289,T:OldInstallStartupTest#老格式模型设置Json遇上新Decode不炸,engine·OldInstallStartupTest·老格式模型设置Json遇上新Decode不炸,engine 域「T:OldInstallStartupTest」的独立行为：老格式模型设置Json遇上新Decode不炸（测试源码解析自动登记）,用例,repotool/ui/state,老格式模型设置Json遇上新Decode不炸
+1290,T:OldInstallStartupTest#各种读不懂的键值不炸,engine·OldInstallStartupTest·各种读不懂的键值不炸,engine 域「T:OldInstallStartupTest」的独立行为：各种读不懂的键值不炸（测试源码解析自动登记）,用例,repotool/ui/state,各种读不懂的键值不炸
+1291,T:OldInstallStartupTest#带坏行与坏头的老会话不炸,engine·OldInstallStartupTest·带坏行与坏头的老会话不炸,engine 域「T:OldInstallStartupTest」的独立行为：带坏行与坏头的老会话不炸（测试源码解析自动登记）,用例,repotool/ui/state,带坏行与坏头的老会话不炸
+1292,T:OldInstallStartupTest#停在最新改动最重的观测页Tab不炸,engine·OldInstallStartupTest·停在最新改动最重的观测页Tab不炸,engine 域「T:OldInstallStartupTest」的独立行为：停在最新改动最重的观测页Tab不炸（测试源码解析自动登记）,用例,repotool/ui/state,停在最新改动最重的观测页Tab不炸
+1293,T:ChatRuntimeToolLoopTest#toolRoundExecutesFeedsBackAndResends,engine·ChatRuntimeToolLoopTest·toolRoundExecutesFeedsBa,engine 域「T:ChatRuntimeToolLoopTest」的独立行为：toolRoundExecutesFeedsBackAndResends（测试源码解析自动登记）,用例,repotool/ui/state,toolRoundExecutesFeedsBackAndResends
+1294,T:ChatRuntimeToolLoopTest#toolRoundLimitStopsTheSpin,engine·ChatRuntimeToolLoopTest·toolRoundLimitStopsTheSp,engine 域「T:ChatRuntimeToolLoopTest」的独立行为：toolRoundLimitStopsTheSpin（测试源码解析自动登记）,用例,repotool/ui/state,toolRoundLimitStopsTheSpin
+1295,T:ChatRuntimeToolLoopTest#stopBetweenToolRoundsStopsTheLoop,engine·ChatRuntimeToolLoopTest·stopBetweenToolRoundsSto,engine 域「T:ChatRuntimeToolLoopTest」的独立行为：stopBetweenToolRoundsStopsTheLoop（测试源码解析自动登记）,用例,repotool/ui/state,stopBetweenToolRoundsStopsTheLoop
+1296,T:AppUiStateRepoWorkbenchTest#myReposRefreshWithoutTokenSetsNoteNotBusy,engine·AppUiStateRepoWorkbenchTest·myReposRefreshWithoutTok,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：myReposRefreshWithoutTokenSetsNoteNotBus（测试源码解析自动登记）,用例,repotool/ui/state,myReposRefreshWithoutTokenSetsNoteNotBusy
+1297,T:AppUiStateRepoWorkbenchTest#browseOtherRepoRejectsBadQueryWithVoice,engine·AppUiStateRepoWorkbenchTest·browseOtherRepoRejectsBa,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：browseOtherRepoRejectsBadQueryWithVoice（测试源码解析自动登记）,用例,repotool/ui/state,browseOtherRepoRejectsBadQueryWithVoice
+1298,T:AppUiStateRepoWorkbenchTest#browseOtherRepoRejectsEmptyQueryWithVoice,engine·AppUiStateRepoWorkbenchTest·browseOtherRepoRejectsEm,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：browseOtherRepoRejectsEmptyQueryWithVoic（测试源码解析自动登记）,用例,repotool/ui/state,browseOtherRepoRejectsEmptyQueryWithVoice
+1299,T:AppUiStateRepoWorkbenchTest#browseDownOnFileEntryIsIgnored,engine·AppUiStateRepoWorkbenchTest·browseDownOnFileEntryIsI,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：browseDownOnFileEntryIsIgnored（测试源码解析自动登记）,用例,repotool/ui/state,browseDownOnFileEntryIsIgnored
+1300,T:AppUiStateRepoWorkbenchTest#browseUpAtRootIsNoop,engine·AppUiStateRepoWorkbenchTest·browseUpAtRootIsNoop,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：browseUpAtRootIsNoop（测试源码解析自动登记）,用例,repotool/ui/state,browseUpAtRootIsNoop
+1301,T:AppUiStateRepoWorkbenchTest#exitBrowseClearsTheWholeBrowseState,engine·AppUiStateRepoWorkbenchTest·exitBrowseClearsTheWhole,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：exitBrowseClearsTheWholeBrowseState（测试源码解析自动登记）,用例,repotool/ui/state,exitBrowseClearsTheWholeBrowseState
+1302,T:AppUiStateRepoWorkbenchTest#closeFileViewClearsThePreview,engine·AppUiStateRepoWorkbenchTest·closeFileViewClearsThePr,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：closeFileViewClearsThePreview（测试源码解析自动登记）,用例,repotool/ui/state,closeFileViewClearsThePreview
+1303,T:AppUiStateRepoWorkbenchTest#toggleBranchPickerWithoutBrowseStaysOffline,engine·AppUiStateRepoWorkbenchTest·toggleBranchPickerWithou,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：toggleBranchPickerWithoutBrowseStaysOffl（测试源码解析自动登记）,用例,repotool/ui/state,toggleBranchPickerWithoutBrowseStaysOffline
+1304,T:AppUiStateRepoWorkbenchTest#switchBranchWithoutBrowseIsNoop,engine·AppUiStateRepoWorkbenchTest·switchBranchWithoutBrows,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：switchBranchWithoutBrowseIsNoop（测试源码解析自动登记）,用例,repotool/ui/state,switchBranchWithoutBrowseIsNoop
+1305,T:AppUiStateRepoWorkbenchTest#toggleCommitsWithoutBrowseStaysOffline,engine·AppUiStateRepoWorkbenchTest·toggleCommitsWithoutBrow,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：toggleCommitsWithoutBrowseStaysOffline（测试源码解析自动登记）,用例,repotool/ui/state,toggleCommitsWithoutBrowseStaysOffline
+1306,T:AppUiStateRepoWorkbenchTest#startEditingWithoutContentIsBlocked,engine·AppUiStateRepoWorkbenchTest·startEditingWithoutConte,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：startEditingWithoutContentIsBlocked（测试源码解析自动登记）,用例,repotool/ui/state,startEditingWithoutContentIsBlocked
+1307,T:AppUiStateRepoWorkbenchTest#commitEditWithoutMessageIsBlockedOffline,engine·AppUiStateRepoWorkbenchTest·commitEditWithoutMessage,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：commitEditWithoutMessageIsBlockedOffline（测试源码解析自动登记）,用例,repotool/ui/state,commitEditWithoutMessageIsBlockedOffline
+1308,T:AppUiStateRepoWorkbenchTest#commitEditWithClosedEditorIsNoop,engine·AppUiStateRepoWorkbenchTest·commitEditWithClosedEdit,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：commitEditWithClosedEditorIsNoop（测试源码解析自动登记）,用例,repotool/ui/state,commitEditWithClosedEditorIsNoop
+1309,T:AppUiStateRepoWorkbenchTest#cancelEditingClearsTheDraft,engine·AppUiStateRepoWorkbenchTest·cancelEditingClearsTheDr,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：cancelEditingClearsTheDraft（测试源码解析自动登记）,用例,repotool/ui/state,cancelEditingClearsTheDraft
+1310,T:AppUiStateRepoWorkbenchTest#toggleBrowseCiWithoutBrowseStaysOffline,engine·AppUiStateRepoWorkbenchTest·toggleBrowseCiWithoutBro,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：toggleBrowseCiWithoutBrowseStaysOffline（测试源码解析自动登记）,用例,repotool/ui/state,toggleBrowseCiWithoutBrowseStaysOffline
+1311,T:AppUiStateRepoWorkbenchTest#openRunJobsWithoutBrowseDoesNothing,engine·AppUiStateRepoWorkbenchTest·openRunJobsWithoutBrowse,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：openRunJobsWithoutBrowseDoesNothing（测试源码解析自动登记）,用例,repotool/ui/state,openRunJobsWithoutBrowseDoesNothing
+1312,T:AppUiStateRepoWorkbenchTest#closeBrowseCiClearsAllThreeLayers,engine·AppUiStateRepoWorkbenchTest·closeBrowseCiClearsAllTh,engine 域「T:AppUiStateRepoWorkbenchTest」的独立行为：closeBrowseCiClearsAllThreeLayers（测试源码解析自动登记）,用例,repotool/ui/state,closeBrowseCiClearsAllThreeLayers
+1313,T:GithubLoginStateTest#emptyTokenIsRefusedWithoutCallingTheVerifier,engine·GithubLoginStateTest·emptyTokenIsRefusedWitho,engine 域「T:GithubLoginStateTest」的独立行为：emptyTokenIsRefusedWithoutCallingTheVeri（测试源码解析自动登记）,用例,repotool/ui/state,emptyTokenIsRefusedWithoutCallingTheVerifier
+1314,T:GithubLoginStateTest#successfulLoginRecordsAccountScopesAndPersists,engine·GithubLoginStateTest·successfulLoginRecordsAc,engine 域「T:GithubLoginStateTest」的独立行为：successfulLoginRecordsAccountScopesAndPe（测试源码解析自动登记）,用例,repotool/ui/state,successfulLoginRecordsAccountScopesAndPersists
+1315,T:GithubLoginStateTest#failedLoginKeepsUnloggedAndShowsGuidance,engine·GithubLoginStateTest·failedLoginKeepsUnlogged,engine 域「T:GithubLoginStateTest」的独立行为：failedLoginKeepsUnloggedAndShowsGuidance（测试源码解析自动登记）,用例,repotool/ui/state,failedLoginKeepsUnloggedAndShowsGuidance
+1316,T:GithubLoginStateTest#tokenEditInvalidatesTheVerifiedLoginThroughAppUiState,engine·GithubLoginStateTest·tokenEditInvalidatesTheV,engine 域「T:GithubLoginStateTest」的独立行为：tokenEditInvalidatesTheVerifiedLoginThro（测试源码解析自动登记）,用例,repotool/ui/state,tokenEditInvalidatesTheVerifiedLoginThroughAppUiState
+1317,T:GithubLoginStateTest#logoutClearsLoginButKeepsTheTokenItself,engine·GithubLoginStateTest·logoutClearsLoginButKeep,engine 域「T:GithubLoginStateTest」的独立行为：logoutClearsLoginButKeepsTheTokenItself（测试源码解析自动登记）,用例,repotool/ui/state,logoutClearsLoginButKeepsTheTokenItself
+1318,T:GithubLoginStateTest#reloadFromSettingsPicksUpImportedValues,engine·GithubLoginStateTest·reloadFromSettingsPicksU,engine 域「T:GithubLoginStateTest」的独立行为：reloadFromSettingsPicksUpImportedValues（测试源码解析自动登记）,用例,repotool/ui/state,reloadFromSettingsPicksUpImportedValues
+1319,T:GithubLoginStateTest#scopesNotDeclaredIsVoicedHonestly,engine·GithubLoginStateTest·scopesNotDeclaredIsVoice,engine 域「T:GithubLoginStateTest」的独立行为：scopesNotDeclaredIsVoicedHonestly（测试源码解析自动登记）,用例,repotool/ui/state,scopesNotDeclaredIsVoicedHonestly
