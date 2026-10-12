@@ -27,12 +27,15 @@ class ApkSignatureTest {
 
     private fun u16(v: Int): ByteArray = byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte())
 
-    private fun buildApkWithV2(certDer: ByteArray): File {
-        val certificates = u32(certDer.size.toLong()) + certDer
+    private fun buildApkWithV2(certDer: ByteArray): File = buildApk(0x7109871aL, listOf(certDer))
+
+    /** 通用版：指定 scheme id 与证书列表（多份=多 signer 计数路径）。 */
+    private fun buildApk(schemeId: Long, certDers: List<ByteArray>): File {
+        val certificates = certDers.fold(ByteArray(0)) { acc, c -> acc + u32(c.size.toLong()) + c }
         val digests = u32(4L) + u32(0L)
         val signedData = u32(digests.size.toLong()) + digests + u32(certificates.size.toLong()) + certificates
         val signer = u32(signedData.size.toLong()) + signedData + u32(4L) + u32(0L) + u32(4L) + u32(0L)
-        val pair = u64(4L + signer.size) + u32(0x7109871aL) + signer // pair 长度前缀是 uint64（含 id 4B 与 value）
+        val pair = u64(4L + signer.size) + u32(schemeId) + signer // pair 长度前缀是 uint64（含 id 4B 与 value）
         val magic = "APK Sig Block 42".toByteArray(Charsets.US_ASCII)
         val sizeOfBlock = pair.size + 8L + magic.size.toLong() // 不含块头 size 字段：pairs + 尾size + magic
         val block = u64(sizeOfBlock) + pair + u64(sizeOfBlock) + magic
@@ -64,6 +67,70 @@ class ApkSignatureTest {
         assertEquals("v2", scheme.scheme)
         assertTrue("subject 应含 CN：${scheme.certSubject}", scheme.certSubject.contains("Hualuo Test Signer"))
         assertEquals(64, scheme.certSha256Hex.length)
+        apk.delete()
+    }
+
+    @Test
+    fun `自造 v3 块走 V3_ID 路径`() {
+        val der = javaClass.classLoader.getResourceAsStream("test-signer.der")!!.readBytes()
+        // V3_ID=0xf05368c0：与源码同值（位模式按 le32 读成 Int）
+        val apk = buildApk(0xf05368c0L, listOf(der))
+        val report = ApkSignature.inspect(apk)
+        assertTrue("应识别 v3：error=${report.error}", report.v3Present)
+        assertEquals("v3", report.schemes.first().scheme)
+        assertTrue(report.schemes.first().certSubject.contains("Hualuo Test Signer"))
+        apk.delete()
+    }
+
+    @Test
+    fun `多证书计数走满 certificates 数组`() {
+        val der = javaClass.classLoader.getResourceAsStream("test-signer.der")!!.readBytes()
+        val apk = buildApk(0x7109871aL, listOf(der, der)) // 同 DER 放两份=双 signer 形
+        val report = ApkSignature.inspect(apk)
+        assertTrue(report.v2Present)
+        val scheme = report.schemes.first()
+        assertEquals("双证书应计 2：${scheme.certCount}", 2, scheme.certCount)
+        apk.delete()
+    }
+
+    @Test
+    fun `中央目录贴零如实报无签名空间`() {
+        // EOCD 里 cdOffset=0（<32）：中央目录紧贴文件头，没有签名块容身之处
+        val entryName = "a"
+        val lfh = u32(0x04034b50L) + u16(20) + u16(0) + u16(0) + u16(0) + u16(0) +
+            u32(0L) + u32(1L) + u32(1L) + u16(entryName.length) + u16(0) +
+            entryName.toByteArray() + byteArrayOf(7)
+        val cd = u32(0x02014b50L) + u16(20) + u16(20) + u16(0) + u16(0) + u16(0) + u16(0) +
+            u32(0L) + u32(1L) + u32(1L) + u16(entryName.length) + u16(0) + u16(0) + u16(0) +
+            u16(0) + u32(0L) + u32(0L) + entryName.toByteArray()
+        val eocd = u32(0x06054b50L) + u16(0) + u16(0) + u16(1) + u16(1) +
+            u32(cd.size.toLong()) + u32(0L) + u16(0) // cdOffset=0
+        val apk = File.createTempFile("nospace", ".apk")
+        apk.outputStream().use { it.write(lfh + cd + eocd) }
+        val report = ApkSignature.inspect(apk)
+        assertTrue("应报签名块空间缺失：error=${report.error}", report.error != null)
+        assertTrue(report.error!!.contains("签名块空间"))
+        apk.delete()
+    }
+
+    @Test
+    fun `魔数错位如实报没有签名块`() {
+        // cdOffset>32 但那 16 字节不是 "APK Sig Block 42"——只可能是垃圾数据
+        val junk = ByteArray(64) { 0x55 }
+        val entryName = "a"
+        val lfh = u32(0x04034b50L) + u16(20) + u16(0) + u16(0) + u16(0) + u16(0) +
+            u32(0L) + u32(1L) + u32(1L) + u16(entryName.length) + u16(0) +
+            entryName.toByteArray() + byteArrayOf(7)
+        val cd = u32(0x02014b50L) + u16(20) + u16(20) + u16(0) + u16(0) + u16(0) + u16(0) +
+            u32(0L) + u32(1L) + u32(1L) + u16(entryName.length) + u16(0) + u16(0) + u16(0) +
+            u16(0) + u32(0L) + u32(lfh.size.toLong()) + entryName.toByteArray()
+        val eocd = u32(0x06054b50L) + u16(0) + u16(0) + u16(1) + u16(1) +
+            u32(cd.size.toLong()) + u32(junk.size.toLong()) + u16(0)
+        val apk = File.createTempFile("badmagic", ".apk")
+        apk.outputStream().use { it.write(lfh + junk + cd + eocd) }
+        val report = ApkSignature.inspect(apk)
+        assertTrue("应报无签名块：error=${report.error}", report.error != null)
+        assertTrue(report.error!!.contains("APK Signing Block"))
         apk.delete()
     }
 
