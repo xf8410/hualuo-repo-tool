@@ -84,15 +84,29 @@ interface WireTransport {
 }
 
 /**
- * 进程级代理口（proxy 页实装刀）：null=直连。App 层在设置变化时调 [installProxy]，
+ * 进程级代理口（proxy 页实装刀）：不配 = 直连。App 层在设置变化时调 [installProxy]，
  * 所有 UrlConnTransport 实例（AI 请求/GitHub API）从此处取代理——只影响这两类出网，
  * 游戏观测桥是设备侧 localhost:18765，不经这里（家规：代理不碰观测）。
+ *
+ * 【2026-10-12 修】出网前一律经 [resolve] 把内部状态翻译成**绝不为 null** 的 Proxy：
+ * 没配代理、或主机命中绕行清单，都返回 [java.net.Proxy.NO_PROXY]（直连）。
+ * 这是旧 Agora `HttpClient.resolveProxy()` 的契约——URL.openConnection(Proxy)
+ * 明文禁止 null，旧仓从 null 配置到 NO_PROXY 的翻译在重写时丢了，
+ * 导致未配代理的设备上所有 AI 请求在建连接前抛
+ * IllegalArgumentException("proxy can not be null")（机主实报：模型清单同步线程异常）。
  */
 object TransportProxy {
+    /** 已安装的代理；null = 直连。**内部状态，出网不许直接读它，走 [resolve]**。 */
     @Volatile var proxy: java.net.Proxy? = null
 
-    /** 格式：type("http"/"socks") + host + port；type 不认或 host 空返回 false 不动旧值。 */
-    fun installProxy(type: String, host: String, port: Int): Boolean {
+    /** 代理绕行清单（对齐旧 Agora：精确主机名、`*.后缀`、IPv4 CIDR，逗号无关、逐条列）。 */
+    @Volatile var bypass: List<String> = emptyList()
+
+    /**
+     * 格式：type("http"/"socks") + host + port；type 不认或 host 空返回 false 不动旧值。
+     * [bypass] 缺省为空清单（全量走代理），与旧签名保持源码兼容。
+     */
+    fun installProxy(type: String, host: String, port: Int, bypass: List<String> = emptyList()): Boolean {
         val h = host.trim()
         if (h.isEmpty() || port !in 1..65535) return false
         proxy = when (type.lowercase()) {
@@ -100,11 +114,60 @@ object TransportProxy {
             "socks" -> java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress(h, port))
             else -> return false
         }
+        this.bypass = bypass
         return true
     }
 
-    /** 清掉：回直连。 */
-    fun clear() { proxy = null }
+    /** 清掉：回直连（连绕行清单一起清，不留半份配置）。 */
+    fun clear() { proxy = null; bypass = emptyList() }
+
+    /**
+     * 给目标主机解出要用的代理：**返回值绝不为 null**（旧 Agora 契约）。
+     * 没配代理或命中绕行清单 → [java.net.Proxy.NO_PROXY]。
+     */
+    fun resolve(host: String): java.net.Proxy {
+        val installed = proxy ?: return java.net.Proxy.NO_PROXY
+        if (isBypassed(host)) return java.net.Proxy.NO_PROXY
+        return installed
+    }
+
+    /** 旧 Agora isProxyBypassed 原样移植：空主机名不走路由（没东西可判），三种条目形态。 */
+    private fun isBypassed(host: String): Boolean {
+        if (host.isBlank()) return true
+        val normalized = host.lowercase().trim('[', ']')
+        for (raw in bypass) {
+            val entry = raw.trim().lowercase()
+            when {
+                entry.isEmpty() -> continue
+                entry.contains('/') -> if (ipv4InCidr(normalized, entry)) return true
+                entry.startsWith("*.") -> if (normalized == entry.drop(2) || normalized.endsWith(entry.drop(1))) return true
+                normalized == entry -> return true
+            }
+        }
+        return false
+    }
+
+    private fun ipv4ToLong(ip: String): Long? {
+        val octets = ip.split('.')
+        if (octets.size != 4) return null
+        var value = 0L
+        for (part in octets) {
+            val octet = part.toIntOrNull() ?: return null
+            if (octet !in 0..255) return null
+            value = (value shl 8) or octet.toLong()
+        }
+        return value
+    }
+
+    private fun ipv4InCidr(host: String, cidr: String): Boolean {
+        val parts = cidr.split('/')
+        if (parts.size != 2) return false
+        val bits = parts[1].toIntOrNull()?.takeIf { it in 0..32 } ?: return false
+        val ip = ipv4ToLong(host) ?: return false
+        val network = ipv4ToLong(parts[0]) ?: return false
+        val mask = if (bits == 0) 0L else (-1L shl (32 - bits)) and 0xffffffffL
+        return (ip and mask) == (network and mask)
+    }
 }
 
 /** JDK HttpURLConnection 实现。 */
@@ -116,7 +179,10 @@ class UrlConnTransport : WireTransport {
     override fun exchange(request: WireRequest, sink: LineSink): WireResponse {
         cancelled = false
         if (request.url.isBlank()) throw IOException("URL 是空的，没发出去")
-        val conn = (URL(request.url).openConnection(TransportProxy.proxy) as HttpURLConnection).apply {
+        // resolve 按旧 Agora 契约绝不返回 null：没配代理 = NO_PROXY 直连。
+        // 直塞 TransportProxy.proxy 会在未配代理时被 URL.openConnection(Proxy) 当场拒收。
+        val target = URL(request.url)
+        val conn = (target.openConnection(TransportProxy.resolve(target.host.orEmpty())) as HttpURLConnection).apply {
             instanceFollowRedirects = true
             useCaches = false
             connectTimeout = request.connectTimeoutMs.coerceIn(1, 120_000)
