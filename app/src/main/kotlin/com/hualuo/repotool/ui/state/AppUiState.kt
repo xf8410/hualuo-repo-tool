@@ -926,28 +926,8 @@ class AppUiState(
     private fun fmtConvMeta(ms: Long): String =
         SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
 
-    /**
-     * 代理启动恢复（对齐旧仓 ProxySettingsSynchronizer）：盘上有配置就装回
-     * TransportProxy——设置页保存当场装的只是内存态，重启后配置不该躺在盘上失效。
-     * 存的数据坏了装不回去：出声并直连，设置页里重新保存一次就好。
-     */
-    init {
-        val savedType = persist.load(UiKeys.PROXY_TYPE)?.trim().orEmpty()
-        if (savedType == "http" || savedType == "socks") {
-            val savedHost = persist.load(UiKeys.PROXY_HOST)?.trim().orEmpty()
-            val savedPort = persist.load(UiKeys.PROXY_PORT)?.trim().toIntOrNull()
-            if (savedHost.isNotEmpty() && savedPort != null) {
-                val savedBypass = persist.load(UiKeys.PROXY_BYPASS)
-                    ?.split(Regex("[,\\n]"))?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
-                val ok = com.hualuo.engine.api.TransportProxy.installProxy(
-                    savedType, savedHost, savedPort, savedBypass,
-                    username = persist.load(UiKeys.PROXY_USER)?.trim().orEmpty(),
-                    password = persist.load(UiKeys.PROXY_PASS).orEmpty(),
-                )
-                if (!ok) toast("存盘的代理配置装不回去（数据可能坏了），这轮先直连；设置页里重新保存一次")
-            }
-        }
-    }
+    /** 代理启动恢复：见 [restoreSavedProxy]（AppUiState 1005 行撞红线三，拆文件）。 */
+    init { restoreSavedProxy(persist, ::toast) }
 
     /**
      * 会话库接线（启动，全同步）。刻意写成嵌套 if 而不是 init 里 return：init 块里的 return
