@@ -926,6 +926,9 @@ class AppUiState(
     private fun fmtConvMeta(ms: Long): String =
         SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
 
+    /** 代理启动恢复：见 [restoreSavedProxy]（AppUiState 1005 行撞红线三，拆文件）。 */
+    init { restoreSavedProxy(persist, ::toast) }
+
     /**
      * 会话库接线（启动，全同步）。刻意写成嵌套 if 而不是 init 里 return：init 块里的 return
      * 语义各版本 Kotlin 有分歧，不值得赌；嵌套清楚照样读得懂。

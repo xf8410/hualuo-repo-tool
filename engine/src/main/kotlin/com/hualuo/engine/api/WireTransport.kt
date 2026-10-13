@@ -105,8 +105,20 @@ object TransportProxy {
     /**
      * 格式：type("http"/"socks") + host + port；type 不认或 host 空返回 false 不动旧值。
      * [bypass] 缺省为空清单（全量走代理），与旧签名保持源码兼容。
+     *
+     * 认证对齐旧 Agora setProxy：[username] 非空时装默认 [java.net.Authenticator]
+     * （只答 RequestorType.PROXY 的问话）；JDK 栈下 HttpURLConnection 的 407 与
+     * SOCKS 握手都走这一路，一套盖两形态。每次安装无条件重置认证——没带
+     * username 就撤掉旧认证，不留上一份代理的凭据。
      */
-    fun installProxy(type: String, host: String, port: Int, bypass: List<String> = emptyList()): Boolean {
+    fun installProxy(
+        type: String,
+        host: String,
+        port: Int,
+        bypass: List<String> = emptyList(),
+        username: String = "",
+        password: String = "",
+    ): Boolean {
         val h = host.trim()
         if (h.isEmpty() || port !in 1..65535) return false
         proxy = when (type.lowercase()) {
@@ -115,11 +127,25 @@ object TransportProxy {
             else -> return false
         }
         this.bypass = bypass
+        if (username.isNotBlank()) {
+            java.net.Authenticator.setDefault(object : java.net.Authenticator() {
+                override fun getPasswordAuthentication(): java.net.PasswordAuthentication? =
+                    if (requestorType == java.net.Authenticator.RequestorType.PROXY)
+                        java.net.PasswordAuthentication(username, password.toCharArray())
+                    else null
+            })
+        } else {
+            java.net.Authenticator.setDefault(null)
+        }
         return true
     }
 
-    /** 清掉：回直连（连绕行清单一起清，不留半份配置）。 */
-    fun clear() { proxy = null; bypass = emptyList() }
+    /** 清掉：回直连（连绕行清单与认证一起清，不留半份配置）。 */
+    fun clear() {
+        proxy = null
+        bypass = emptyList()
+        java.net.Authenticator.setDefault(null)
+    }
 
     /**
      * 给目标主机解出要用的代理：**返回值绝不为 null**（旧 Agora 契约）。
