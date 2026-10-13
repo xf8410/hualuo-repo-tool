@@ -283,12 +283,15 @@ private fun ChatSearchCardField(state: AppUiState) {
     }
 }
 
-/** 代理卡：类型/地址/端口真存盘；保存当场 installProxy（AI 请求与 GitHub API 出网口）。 */
+/** 代理卡：类型/地址/端口/认证/绕行真存盘；保存当场 installProxy（AI 请求与 GitHub API 出网口）。 */
 @Composable
 private fun ProxyCardField(state: AppUiState) {
     var type by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.text(com.hualuo.repotool.ui.state.UiKeys.PROXY_TYPE).ifBlank { "none" }) }
     var host by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.text(com.hualuo.repotool.ui.state.UiKeys.PROXY_HOST)) }
     var port by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.text(com.hualuo.repotool.ui.state.UiKeys.PROXY_PORT).ifBlank { "7890" }) }
+    var user by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.text(com.hualuo.repotool.ui.state.UiKeys.PROXY_USER)) }
+    var pass by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.text(com.hualuo.repotool.ui.state.UiKeys.PROXY_PASS)) }
+    var bypass by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.text(com.hualuo.repotool.ui.state.UiKeys.PROXY_BYPASS)) }
     var note by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(CardBg).padding(14.dp)) {
         Text("代理（AI 请求与 GitHub API；游戏观测桥 localhost 不经此口）", fontSize = 13.sp, color = SubInk)
@@ -323,6 +326,28 @@ private fun ProxyCardField(state: AppUiState) {
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Bg).padding(10.dp),
                 textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
             )
+            Spacer(Modifier.height(4.dp))
+            Text("用户名（可选；SOCKS 与 HTTP 407 认证）", fontSize = 12.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = user, onValueChange = { user = it },
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Bg).padding(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text("密码（可选）", fontSize = 12.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = pass, onValueChange = { pass = it },
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Bg).padding(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text("绕行清单（可选；逗号分隔：精确主机 / *.后缀 / IPv4 CIDR）", fontSize = 12.sp, color = SubInk)
+            androidx.compose.foundation.text.BasicTextField(
+                value = bypass, onValueChange = { bypass = it },
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Bg).padding(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Ink),
+            )
         }
         Spacer(Modifier.height(8.dp))
         Text(
@@ -335,12 +360,21 @@ private fun ProxyCardField(state: AppUiState) {
                     note = "已清代理：直连"
                 } else {
                     val p = port.trim().toIntOrNull()
-                    val ok = p != null && com.hualuo.engine.api.TransportProxy.installProxy(type, host, p)
+                    val bypassList = bypass.split(Regex("[,\\n]")).map { it.trim() }.filter { it.isNotEmpty() }
+                    val ok = p != null && com.hualuo.engine.api.TransportProxy.installProxy(
+                        type, host, p, bypassList,
+                        username = user.trim(), password = pass,
+                    )
                     if (ok) {
                         state.setText(com.hualuo.repotool.ui.state.UiKeys.PROXY_TYPE, type)
                         state.setText(com.hualuo.repotool.ui.state.UiKeys.PROXY_HOST, host.trim())
                         state.setText(com.hualuo.repotool.ui.state.UiKeys.PROXY_PORT, port.trim())
-                        note = "已生效：$type ${host.trim()}:$port（AI 与 GitHub API 走代理）"
+                        state.setText(com.hualuo.repotool.ui.state.UiKeys.PROXY_USER, user.trim())
+                        state.setText(com.hualuo.repotool.ui.state.UiKeys.PROXY_PASS, pass)
+                        state.setText(com.hualuo.repotool.ui.state.UiKeys.PROXY_BYPASS, bypass)
+                        val authNote = if (user.isBlank()) "" else " +认证"
+                        val bypassNote = if (bypassList.isEmpty()) "" else " 绕行${bypassList.size}条"
+                        note = "已生效：$type ${host.trim()}:$port$authNote$bypassNote（AI 与 GitHub API 走代理）"
                     } else {
                         note = "没生效：地址或端口不合法（端口要 1-65535）"
                     }

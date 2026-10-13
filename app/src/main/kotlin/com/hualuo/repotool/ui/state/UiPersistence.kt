@@ -92,6 +92,15 @@ object UiKeys {
 
     /** 代理端口（proxy 页实装刀）。 */
     const val PROXY_PORT = "net.proxy_port"
+
+    /** 代理用户名（proxy 页对齐旧 Agora 刀）：空 = 无认证；SOCKS 与 HTTP 407 都吃它。 */
+    const val PROXY_USER = "net.proxy_user"
+
+    /** 代理密码（proxy 页对齐旧 Agora 刀）。 */
+    const val PROXY_PASS = "net.proxy_pass"
+
+    /** 代理绕行清单（proxy 页对齐旧 Agora 刀）：逗号或换行分隔——精确主机 / *.后缀 / IPv4 CIDR。 */
+    const val PROXY_BYPASS = "net.proxy_bypass"
     const val DRAFT = "ui.draft"
     const val MODEL = "ui.model"
     const val THINK_ON = "ui.think_on"

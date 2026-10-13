@@ -103,4 +103,92 @@ class WireTransportProxyTest {
             server.stop(0)
         }
     }
+
+    /**
+     * 认证生命周期端到端（对齐旧 Agora setProxy 的无条件重置语义）。
+     * JDK 无 Authenticator.getDefault 读回，状态全用假代理行为验证：
+     * 无 Proxy-Authorization 回 407+challenge，凭据对（u:p）回 200。
+     */
+    private fun fakeAuthProxy(): Pair<HttpServer, () -> Boolean> {
+        var sawAuth = false
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/") { ex ->
+            val auth = ex.requestHeaders.getFirst("Proxy-Authorization")
+            val expect = "Basic " + java.util.Base64.getEncoder().encodeToString("u:p".toByteArray())
+            if (auth == expect) {
+                sawAuth = true
+                val body = "ok".toByteArray(Charsets.UTF_8)
+                ex.sendResponseHeaders(200, body.size.toLong())
+                ex.responseBody.use { it.write(body) }
+            } else {
+                ex.responseHeaders.add("Proxy-Authenticate", "Basic realm=\"proxy\"")
+                ex.sendResponseHeaders(407, -1)
+            }
+        }
+        server.start()
+        return server to { sawAuth }
+    }
+
+    /** 带认证装代理：407 challenge -> Authenticator 答话 -> 带 Basic 重试 -> 200。 */
+    @Test
+    fun `proxy auth answers 407 challenge end to end`() {
+        val (server, sawAuth) = fakeAuthProxy()
+        try {
+            assertTrue(TransportProxy.installProxy("http", "127.0.0.1", server.address.port, username = "u", password = "p"))
+            val response = UrlConnTransport().exchange(WireRequest(url = "http://example.com/models")) { true }
+            assertEquals(200, response.status)
+            assertTrue(sawAuth())
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    /** 装认证后重装不带认证：旧凭据撤掉（不留上一份代理的认证）-> 407 透传。 */
+    @Test
+    fun `reinstall without credentials drops previous auth`() {
+        val (server, sawAuth) = fakeAuthProxy()
+        try {
+            assertTrue(TransportProxy.installProxy("http", "127.0.0.1", 9, username = "u", password = "p"))
+            assertTrue(TransportProxy.installProxy("http", "127.0.0.1", server.address.port))
+            val response = UrlConnTransport().exchange(WireRequest(url = "http://example.com/models")) { true }
+            assertEquals(407, response.status)
+            assertTrue(!sawAuth())
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    /** clear 连认证一起清：直连假代理 -> 407 透传（无凭据重试）。 */
+    @Test
+    fun `clear also drops authenticator`() {
+        val (server, sawAuth) = fakeAuthProxy()
+        try {
+            assertTrue(TransportProxy.installProxy("http", "127.0.0.1", 9, username = "u", password = "p"))
+            TransportProxy.clear()
+            val response = UrlConnTransport().exchange(
+                WireRequest(url = "http://127.0.0.1:${server.address.port}/models"),
+            ) { true }
+            assertEquals(407, response.status)
+            assertTrue(!sawAuth())
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    /** 非法安装拒收时不许动认证状态。 */
+    @Test
+    fun `rejected install leaves authenticator untouched`() {
+        val (server, sawAuth) = fakeAuthProxy()
+        try {
+            assertTrue(TransportProxy.installProxy("http", "127.0.0.1", server.address.port, username = "u", password = "p"))
+            assertEquals(false, TransportProxy.installProxy("gopher", "127.0.0.1", 8888))
+            assertEquals(false, TransportProxy.installProxy("http", "", 8888))
+            assertEquals(false, TransportProxy.installProxy("http", "127.0.0.1", 0))
+            val response = UrlConnTransport().exchange(WireRequest(url = "http://example.com/models")) { true }
+            assertEquals(200, response.status)
+            assertTrue(sawAuth())
+        } finally {
+            server.stop(0)
+        }
+    }
 }
