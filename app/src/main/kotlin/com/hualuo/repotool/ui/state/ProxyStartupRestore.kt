@@ -9,7 +9,7 @@ internal fun restoreSavedProxy(persist: UiPersistence, toast: (String) -> Unit) 
     val savedType = persist.load(UiKeys.PROXY_TYPE)?.trim().orEmpty()
     if (savedType != "http" && savedType != "socks") return
     val savedHost = persist.load(UiKeys.PROXY_HOST)?.trim().orEmpty()
-    val savedPort = persist.load(UiKeys.PROXY_PORT)?.trim().toIntOrNull()
+    val savedPort = persist.load(UiKeys.PROXY_PORT)?.trim()?.toIntOrNull()
     if (savedHost.isEmpty() || savedPort == null) return
     val savedBypass = persist.load(UiKeys.PROXY_BYPASS)
         ?.split(Regex("[,\\n]"))?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
