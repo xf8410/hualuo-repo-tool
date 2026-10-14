@@ -1,21 +1,27 @@
 # Artifact 统一账本（功能 · 包 · 证据 对齐表）
 
-> 生成：2026-10-09 10:09（Asia/Shanghai）· 生成器：`tools/gen-artifact-ledger.py`（幂等，随时重跑）
+> 生成：2026-10-15 02:31（Asia/Shanghai）· 生成器：`tools/gen-artifact-ledger.py`（幂等，随时重跑）
 > 数据源：`docs/FEATURE-LEDGER.csv` + GitHub API（releases / actions runs / artifacts）
 > 规矩出处：一功能一包一存档（用户规矩：跑一次 CI 留一个包）；本表只登记事实，覆盖判定看审计报告。
 
 ## 一、总览
 
-- 功能账：**819** 条（1-819）
-- Release：**96** 个（功能包 23 · 常规自检 73）
-- Actions run：**688** 个；其中功能名 run 239 条（涉及 126 个功能号）
-- 对齐：功能包 23/23 能对上功能账（全对上）
-- 无包功能：796 条（包是两波：10-02 的 1-10 语言批与 805 起的实装批；其余条目存证=PR+commit，属正常态）
+- 功能账：**1319** 条（1-1319）
+- Release：**123** 个（功能包 29 · 常规自检 94）
+- Actions run：**719** 个；其中功能名 run 244 条（涉及 131 个功能号）
+- 对齐：功能包 29/29 能对上功能账（全对上）
+- 无包功能：1290 条（包是两波：10-02 的 1-10 语言批与 805 起的实装批；其余条目存证=PR+commit，属正常态）
 
 ## 二、功能包对照表（新到旧）
 
 | 功能号 | 功能名（账本） | 账本关联 | 构建 run | Release（APK） | 源码 | 包日期 | 证据（逐测试 XML） |
 |---|---|---|---|---|---|---|---|
+| 824 | engine·EngineCoreTest·搬一小段内容能算出正确的字节数和校验和 | — | [#729](https://github.com/xf8410/hualuo-repo-tool/actions/runs/38359775461) | [功能824-src9a377e7](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD824-src9a377e7) · [Hualuo-v0.6.1-F824-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD824-src9a377e7/Hualuo-v0.6.1-F824-signed.apk) | [9a377e7](https://github.com/xf8410/hualuo-repo-tool/commit/9a377e7) | 2026-10-13 | [Hualuo-v0.6.1-功能824-构建包-src9a377e7](https://github.com/xf8410/hualuo-repo-tool/actions/runs/38359775461) |
+| 823 | engine·NestedScrollGateTest·detectorBitesOnKnownBadS | — | [#721](https://github.com/xf8410/hualuo-repo-tool/actions/runs/38191783938) | [功能823-srcfad3e34](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD823-srcfad3e34) · [Hualuo-v0.6.1-F823-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD823-srcfad3e34/Hualuo-v0.6.1-F823-signed.apk) | [fad3e34](https://github.com/xf8410/hualuo-repo-tool/commit/fad3e34) | 2026-10-12 | [Hualuo-v0.6.1-功能823-构建包-srcfad3e34](https://github.com/xf8410/hualuo-repo-tool/actions/runs/38191783938) |
+| 822 | engine·NestedScrollGateTest·noFileMixesVerticalScrol | — | [#719](https://github.com/xf8410/hualuo-repo-tool/actions/runs/38190392940) | [功能822-src0a5ff8a](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD822-src0a5ff8a) · [Hualuo-v0.6.1-F822-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD822-src0a5ff8a/Hualuo-v0.6.1-F822-signed.apk) | [0a5ff8a](https://github.com/xf8410/hualuo-repo-tool/commit/0a5ff8a) | 2026-10-10 | [Hualuo-v0.6.1-功能822-构建包-src0a5ff8a](https://github.com/xf8410/hualuo-repo-tool/actions/runs/38190392940) |
+| 821 | MetadataParser：v31 段表+typeDefinitions 88字节流式迭代+按类查字段名；RandomAccessFile 按需 seek（151MB 内存<=几KB）；与观测桥 /fields 互补=名字全景×偏移真相 | [PR#107](https://github.com/xf8410/hualuo-repo-tool/pull/107) | [#711](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37945588428) | [功能821-src24584d6](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD821-src24584d6) · [Hualuo-v0.6.1-F821-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD821-src24584d6/Hualuo-v0.6.1-F821-signed.apk) | [24584d6](https://github.com/xf8410/hualuo-repo-tool/commit/24584d6) | 2026-10-09 | [Hualuo-v0.6.1-功能821-构建包-src24584d6](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37945588428) |
+| 820 | FieldCardStore（版本目录存字段卡原子落盘）+MetadataSpool（32KB分片read_mem落盘+断点续传，解151MB双崩）+三工具：uma_fieldcard_save/uma_offset_diff/uma_metadata_spool | [PR#105](https://github.com/xf8410/hualuo-repo-tool/pull/105) | [#705](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37913329511) | [功能820-src6841e32](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD820-src6841e32) · [Hualuo-v0.6.1-F820-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD820-src6841e32/Hualuo-v0.6.1-F820-signed.apk) | [6841e32](https://github.com/xf8410/hualuo-repo-tool/commit/6841e32) | 2026-10-09 | [Hualuo-v0.6.1-功能820-构建包-src6841e32](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37913329511) |
+| 819 | OffsetProbe：旧新字段表四态对账+对齐规则穷举候选偏移（引用8/int4/short2/byte1，对象头16起）；13用例；外部三仓实证随docs/IL2CPP-OFFSET-STUDY.md | [PR#103](https://github.com/xf8410/hualuo-repo-tool/pull/103) | [#699](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37873089355) | [功能819-src9dbf218](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD819-src9dbf218) · [Hualuo-v0.6.1-F819-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD819-src9dbf218/Hualuo-v0.6.1-F819-signed.apk) | [9dbf218](https://github.com/xf8410/hualuo-repo-tool/commit/9dbf218) | 2026-10-09 | [Hualuo-v0.6.1-功能819-构建包-src9dbf218](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37873089355) |
 | 818 | 撤最后三页无后端演示页（语音转写/多智能体接力/Claude导入）；清 relayOn 摆设布尔与图标资源；24 设置页全真实 | [PR#100](https://github.com/xf8410/hualuo-repo-tool/pull/100) | [#690](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37861597645) | [功能818-src7b72fa6](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD818-src7b72fa6) · [Hualuo-v0.6.1-F818-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD818-src7b72fa6/Hualuo-v0.6.1-F818-signed.apk) | [7b72fa6](https://github.com/xf8410/hualuo-repo-tool/commit/7b72fa6) | 2026-10-08 | [Hualuo-v0.6.1-功能818-构建包-src7b72fa6](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37861597645) |
 | 817 | 撤 DEFAULT_MODEL（无钥匙的默认=摆设）；视觉/图像生成页换已接入模型点选卡；清假模型清单 | [PR#99](https://github.com/xf8410/hualuo-repo-tool/pull/99) | [#686](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37758028600) | [功能817-srce3f570d](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD817-srce3f570d) · [Hualuo-v0.6.1-F817-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD817-srce3f570d/Hualuo-v0.6.1-F817-signed.apk) | [e3f570d](https://github.com/xf8410/hualuo-repo-tool/commit/e3f570d) | 2026-10-08 | [Hualuo-v0.6.1-功能817-构建包-srce3f570d](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37758028600) |
 | 816 | 复用工具页 ApkCheckCard 真组件（ApkInspector 引擎） | [PR#98](https://github.com/xf8410/hualuo-repo-tool/pull/98) | [#685](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37758024912) | [功能816-srce3f570d](https://github.com/xf8410/hualuo-repo-tool/releases/tag/%E5%8A%9F%E8%83%BD816-srce3f570d) · [Hualuo-v0.6.1-F816-signed.apk](https://github.com/xf8410/hualuo-repo-tool/releases/download/%E5%8A%9F%E8%83%BD816-srce3f570d/Hualuo-v0.6.1-F816-signed.apk) | [e3f570d](https://github.com/xf8410/hualuo-repo-tool/commit/e3f570d) | 2026-10-08 | [Hualuo-v0.6.1-功能816-构建包-srce3f570d](https://github.com/xf8410/hualuo-repo-tool/actions/runs/37758024912) |
@@ -278,11 +284,11 @@
 
 ### 常规自检包（样例，最新 5 个；全量见 Releases 页）
 
-- run [697](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r697-src0fa290b) · `v0.6.1-r697-src0fa290b` · 2026-10-09
-- run [693](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r693-src616a17d) · `v0.6.1-r693-src616a17d` · 2026-10-09
-- run [692](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r692-src7374bd1) · `v0.6.1-r692-src7374bd1` · 2026-10-09
-- run [691](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r691-src61571d7) · `v0.6.1-r691-src61571d7` · 2026-10-08
-- run [689](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r689-src5507937) · `v0.6.1-r689-src5507937` · 2026-10-08
+- run [730](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r730-src9a377e7) · `v0.6.1-r730-src9a377e7` · 2026-10-13
+- run [728](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r728-src6939692) · `v0.6.1-r728-src6939692` · 2026-10-13
+- run [725](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r725-src40377dc) · `v0.6.1-r725-src40377dc` · 2026-10-12
+- run [724](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r724-src72f7752) · `v0.6.1-r724-src72f7752` · 2026-10-12
+- run [722](https://github.com/xf8410/hualuo-repo-tool/releases/tag/v0.6.1-r722-srcfad3e34) · `v0.6.1-r722-srcfad3e34` · 2026-10-12
 
 ## 四、怎么用
 
