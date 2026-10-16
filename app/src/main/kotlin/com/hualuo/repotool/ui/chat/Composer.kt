@@ -60,6 +60,10 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  *  - 胶囊自己 `widthIn(max = ...)` 加单行省略号（旧仓同款：胶囊宽上限 160dp 上下）。
  * 这两条是配套的：只截字不设上限，字短时胶囊仍可能撑；只设上限不截字，短屏上照样省略。
  *
+ * **思考胶囊（2026-10-14 接线）**：旧 Agora 输入区那颗回来了——点按开/关，开着带档位名；
+ * 档位在「设置·生成参数」调。开着时流上的 reasoning_content 落回答卡的思考折叠区
+ * （ChatScreen 的渲染早已就位），关着不上屏。键名复用接线前就存在的 THINK_ON/THINK_LEVEL。
+ *
  * 图形字符一律走资源（`stringResource(IconKey.X.resId)`）—— 家规，闸门 NoEmojiInSourceTest。
  * 缩略列表存的是 IconKey 键名字符串，解不出键就照原样显示并染成警告色，不许悄悄换成别的图标。
  */
@@ -274,6 +278,10 @@ fun Composer(state: AppUiState) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            // 思考胶囊：点按开/关（开着时胶囊带档位名）；档位去「设置·生成参数」调
+            Pill(thinkPillText(state.thinkOn, state.thinkLevel)) {
+                state.thinkOn = !state.thinkOn
+            }
             Pill("$dotsGlyph 工具") {
                 state.addMenuOpen = false
                 state.modelSheetOpen = false
@@ -309,6 +317,13 @@ fun Composer(state: AppUiState) {
             }
         }
     }
+}
+
+/** 思考胶囊文字：关着报「思考·关」，开着带档位名（六档名对齐旧 Agora ThinkingLevels 的顺序）。 */
+private fun thinkPillText(on: Boolean, level: Int): String {
+    if (!on) return "思考·关"
+    val names = listOf("最小", "低", "中", "高", "超高", "满")
+    return "思考·" + names.getOrElse(level) { "中" }
 }
 
 @Composable
