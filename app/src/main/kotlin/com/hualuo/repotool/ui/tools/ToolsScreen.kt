@@ -158,8 +158,9 @@ fun ToolsScreen(state: AppUiState) {
  * 直接问 [ToolRegistryRuntime]（装配口出口时登记的那张表），不维护第二份清单——
  * 拆族数对照表迟早漂移，漂了又是「界面上写着能调、实际没有」。
  *
- * 每件一行：名字 + 状态点。绿 = 模型此刻能调；黄 = 注册了但设置开关关着
- * （关掉不是坏了，去设置打开）；红 = 开关读取失败（gateNote 原样出声，不吞）。
+ * 每件一行：名字 + 状态点。绿 = 模型此刻能调；黄 = 注册了但门关着（2026-10-16 措辞
+ * 修正：门按件对症——设置开关没开、钥匙没配，或观测桥没接。都不是坏了，对症去开）；
+ * 红 = 开关读取失败（gateNote 原样出声，不吞）。
  * 没装配（注册表为空）时照实说「还没装配任何工具」，不摆演示清单顶数。
  */
 @Composable
@@ -203,9 +204,9 @@ private fun ToolLedgerCard() {
                     Text(
                         when {
                             row.gateNote != null -> "开关读取出错"
-                            row.visible && row.gated -> "开着（受设置开关控制）"
+                            row.visible && row.gated -> "开着（带门）"
                             row.visible -> "可调"
-                            row.gated -> "开关关着"
+                            row.gated -> "门关着"
                             else -> "不可见"
                         },
                         fontSize = 11.sp,

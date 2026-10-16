@@ -116,6 +116,39 @@ class ChatRuntimeTest {
     }
 
     @Test
+    fun whitespaceOnlyStreamIsNotAProductCard() {
+        // 收场尾部空白移除（2026-10-16 旧 Agora 硬核补课）：只回过空白的流
+        // 不许冒充成品——落「一个字都没收到」的诚实错误卡。
+        val wire = FakeWire(mutableListOf(streamOf("  ", " ")))
+        val runtime = runtimeOf(MemPersist(configured), wire)
+
+        runtime.send("问", "m")
+
+        assertEquals(2, runtime.messages.size)
+        val card = runtime.messages[1]
+        assertTrue("只回过空白不许冒充成品：${card.text}", card.isError)
+        assertTrue(
+            "空收场要替链路认账（人话在卡上）：${card.text}",
+            card.text.contains("一个字都没收到"),
+        )
+        assertFalse("收场忙灯归位", runtime.busy)
+    }
+
+    @Test
+    fun trailingWhitespaceIsTrimmedOnSettle() {
+        // 成品卡的正文不带尾巴空白：上屏与落盘吃同一份剪过尾巴的文本。
+        val wire = FakeWire(mutableListOf(streamOf("答案", "   ")))
+        val runtime = runtimeOf(MemPersist(configured), wire)
+
+        runtime.send("问", "m")
+
+        val card = runtime.messages[1]
+        assertFalse("有真内容就是成品卡", card.isError)
+        assertEquals("尾部空白移除：正文不带尾巴", "答案", card.text)
+        assertFalse(runtime.busy)
+    }
+
+    @Test
     fun errorCardsStayOutOfHistory() {
         val wire = FakeWire(
             mutableListOf(

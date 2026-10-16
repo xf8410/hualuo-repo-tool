@@ -78,7 +78,7 @@ class ChatRuntimeToolLoopTest {
         transportFactory = { wire },
         worker = { thread -> thread.run() },
         toolRegistry = registry,
-        maxToolRounds = maxRounds,
+        maxToolRounds = { maxRounds },
         clock = { 1_700_000_000_000L },
     )
 
@@ -125,6 +125,28 @@ class ChatRuntimeToolLoopTest {
             "打转闸的出路是拆小：${runtime.messages.last().text}",
             runtime.messages.last().text.contains("拆小"),
         )
+        assertFalse(runtime.busy)
+    }
+
+    @Test
+    fun toolRoundLimitReadsSettingWhenNotOverridden() {
+        // 现读设置这条路（2026-10-16 可调刀）：不显式传 maxToolRounds 时，
+        // 上限从 chat.max_tool_rounds 现读；写 1 就 1 轮封顶（超了才收）。
+        val executed = mutableListOf<String>()
+        val wire = FakeWire(mutableListOf(toolCallStep("call_1", "echo")))
+        val persist = MemPersist(configured + (ChatRuntime.KEY_MAX_TOOL_ROUNDS to "1"))
+        val runtime = ChatRuntime(
+            persist,
+            transportFactory = { wire },
+            worker = { thread -> thread.run() },
+            toolRegistry = echoRegistry(executed),
+            clock = { 1_700_000_000_000L },
+        )
+
+        runtime.send("问", "m")
+
+        assertEquals("设置写 1：最多发 2 轮（超了才收）", 2, wire.calls)
+        assertTrue("打到上限走错误卡收场", runtime.messages.last().isError)
         assertFalse(runtime.busy)
     }
 

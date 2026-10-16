@@ -48,10 +48,11 @@ import java.util.Locale
  * 不占历史条数，空指令就一个字都不多发。
  *
  * **工具回合（0.7.0 协议刀）**：注入了 [toolRegistry]（非空）时，请求带上 tools 清单；
- * 模型回工具调用就执行、把结果回填历史、再发下一轮——轮次有上限（[maxToolRounds]），
- * 打到上限按 ToolLoopLimit 收场（出路是「拆小问题」不是重试）。每一轮的工具动作在
- * 当前卡上以 toolLine 回显（每步出声），轮与轮之间**停止键照样管用**（stopRequested
- * 在两轮检查点收线）。注册表为空时走老路（不带 tools 字段），行为与接线前逐字一致。
+ * 模型回工具调用就执行、把结果回填历史、再发下一轮——轮次有上限（[maxToolRounds]，
+ * 生成参数页可调 6/12/20），打到上限按 ToolLoopLimit 收场（出路是「拆小问题」不是重试）。
+ * 每一轮的工具动作在当前卡上以 toolLine 回显（每步出声），轮与轮之间**停止键照样管用**
+ * （stopRequested 在两轮检查点收线）。注册表为空时走老路（不带 tools 字段），
+ * 行为与接线前逐字一致。
  *
  * **思考段（2026-10-14 接线）**：流上的 reasoning_content 走 [appendThoughtGated]
  * 进当前卡的 thinkLabel/thinkBody 折叠区（渲染在 ChatScreen 早已就位），开关关着就丢
@@ -61,6 +62,10 @@ import java.util.Locale
  * **图片附件（2026-10-16，对齐旧 Agora 链路）**：send 带 images（收件时已降采样落盘的
  * 路径），用户卡与落盘行都带这份清单，历史组包时 user 轮的图随消息进请求体
  * （engine 侧 content 升 parts 数组）；助手卡与错误卡不带图。
+ *
+ * **收场尾部空白移除（2026-10-16，旧 Agora 硬核补课）**：流式攒下的尾巴空白不算内容
+ * ——成品卡、落盘行、半截标记三处一律吃剪过尾巴的文本；只回过空白的流按
+ * 「一个字都没收到」的诚实错误卡收场，不冒充成品。
  *
  * 家规对齐：
  *  - 「生成中」只是徽标文字，不是转圈图形；错误卡走系统红样式，text 就是
@@ -100,8 +105,11 @@ class ChatRuntime(
     val systemPrompt: () -> String = { "" },
     /** 模型可调用的工具表；空表 = 不带 tools 字段（行为与接线前逐字一致）。 */
     private val toolRegistry: ToolRegistry = ToolRegistry(),
-    /** 工具回合的轮次上限（防模型连轴转地调工具不给答案）。 */
-    private val maxToolRounds: Int = MAX_TOOL_ROUNDS,
+    /** 工具回合的轮次上限（防模型连轴转地调工具不给答案）：每次发送现读设置
+     *  （生成参数页 6/12/20 可调），读不到或越界用 [MAX_TOOL_ROUNDS] 兜底。 */
+    private val maxToolRounds: () -> Int = {
+        persist.load(KEY_MAX_TOOL_ROUNDS)?.trim()?.toIntOrNull()?.coerceIn(1, 30) ?: MAX_TOOL_ROUNDS
+    },
     private val clock: () -> Long = System::currentTimeMillis,
     /** 生成收尾回调（会话循环页实装刀）：每轮生成落定（成功/失败/按停）后调一次，
      *  参数=是否用户主动按停。循环调度器挂这里，别去轮询 busy。 */
@@ -287,7 +295,7 @@ class ChatRuntime(
                 }
                 is RoundOutcome.Calls -> {
                     rounds += 1
-                    if (rounds > maxToolRounds) {
+                    if (rounds > maxToolRounds()) {
                         // 打转闸：不是网络错也不是模型错，是「这题该拆小」——出路话在分类那边
                         settleError(GenerationError.ToolLoopLimit(rounds))
                         return
@@ -361,9 +369,12 @@ class ChatRuntime(
         synchronized(lock) {
             val base = messages.dropLast(1)
             val last = messages.lastOrNull()
-            val finished = last?.text ?: ""
+            // 尾部空白移除（旧 Agora 硬核补课）：流式攒下的尾巴空白不算内容——
+            // 成品卡的正文、落盘行、半截标记都吃这份剪过尾巴的文本。
+            val finished = (last?.text ?: "").trimEnd()
             messages = when {
                 last != null && finished.isNotEmpty() -> base + last.copy(
+                    text = finished,
                     who = listOf(Badge(profile.name, Tone.Neutral)),
                 )
                 // 一个字都没收到：这是链路说谎，替模型认账是假、替它遮掩更糟
@@ -385,7 +396,7 @@ class ChatRuntime(
         synchronized(lock) {
             val base = messages.dropLast(1)
             val last = messages.lastOrNull()
-            val finished = last?.text ?: ""
+            val finished = (last?.text ?: "").trimEnd()
             messages = base + ChatMsg(
                 who = listOf(Badge("系统", Tone.Err)),
                 time = now(),
@@ -406,7 +417,7 @@ class ChatRuntime(
         synchronized(lock) {
             val base = messages.dropLast(1)
             val last = messages.lastOrNull()
-            val finished = last?.text ?: ""
+            val finished = (last?.text ?: "").trimEnd()
             messages = base + ChatMsg(
                 who = listOf(Badge("系统", Tone.Err)),
                 time = now(),
@@ -470,7 +481,7 @@ class ChatRuntime(
         var sid = sessionId
         if (sid == null) {
             sid = runCatching { s.create(model) }.getOrElse {
-                storeIssue = "新会话没建成（${it.message ?: "写盘出错"}）：这轮对话只在屏上，重开会丢"
+                storeIssue = "新会话没建成（${it.message ?: "写盘出错"}）：这轮对话只在屏上，重开就丢"
                 return
             }
             sessionId = sid
@@ -547,8 +558,12 @@ class ChatRuntime(
         /** 历史上限的兜底默认（设置里可配，读不到就用它）。 */
         const val MAX_HISTORY_TURNS = 40
 
-        /** 工具回合轮次上限（防模型连轴转地调工具不给答案）；打到上限按拆小问题收场。 */
-        const val MAX_TOOL_ROUNDS = 6
+        /** 工具回合轮次上限的兜底默认（2026-10-16 从 6 提到 12：正经调查六轮不够用，
+         *  常被误杀；生成参数页可调 6/12/20）。打到上限按拆小问题收场，那是提醒不是故障。 */
+        const val MAX_TOOL_ROUNDS = 12
+
+        /** 工具轮次上限的设置键（生成参数页写、本类每次发送现读；键名进真机后不改）。 */
+        const val KEY_MAX_TOOL_ROUNDS = "chat.max_tool_rounds"
     }
 }
 
