@@ -7,8 +7,7 @@ plugins {
 }
 
 // 版本号只能从根目录的 version.properties 读，写死的数字在这里一律不许出现。
-// 注意：读文件这件事在本脚本和 engine 里各有一份（engine 那份是给运行时和测试用的），
-// CI 的「自检四」会把两边对一次，防止有人只改一处。
+// CI 会核对「构建时生效的版本」和这里写的是否一致，不一致就红。
 val versionProps = Properties().apply {
     rootProject.file("version.properties").inputStream().use { load(it) }
 }
@@ -70,6 +69,17 @@ android {
         compose = true
         // BuildConfig 用来把版本号交给界面显示
         buildConfig = true
+    }
+
+    // 沙盒 proot 执行件（2026-10-16 真机接线刀）：CI 把三个 .so 构建进
+    // app/src/main/jniLibs/arm64-v8a（exec/loader/talloc），必须以 legacy 方式打包
+    // （解压到 nativeLibraryDir）才有执行权——Android 6+ 默认压缩在 APK 内不落盘、
+    // 不可 exec，ProcessBuilder 一跑就是 ENOEXEC。
+    @Suppress("UnstableApiUsage")
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 

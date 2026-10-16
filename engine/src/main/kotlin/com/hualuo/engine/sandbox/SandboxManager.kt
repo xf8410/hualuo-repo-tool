@@ -219,7 +219,7 @@ class SandboxManager(
                     } else {
                         downloader.downloadToFile(
                             mirrors = mirrors.repositories,
-                            urlOf = { mirror -> "${mirror}/${pkg.name}-${pkg.version}.apk" },
+                            urlOf = { mirror -> "$mirror/${pkg.name}-${pkg.version}.apk" },
                             target = apkFile,
                             expectedSha256 = null, // APKINDEX 不含单包 sha256（校验在 APKINDEX.sig 体系）；此处出账不装假
                             onProgress = {},
@@ -280,7 +280,7 @@ class SandboxManager(
                 SandboxError.Kind.VERIFY,
                 exitCode = outcome.exitCode,
                 pkg = name,
-                stderrSnippet = "apk del 后复验：包仍在库=${stillThere}；stderr 尾=${outcome.stderrTail.take(200)}",
+                stderrSnippet = "apk del 后复验：包仍在库=$stillThere；stderr 尾=${outcome.stderrTail.take(200)}",
             ).toException()
         }
         val captured = captureBaseWorld(force = true)
@@ -291,9 +291,14 @@ class SandboxManager(
 
     private fun session(): ProotSession = session ?: sessionProvider(rootfsDir, emptyList()).also { session = it }
 
-    /** 供 installPackages 用的会话：多绑一个 /apks-tmp（本地 .apk 包目录），只读挂载。 */
+    /**
+     * 供 installPackages 用的会话：多绑一个 /apks-tmp（本地 .apk 包目录）。
+     * guest 路径就是纯路径——proot -b 没有 :ro 旗标，写进去只会让挂载点名字带上
+     * 冒号、后面的 apk add 找不到文件（2026-10-16 审计逮到后修正；ProotSession
+     * 侧的冒号禁令兜底，谁再犯当场炸响）。
+     */
     private fun sessionWithApks(pkgDir: File): ProotSession =
-        sessionProvider(rootfsDir, listOf(pkgDir to "/apks-tmp:ro"))
+        sessionProvider(rootfsDir, listOf(pkgDir to "/apks-tmp"))
 
     /** 仅供测试：直取当前会话（busy 门等并发行为的对照验证用）。 */
     internal fun sessionForTest(): ProotSession = session()
