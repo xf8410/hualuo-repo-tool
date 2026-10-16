@@ -42,6 +42,30 @@ class MirrorPolicyTest {
             "https://dl-cdn.alpinelinux.org/alpine/v3.21/main/APKINDEX.tar.gz",
             m.apkIndexPathOn(m.current()),
         )
-        assertTrue("rootfs 路径含 aarch64 与 minirootfs：${m.rootfsUrlOn(m.current())}", m.rootfsUrlOn(m.current()).contains("aarch64") && m.rootfsUrlOn(m.current()).contains("minirootfs"))
+        assertEquals(
+            "rootfs 路径拼接（releases 段不在 /main 仓库段下——旧拼法是 404）：",
+            "https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/aarch64/alpine-minirootfs-3.21.0-aarch64.tar.gz",
+            m.rootfsUrlOn(m.current()),
+        )
+        assertEquals(
+            "国内镜像的 rootfs 路径同样要拼对：",
+            "https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.21/releases/aarch64/alpine-minirootfs-3.21.0-aarch64.tar.gz",
+            m.rootfsUrlOn("https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.21/main"),
+        )
+        assertEquals(
+            "镜像串不带仓库段（直接给到版本根）也拼得对：",
+            "https://mirrors.ustc.edu.cn/alpine/v3.21/releases/aarch64/alpine-minirootfs-3.21.0-aarch64.tar.gz",
+            m.rootfsUrlOn("https://mirrors.ustc.edu.cn/alpine/v3.21"),
+        )
+    }
+
+    @Test
+    fun rootfsSha256IsRealValueNotPlaceholder() {
+        // 2026-10-16 修：占位空串等于悄悄关掉校验。真值取自官方同名 .sha256（可复核）。
+        assertEquals(
+            "f31202c4070c4ef7de9e157e1bd01cb4da3a2150035d74ea5372c5e86f1efac1",
+            MirrorPolicy.ROOTFS_SHA256,
+        )
+        assertEquals("sha256 真值是 64 位十六进制：", 64, MirrorPolicy.ROOTFS_SHA256.length)
     }
 }
