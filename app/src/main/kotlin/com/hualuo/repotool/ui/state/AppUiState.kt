@@ -485,7 +485,7 @@ class AppUiState(
             toast("正在投递，先等这批跑完")
             return
         }
-        pendingDataAction = if (tree) ACTION_COURIER_PICK_FILES else ACTION_COURIER_PICK_FILES
+        pendingDataAction = if (tree) ACTION_COURIER_PICK_TREE else ACTION_COURIER_PICK_FILES
     }
 
     /** 目标仓：设置「文件投递」里配，粘整条仓库链接也认（与仓库CI 同一套 normalize）。没配对返回 null。 */
