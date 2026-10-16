@@ -53,6 +53,11 @@ import java.util.Locale
  * 当前卡上以 toolLine 回显（每步出声），轮与轮之间**停止键照样管用**（stopRequested
  * 在两轮检查点收线）。注册表为空时走老路（不带 tools 字段），行为与接线前逐字一致。
  *
+ * **思考段（2026-10-14 接线）**：流上的 reasoning_content 走 [appendThoughtGated]
+ * 进当前卡的 thinkLabel/thinkBody 折叠区（渲染在 ChatScreen 早已就位），开关关着就丢
+ * （对齐旧 Agora 的 thinkingEnabled 语义）。思考**不进正文、不进历史、不落盘**
+ * （StoredMsg 没有思考字段，重开会话思考区不再回摆——先看正文的规矩不破坏）。
+ *
  * 家规对齐：
  *  - 「生成中」只是徽标文字，不是转圈图形；错误卡走系统红样式，text 就是
  *    GenerationError.userMessage()——出路写在脸上，不弹窗、不静默。
@@ -85,6 +90,8 @@ class ChatRuntime(
     val temperature: () -> Double? = { null },
     /** 核采样 top_p；null = 不带该字段。 */
     val topP: () -> Double? = { null },
+    /** 思考段显不显示（输入区思考胶囊接线）：关着时 reasoning_content 收到也不上屏。 */
+    val thinkingEnabled: () -> Boolean = { true },
     /** 系统指令；空串就不发这条（不多塞一个空消息占位）。 */
     val systemPrompt: () -> String = { "" },
     /** 模型可调用的工具表；空表 = 不带 tools 字段（行为与接线前逐字一致）。 */
@@ -321,14 +328,14 @@ class ChatRuntime(
             if (toolRegistry.isEmpty()) {
                 // 表空：走老形状（不带 tools 字段）。模型回了工具调用按形状异常报错——
                 // 没带清单却回调用，当成功或当文本都说不通（这层的语义在客户端那侧钉过）。
-                val error = client.chat(profile, history, temperature(), topP()) { chunk ->
+                val error = client.chat(profile, history, temperature(), topP(), onThought = ::appendThoughtGated) { chunk ->
                     roundText.append(chunk)
                     appendStreaming(chunk)
                 }
                 if (error == null) RoundOutcome.Text else RoundOutcome.Failed(error)
             } else {
                 when (
-                    val outcome = client.chatTurns(profile, history, tools = toolRegistry.specs(), temperature = temperature(), topP = topP()) { chunk ->
+                    val outcome = client.chatTurns(profile, history, tools = toolRegistry.specs(), temperature = temperature(), topP = topP(), onThought = ::appendThoughtGated) { chunk ->
                         roundText.append(chunk)
                         appendStreaming(chunk)
                     }
@@ -379,6 +386,8 @@ class ChatRuntime(
                 time = now(),
                 text = GenerationError.Cancelled.userMessage() +
                     if (finished.isNotEmpty()) "\n——已收到的半截（不完整，别当成品）——\n$finished" else "",
+                thinkLabel = last?.thinkLabel,
+                thinkBody = last?.thinkBody,
                 isError = true,
             )
             busy = false
@@ -398,6 +407,8 @@ class ChatRuntime(
                 time = now(),
                 text = if (finished.isEmpty()) error.userMessage()
                 else error.userMessage() + "\n——已收到的半截（不完整，别当成品）——\n" + finished,
+                thinkLabel = last?.thinkLabel,
+                thinkBody = last?.thinkBody,
                 isError = true,
             )
             busy = false
@@ -413,6 +424,20 @@ class ChatRuntime(
             val base = messages.dropLast(1)
             val last = messages.last()
             messages = base + last.copy(text = last.text + chunk)
+        }
+    }
+
+    /** 思考段落卡口：开关关着就丢（旧 Agora thinkingEnabled 语义）；开着拼进折叠区。 */
+    private fun appendThoughtGated(chunk: String) {
+        if (!thinkingEnabled()) return
+        synchronized(lock) {
+            if (messages.isEmpty()) return
+            val base = messages.dropLast(1)
+            val last = messages.last()
+            messages = base + last.copy(
+                thinkLabel = last.thinkLabel ?: "思考过程",
+                thinkBody = (last.thinkBody ?: "") + chunk,
+            )
         }
     }
 

@@ -36,8 +36,8 @@ class OpenAiCompatClient(
     private val watchdog: IdleWatchdog,
     private val sleeper: (Long) -> Unit = ::napQuietly,
 ) {
-    // route 放在 onText 前，保证旧的 chatTurns(..., tools) { chunk -> } 尾随 lambda 仍绑定 onText。
-    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, route: Boolean = true, onText: (String) -> Unit): ChatOutcome {
+    // route 与 onThought 放在 onText 前，保证旧的 chatTurns(..., tools) { chunk -> } 尾随 lambda 仍绑定 onText。
+    fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, route: Boolean = true, onThought: (String) -> Unit = {}, onText: (String) -> Unit): ChatOutcome {
         val routed = if (route) ProviderRouting.sessionFor(profile.model) else null
         if (routed != null && routed.protocol != ProviderProtocol.OPENAI_COMPAT) return ProviderClient(transport, slot, watchdog).chatTurns(routed, history, tools, onText)
         val active = routed?.profile ?: profile
@@ -45,14 +45,14 @@ class OpenAiCompatClient(
         if (history.none { it.content.isNotBlank() || it.toolCalls.isNotEmpty() || it.role == "tool" }) return ChatOutcome.Failed(GenerationError.Configuration("这条对话是空的，不花这个钱"))
         val request = WireRequest(url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(active.baseUrl), CHAT_SUFFIX), method = "POST", headers = headersFor(active, true), body = chatBody(active, history, temperature, topP, maxTokens, tools))
         val runner = ChatWireRunner(transport, slot, policy, watchdog, providerLabel = active.name, sleeper = sleeper)
-        return when (val result = runner.run(request, RequestCost.Costly, onText)) {
+        return when (val result = runner.run(request, RequestCost.Costly, onText, onThought)) {
             is ChatRunResult.Ok -> ChatOutcome.Text
             is ChatRunResult.ToolCalls -> ChatOutcome.Calls(result.calls)
             is ChatRunResult.Failed -> ChatOutcome.Failed(result.error)
         }
     }
 
-    fun chat(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, onText: (String) -> Unit): GenerationError? = when (val outcome = chatTurns(profile, history, emptyList(), temperature, topP, maxTokens, onText = onText)) {
+    fun chat(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, onThought: (String) -> Unit = {}, onText: (String) -> Unit): GenerationError? = when (val outcome = chatTurns(profile, history, emptyList(), temperature, topP, maxTokens, onText = onText, onThought = onThought)) {
         ChatOutcome.Text -> null
         is ChatOutcome.Calls -> GenerationError.Configuration("模型回了工具调用，但这轮请求没带工具清单（形状异常）：按错误报，别装没看见")
         is ChatOutcome.Failed -> outcome.error
@@ -86,6 +86,8 @@ class OpenAiCompatClient(
 
     private fun headersFor(profile: ProviderProfile, acceptSse: Boolean): List<Pair<String, String>> = buildList { add("content-type" to "application/json; charset=utf-8"); if (acceptSse) add("accept" to "text/event-stream"); if (profile.apiKey.isNotBlank()) add("authorization" to "Bearer ${profile.apiKey}") }
 
+    // 请求体只带调用方显式给了的字段（temperature/top_p 为 null 就不写）：旧 Agora 同款语义——
+    // 空手用端点默认。有端点（Kimi coding k 系）只认 temperature=1，硬塞默认值会被 400 拒掉。
     private fun chatBody(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double?, topP: Double?, maxTokens: Int?, tools: List<ToolSpec>): String = buildJsonObject {
         put("model", profile.model); put("stream", true); temperature?.let { put("temperature", it) }; topP?.let { put("top_p", it) }; maxTokens?.let { put("max_tokens", it) }
         putJsonArray("messages") { history.forEach { turn -> addJsonObject {
