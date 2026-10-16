@@ -13,6 +13,16 @@ import java.util.concurrent.TimeUnit
  *  - 输出有上限但**必须排干**（子进程把管道写满就死锁的经典坑），封顶不存但读走不少报；
  *  - 每次执行结束必落一行终态（TOOL-CONTRACTS 契约二.3），不许静默结束。
  *
+ * **proot 执行件与运行环境（2026-10-16 真机接线刀）**：
+ *  - [prootBinary] 默认 "proot"（PATH 上找——纯 JVM 测试与桌面跑法）；
+ *  - 真机上 proot 以 libproot_exec.so 的名字打进 APK（CI 从钉死源码构建进 jniLibs，
+ *    useLegacyPackaging 解压到 nativeLibraryDir 才有执行权），app 层把绝对路径递进来；
+ *  - [env] 是传给 proot 进程的环境变量：LD_LIBRARY_PATH（找 libtalloc）、PROOT_LOADER
+ *    （loader 不打进 proot 二进制，运行时必须指路）、PROOT_TMP_DIR（proot 宿主侧临时目录）、
+ *    HOME/PATH（guest 继承）。空表 = 一个不设（测试桩语义）。
+ *  - 绝对路径形态的执行件先做**预检**：文件不在就给人话（这个构建没带沙盒执行层），
+ *    不许 ProcessBuilder 抛一句英文 IOException 糊弄——那正是「环境错误没错误码」的旧病。
+ *
  * proot 参数对齐官方版（--link2symlink / --kill-on-exit / -0 / -L），因为 Alpine rootfs
  * 里的绝对符号链接（/bin/sh 之类）依赖 link2symlink 才能在 Android 私有目录里落地。
  * 官方版把这些参数散在 793 行大文件里，这里只做装配这一件事。
@@ -20,17 +30,22 @@ import java.util.concurrent.TimeUnit
 class ProotSession(
     private val rootfsDir: File,
     private val sharedDir: File? = null,
-    /** 额外绑定挂载（host 目录 -> guest 路径，guest 可带 :ro 标记）。apk 本地包安装用。 */
+    /** 额外绑定挂载（host 目录 -> guest 路径）。apk 本地包安装用。 */
     internal val bindMounts: List<Pair<File, String>> = emptyList(),
     private val prootBinary: String = "proot",
-    private val launcher: Launcher = Launcher { cmd, workdir ->
-        ProcessBuilder(cmd).apply { workdir?.let { directory(it) } }.start()
+    /** 传给 proot 进程的环境变量（LD_LIBRARY_PATH / PROOT_LOADER / PROOT_TMP_DIR / HOME / PATH）。 */
+    private val env: Map<String, String> = emptyMap(),
+    private val launcher: Launcher = Launcher { cmd, workdir, launchEnv ->
+        ProcessBuilder(cmd).apply {
+            workdir?.let { directory(it) }
+            environment().putAll(launchEnv)
+        }.start()
     },
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
     fun interface Launcher {
-        fun start(command: List<String>, workdir: File?): Process
+        fun start(command: List<String>, workdir: File?, env: Map<String, String>): Process
     }
 
     data class ExecOutcome(
@@ -60,6 +75,7 @@ class ProotSession(
     /**
      * 跑一条 shell 命令。
      * 修复 L3：空命令 / 超长命令在进门就被拒，给明确 kind=REJECTED，不带模糊往下走。
+     * 修复 D4：进程起不来是对象化 EXEC（预检命中或 IOException 换译），不是裸异常穿透。
      */
     fun exec(command: String, timeoutMs: Long = 60_000L): ExecOutcome {
         val trimmed = command.trim()
@@ -78,10 +94,27 @@ class ProotSession(
         if (isBusy) {
             throw SandboxError(SandboxError.Kind.BUSY, stderrSnippet = busyReason()).toException()
         }
+        // 预检：绝对路径形态的执行件先看在不在——不在就给人话（这个构建没带沙盒执行层），
+        // 不许 ProcessBuilder 抛一句英文 IOException 糊弄。PATH 形态（"proot"）预检不了，跳过。
+        if (prootBinary.contains(File.separatorChar) && !File(prootBinary).isFile) {
+            throw SandboxError(
+                SandboxError.Kind.EXEC,
+                stderrSnippet = "proot 执行件不在：$prootBinary——这个构建没带沙盒执行层" +
+                    "（APK 的 jniLibs 里没有它），换用带 proot 的构建；沙盒其它功能不受影响",
+            ).toException()
+        }
 
         val cmd = buildCommand(trimmed)
         val started = clock()
-        val process = launcher.start(cmd, null)
+        val process = try {
+            launcher.start(cmd, null, env)
+        } catch (e: java.io.IOException) {
+            throw SandboxError(
+                SandboxError.Kind.EXEC,
+                stderrSnippet = "进程起不来（${e.message ?: e.javaClass.simpleName}）：" +
+                    "执行件=$prootBinary；PATH 形态时先确认装没装，绝对路径形态见上一条预检话",
+            ).toException()
+        }
         currentProcess = process
         currentDesc = trimmed.take(60)
 
@@ -119,7 +152,13 @@ class ProotSession(
         )
     }
 
-    /** proot 命令装配：rootfs + 标准绑定 + link2symlink + sh -c。 */
+    /**
+     * proot 命令装配：rootfs + 标准绑定 + link2symlink + sh -c。
+     *
+     * guest 路径**不许带冒号**（fail-fast）：proot -b 语法只认 host:guest，把只读旗标
+     * 写成 host:guest:ro 会让挂载点字面上变成「/apks-tmp:ro」——后面的 apk add 找不到
+     * 文件，报错还看不出因果（2026-10-16 审计逮到的旧病形状，宁可炸响不诈哑）。
+     */
     fun buildCommand(shellCommand: String): List<String> {
         val cmd = mutableListOf(
             prootBinary,
@@ -139,7 +178,9 @@ class ProotSession(
         }
         for ((host, guest) in bindMounts) {
             host.mkdirs()
-            // 绑定写法支持 host:guest 与 host:guest:ro（ro 只是标记，proot 无只读绑定，靠命令侧约束）
+            require(':' !in guest) {
+                "绑定 guest 路径不许带冒号（proot -b 只认 host:guest，ro 旗标会吃掉挂载点名）：$guest"
+            }
             cmd.add("-b")
             cmd.add("${host.absolutePath}:$guest")
         }
@@ -186,7 +227,7 @@ class ProotSession(
 
     /** 仅供测试：占住 busy 门一段时间的睡眠进程（验证并发拒绝用）。 */
     internal fun holdForBusyTest(ms: Long): Process {
-        val p = launcher.start(listOf("/bin/sh", "-c", "sleep ${ms / 1000 + 1}"), null)
+        val p = launcher.start(listOf("/bin/sh", "-c", "sleep ${ms / 1000 + 1}"), null, emptyMap())
         currentProcess = p
         currentDesc = "busy-test"
         return p
