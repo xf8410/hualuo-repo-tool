@@ -77,9 +77,11 @@ class ChatWireRunner(
 
     /**
      * 跑一次完整的「请求，流式交付，失败按策略重来或放弃」。
-     * [onText] 会被多次调用（每段内容一次）；返回 [ChatRunResult.Failed] 时一句没交付或半路停。
+     * [onText] 会被多次调用（每段内容一次）；[onThought] 是思考段（reasoning_content）
+     * 的独立回调——思考不混进正文（正文要喂历史，思考不喂）。返回 [ChatRunResult.Failed]
+     * 时一句没交付或半路停。
      */
-    fun run(request: WireRequest, cost: RequestCost, onText: (String) -> Unit): ChatRunResult {
+    fun run(request: WireRequest, cost: RequestCost, onText: (String) -> Unit, onThought: (String) -> Unit = {}): ChatRunResult {
         stopRequested = false
         var attempt = 1
         while (true) {
@@ -92,7 +94,7 @@ class ChatWireRunner(
                 // 排队策略归调用方：这里先把话说清，不悄悄丢请求也不硬闯并发。
                 GenerationError.Configuration("上一条还在生成，槽被占着：这条没发出去。等它收完或先按停止"),
             )
-            val guarded = slot.runGuarded(claim) { attemptOnce(request, cost, attempt, onText) }
+            val guarded = slot.runGuarded(claim) { attemptOnce(request, cost, attempt, onText, onThought) }
             val bundle = guarded.value
                 ?: return ChatRunResult.Failed(
                     GenerationError.Unknown(guarded.failure ?: IOException("接线层内部异常（不该走到这）")),
@@ -153,8 +155,9 @@ class ChatWireRunner(
         cost: RequestCost,
         attempt: Int,
         onText: (String) -> Unit,
+        onThought: (String) -> Unit,
     ): AttemptBundle {
-        val parser = OpenAiSseParser(onText)
+        val parser = OpenAiSseParser(onText, onThought)
         return try {
             val response = transport.exchange(request) { line ->
                 watchdog.beat()
@@ -265,7 +268,10 @@ class ChatWireRunner(
 
 /**
  * OpenAI 兼容的流式行解析：`data: 行` 与裸 JSON 都认（有的网关不写 SSE 前缀），
- * `[DONE]` 或 `finish_reason` 都算语义收尾。只挑 delta.content；reasoning 等别字段将来再加。
+ * `[DONE]` 或 `finish_reason` 都算语义收尾。挑 delta.content 与 delta.reasoning_content
+ * （思考段走独立的 [onThought] 回调，不混进正文——正文要喂历史，思考不喂；
+ * 2026-10-14 从「将来再加」落成真接线，对齐旧 Agora 的 ThoughtChunk 通道）；
+ * 行内 think 标签的解析（旧仓 StreamingThinkTagParser 那一路）将来再加。
  *
  * 中途出现 `{"error":...}` 块（200 外壳里的错误）：记下 [streamError] 并收线 ——
  * 这是「对方 HTTP 说 OK、内容说炸了」的经典形状，当成功返回就是骗人。
@@ -282,7 +288,7 @@ class ChatWireRunner(
  * **tool_calls（0.7.0 协议刀）**：delta.tool_calls（非流式形状则在 message.tool_calls）
  * 逐帧喂给 [toolAssembler] 按 index 装配；本类不解释参数内容，只保证碎片拼得全。
  */
-class OpenAiSseParser(private val onText: (String) -> Unit) {
+class OpenAiSseParser(private val onText: (String) -> Unit, private val onThought: (String) -> Unit = {}) {
 
     var finished = false
         private set
@@ -357,6 +363,9 @@ class OpenAiSseParser(private val onText: (String) -> Unit) {
             sawText = true
             onText(content)
         }
+        // 思考段（Kimi/DeepSeek 系都叫 reasoning_content）：独立回调，不进正文不计 sawText。
+        val thought = delta?.let { (it["reasoning_content"] as? JsonPrimitive)?.contentOrNull }
+        if (!thought.isNullOrEmpty()) onThought(thought)
         // 工具调用碎片：流式形状在 delta.tool_calls，非流式形状在 message.tool_calls。
         // 条目没有 index 的（非流式）用数组位置当 index，装配器两形状通吃。
         (delta?.get("tool_calls") as? JsonArray)?.forEachIndexed { position, element ->
