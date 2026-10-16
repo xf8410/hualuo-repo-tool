@@ -8,6 +8,9 @@ import org.junit.Test
 /**
  * 思考段（reasoning_content）接线：走独立的 onThought 回调，不混进正文。
  * 正文要喂历史、思考不喂——两条通道在解析器里就分开，不许到界面层再拆。
+ *
+ * 调用形状钉死：OpenAiSseParser 的尾随 lambda 永远绑 onText（老测试全是
+ * `OpenAiSseParser {}` 裸尾随写法），onThought 排在前面带默认值。
  */
 class ThoughtStreamTest {
 
@@ -15,7 +18,10 @@ class ThoughtStreamTest {
     fun `reasoning content goes to thought callback not text`() {
         val text = StringBuilder()
         val thought = StringBuilder()
-        val parser = OpenAiSseParser({ text.append(it) }, { thought.append(it) })
+        val parser = OpenAiSseParser(
+            onThought = { thought.append(it) },
+            onText = { text.append(it) },
+        )
 
         parser.onLine("""data: {"choices":[{"delta":{"reasoning_content":"先想想"}}]}""")
         parser.onLine("""data: {"choices":[{"delta":{"reasoning_content":"再想想"}}]}""")
@@ -25,13 +31,13 @@ class ThoughtStreamTest {
         assertEquals("正文只有 content", "答案", text.toString())
         assertEquals("思考段按序拼齐", "先想想再想想", thought.toString())
         assertTrue(parser.finished)
-        assertTrue("思考段不算正文内容字节", parser.sawText)
+        assertTrue("正文内容到场", parser.sawText)
     }
 
     @Test
     fun `non-streaming message shape also yields thought`() {
         val thought = StringBuilder()
-        val parser = OpenAiSseParser({}, { thought.append(it) })
+        val parser = OpenAiSseParser(onThought = { thought.append(it) }, onText = {})
 
         parser.onLine("""{"choices":[{"message":{"role":"assistant","reasoning_content":"想过","content":"答"},"finish_reason":"stop"}]}""")
 
@@ -40,10 +46,10 @@ class ThoughtStreamTest {
     }
 
     @Test
-    fun `thought callback defaults to dropping chunks quietly`() {
+    fun `legacy trailing lambda still binds onText and thought drops quietly`() {
         val text = StringBuilder()
-        // 旧调用形状：只给 onText，思考段不许炸也不许混进正文
-        val parser = OpenAiSseParser({ text.append(it) })
+        // 老调用形状：裸尾随 lambda 必须还绑 onText（GatewayBodyAttributionTest 全这么写）
+        val parser = OpenAiSseParser { text.append(it) }
 
         val keepGoing = parser.onLine("""data: {"choices":[{"delta":{"reasoning_content":"没人听的思考"}}]}""")
         parser.onLine("""data: {"choices":[{"delta":{"content":"答"}}]}""")
