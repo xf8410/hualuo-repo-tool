@@ -9,9 +9,7 @@ import com.hualuo.engine.github.normalizeGitHubRepo
 import com.hualuo.engine.search.WebSearchResult
 import com.hualuo.engine.store.SessionStore
 import com.hualuo.repotool.backup.BackupGateway
-import com.hualuo.repotool.ui.data.GEN_TEMPERATURE_DEFAULT
 import com.hualuo.repotool.ui.data.GEN_TEMPERATURE_KEY
-import com.hualuo.repotool.ui.data.GEN_TOP_P_DEFAULT
 import com.hualuo.repotool.ui.data.GEN_TOP_P_KEY
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_DEFAULT
 import com.hualuo.repotool.ui.data.RETRY_COSTLY_KEY
@@ -47,7 +45,7 @@ data class CourierPick(
  *  - **会话库（M2 接线）**：store 不为 null 时，启动**同步**接上最近一次会话（没有异步首读，
  *    白屏和「多进几次才出来」没有土壤）、抽屉列表来自真库、新建/删除都动真文件；
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
- *    切换三口（新建/切换/批删）与对话搜索拆在 [SessionSwitcher.kt]（999 行红线拆件）：
+ *    切换三口（新建/切换/批删）与对话搜索拆在 SessionSwitcher.kt（999 行红线拆件）：
  *    生成中（chat.busy）一律拦下出声——半途换户就把 A 的后半截写进 B（串台）。
  *  - **GitHub 登录（2026-09-22 补）**：整体住 [githubLogin]（[GithubLoginState]，进程级）；
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
@@ -264,8 +262,13 @@ class AppUiState(
         worker = chatWorker,
         store = store,
         maxHistoryTurns = { readInt(UiKeys.MAX_HISTORY, ChatRuntime.MAX_HISTORY_TURNS).coerceIn(1, 500) },
-        temperature = { readDouble(GEN_TEMPERATURE_KEY, GEN_TEMPERATURE_DEFAULT)?.coerceIn(0.0, 2.0) },
-        topP = { readDouble(GEN_TOP_P_KEY, GEN_TOP_P_DEFAULT)?.coerceIn(0.0, 1.0) },
+        // 旧 Agora 语义（2026-10-14 修）：没动过滑块就**不带这个字段**，用端点默认。
+        // 之前没设也硬塞默认 0.7/0.95，被只认 temperature=1 的挑剔端点
+        // （Kimi coding k 系）以 400 invalid temperature 拒掉（机主实报）。
+        temperature = { persist.load(GEN_TEMPERATURE_KEY)?.trim()?.toDoubleOrNull()?.coerceIn(0.0, 2.0) },
+        topP = { persist.load(GEN_TOP_P_KEY)?.trim()?.toDoubleOrNull()?.coerceIn(0.0, 1.0) },
+        // 思考胶囊（2026-10-14 接线）：输入区那颗开关就是这里的事实源
+        thinkingEnabled = { thinkOn },
         systemPrompt = {
             val base = persist.load(ChatRuntime.KEY_SYSTEM_PROMPT)?.trim().orEmpty()
             // 技能目录拼在系统提示词后（对齐旧仓 GenerationRequestBuilder 的 available_skills
@@ -843,10 +846,6 @@ class AppUiState(
 
     private fun readInt(key: String, default: Int): Int =
         persist.load(key)?.trim()?.toIntOrNull() ?: default
-
-    /** 生成参数读数：存过用存值，没存过用默认——滑块显示什么请求就带什么（与 Agora 一致）。 */
-    private fun readDouble(key: String, default: Double): Double? =
-        persist.load(key)?.trim()?.toDoubleOrNull() ?: default
 
     /** 代理启动恢复：见 [restoreSavedProxy]（AppUiState 1005 行撞红线三，拆文件）。 */
     init { restoreSavedProxy(persist, ::toast) }
