@@ -62,6 +62,11 @@ sealed class ChatRunResult {
  * 线程模型：[run] 设计给**后台线程**调用（内部阻塞读流 + sleeper 等待）；
  * 本层不碰协程库（D-03 纯 JVM）。取消靠 [GenerationSlot.stop]：它会调这里的
  * Cancellable，置停旗并掐断 transport。
+ *
+ * 参数写法钉死（PR #115 首轮 CI 编译段抓过）：[run] 的 onText 是第三个位置参数、
+ * onThought 排最后带默认值——**尾随 lambda 会绑到 onThought**，所以调用方一律走
+ * 位置参数或具名参数（现有调用全是位置参数，Harness 包装层钉死了这个形状）；
+ * 要「尾随 lambda = 正文」的语义去用 [OpenAiSseParser]（它的 onText 排最后）。
  */
 class ChatWireRunner(
     private val transport: WireTransport,
@@ -157,7 +162,8 @@ class ChatWireRunner(
         onText: (String) -> Unit,
         onThought: (String) -> Unit,
     ): AttemptBundle {
-        val parser = OpenAiSseParser(onText, onThought)
+        // 具名传参：OpenAiSseParser 的 onText 排最后（尾随 lambda 语义），这里不许靠位置赌。
+        val parser = OpenAiSseParser(onThought = onThought, onText = onText)
         return try {
             val response = transport.exchange(request) { line ->
                 watchdog.beat()
@@ -257,7 +263,7 @@ class ChatWireRunner(
         val finished: Boolean,
         val stopReason: String?,
         val sawText: Boolean,
-        /** 流上到过工具调用碎片没有（收尾失败时的证据位：「当时正在写工具调用」）。 */
+        /** 到过工具调用碎片没有（收尾失败时的证据位：「当时正在写工具调用」）。 */
         val sawToolCallFrames: Boolean,
         /** 装配完整的工具调用（流收尾正常且有调用时，上层拿它去执行）。 */
         val toolCalls: List<AssembledToolCall>,
@@ -287,8 +293,13 @@ class ChatWireRunner(
  *
  * **tool_calls（0.7.0 协议刀）**：delta.tool_calls（非流式形状则在 message.tool_calls）
  * 逐帧喂给 [toolAssembler] 按 index 装配；本类不解释参数内容，只保证碎片拼得全。
+ *
+ * **构造参数顺序钉死**：onText 排**最后**——Kotlin 尾随 lambda 永远绑最后一个参数，
+ * 老测试全是 `OpenAiSseParser { … }` 裸尾随写法，绑的必须是正文回调
+ * （PR #115 首轮 CI 编译段抓过排反的版本：尾随 lambda 绑去了 onThought，
+ * onText 没人填，四处编译全红）。
  */
-class OpenAiSseParser(private val onText: (String) -> Unit, private val onThought: (String) -> Unit = {}) {
+class OpenAiSseParser(private val onThought: (String) -> Unit = {}, private val onText: (String) -> Unit) {
 
     var finished = false
         private set
