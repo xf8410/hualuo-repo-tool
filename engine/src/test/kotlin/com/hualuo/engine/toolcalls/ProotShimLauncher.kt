@@ -11,13 +11,16 @@ import java.util.concurrent.TimeUnit
  *  - apk add：从 [indexText] 的 P: 行反查包名（包名可含横杠，不能按文件名瞎切），把
  *    name-version 写进表——D3 复验读到的是真入库状态，不是 mock 出来的绿；
  *  - apk del：把对应行从表里删掉。
+ *
+ * 2026-10-16 真机接线刀：Launcher 签名加 env 三参——桩不吃沙盒环境变量
+ * （宿主 sh 没必要吃 guest 的 PATH/PROOT_LOADER），收下不应用。
  */
 class ProotShimLauncher(
     private val installed: MutableMap<String, String>,
     private val indexText: String = "",
 ) : ProotSession.Launcher {
 
-    override fun start(cmd: List<String>, workdir: File?): Process {
+    override fun start(cmd: List<String>, workdir: File?, env: Map<String, String>): Process {
         val inner = if (cmd.firstOrNull() == "proot") {
             val idx = cmd.indexOf("/bin/sh")
             cmd.subList(idx, cmd.size)
