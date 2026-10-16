@@ -187,7 +187,17 @@ val RealSubPages: Map<String, SubPage> = mapOf(
                 ),
                 default = "40",
             ),
-            SubField.Note("温度/top_p 拖动过才进请求体（没碰过 = 不带该字段、用端点默认——只认 temperature=1 的挑剔端点因此能直通）；思考开关在输入区「思考」胶囊（点按开/关），档位在这里调，胶囊上会显示档位名。思考段流回来时落在回答卡的折叠区，关掉就不显示。档位只对认 effort 类参数的提供商影响请求，通用兼容端点不多发字段。"),
+            SubField.PersistedSeg(
+                "工具来回上限",
+                ChatRuntime.KEY_MAX_TOOL_ROUNDS,
+                listOf(
+                    SubField.SegChoice("6 轮", "6"),
+                    SubField.SegChoice("12 轮", "12"),
+                    SubField.SegChoice("20 轮", "20"),
+                ),
+                default = "12",
+            ),
+            SubField.Note("温度/top_p 拖动过才进请求体（没碰过 = 不带该字段、用端点默认——只认 temperature=1 的挑剔端点因此能直通）；思考开关在输入区「思考」胶囊（点按开/关），档位在这里调，胶囊上会显示档位名。思考段流回来时落在回答卡的折叠区，关掉就不显示。档位只对认 effort 类参数的提供商影响请求，通用兼容端点不多发字段。工具来回上限：模型连着调工具不给答案时最多转几轮（默认 12，旧默认 6 常把正经调查误杀）；打到上限按「把问题拆小」收场，那是提醒不是故障。"),
         ),
     ),
     "appearance" to SubPage(

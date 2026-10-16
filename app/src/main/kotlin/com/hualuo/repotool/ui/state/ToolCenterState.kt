@@ -31,7 +31,7 @@ object ToolCenterState {
     /** 此刻开着几件（无开关的恒算开着；开关读出错的不算，并另有 gateNote 出声）。 */
     fun visibleCount(registry: ToolRegistry?): Int = rows(registry).count { it.visible }
 
-    /** 带运行时开关的件数：面板据此说明「其中几件受设置开关控制」。 */
+    /** 带运行时门的件数：面板据此说明「其中几件有门」。 */
     fun gatedCount(registry: ToolRegistry?): Int = rows(registry).count { it.gated }
 
     /**
@@ -39,6 +39,10 @@ object ToolCenterState {
      *
      * 说真话，不说「一切正常」：关着的件必须是屏上看得见的数字，否则用户以为
      * 「它坏了」而实际只是自己把开关关了——这两种误会都要靠这句账拆开。
+     *
+     * 「门」按件对症（2026-10-16 措辞修正）：有的门是设置开关（网页搜索），有的是
+     * 钥匙配没配（图像生成），有的是观测桥接没接（uma 族——那族没有拨片，桥地址就是门）。
+     * 一律叫「设置开关」会把观测桥关着说成「去翻设置」，指错路。
      */
     fun summary(registry: ToolRegistry?): String {
         val all = rows(registry)
@@ -48,7 +52,7 @@ object ToolCenterState {
         val gatedOff = all.count { it.gated && !it.visible }
         return buildString {
             append("真实注册 ${all.size} 件，此刻模型能调 $on 件")
-            if (gated > 0) append("；其中 $gated 件受设置开关控制，关着 $gatedOff 件")
+            if (gated > 0) append("；其中 $gated 件带门（设置开关、钥匙或观测桥接线），关着 $gatedOff 件")
         }
     }
 
