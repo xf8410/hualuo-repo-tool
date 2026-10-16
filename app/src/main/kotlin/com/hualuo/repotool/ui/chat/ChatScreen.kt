@@ -129,16 +129,28 @@ private fun MessageCard(state: AppUiState, msg: ChatMsg) {
     val expandGlyph = stringResource(IconKey.Expand.resId)
 
     if (msg.fromMe) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 11.dp)
-                .padding(start = 36.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(MeBubble)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(start = 36.dp),
         ) {
-            Text(msg.text, fontSize = 14.sp, color = Ink)
+            // 随这条消息发走的真图片（2026-10-16 刀）：气泡上方一排缩略图
+            if (msg.imagePaths.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    msg.imagePaths.forEach { ChatImageThumb(it, 56) }
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MeBubble)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Text(msg.text, fontSize = 14.sp, color = Ink)
+            }
         }
         return
     }

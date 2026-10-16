@@ -2,6 +2,7 @@ package com.hualuo.repotool.ui
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -48,6 +49,7 @@ import com.hualuo.repotool.HualuoApplication
 import com.hualuo.repotool.R
 import com.hualuo.repotool.backup.BackupGateway
 import com.hualuo.repotool.courier.CourierDelivery
+import com.hualuo.repotool.ui.chat.ChatImageInbox
 import com.hualuo.repotool.ui.chat.ChatScreen
 import com.hualuo.repotool.ui.chat.Composer
 import com.hualuo.repotool.ui.chat.SheetsLayer
@@ -124,7 +126,7 @@ private val BusyBarAlpha = 0.55f
  * 不认识 ActivityResult。选择器结果回来后网关/投递在后台线程流式进出，进度经
  * kernel.backupProgress / kernel.courierProgress（进程级）画在顶栏下面，收尾必须写 null
  * 收行；结果走状态层活通道应用并出声，各管一段（主线程做大会计 IO 是 ANR/闪退病根，
- * 0.5.0 根治；黑盒等待是 0.6.0 根治）。
+ * 0.5.0 根治；黑盒等待是 0.6.0 根治）。聊天图片的选图器（2026-10-16 刀）同桥同规矩。
  *
  * 写仓库确认卡（0.7.0 刀③）画在**最上层**：写仓库是全 App 最重的一个动作，
  * 不许被设置层/弹层盖住——模型提议改码时它必须第一个被看见，点头才写。
@@ -275,6 +277,33 @@ fun HualuoApp(versionLabel: String) {
         state.clearPendingDataAction()
     }
 
+    // 聊天图片选择器（2026-10-16 图片附件刀）：照片多件。解码+落盘是 IO，
+    // 收件在后台线程（主线程做图 IO 是 ANR 病根，同备份那套教训）；
+    // 结果报「成了几张、跳过几张」，跳过的不静默。
+    val chatPickImages = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(),
+    ) { uris ->
+        if (uris.isEmpty()) {
+            state.clearPendingDataAction()
+            return@rememberLauncherForActivityResult
+        }
+        Thread({
+            val dir = java.io.File(context.filesDir, "chat_images")
+            val result = ChatImageInbox.import(context, uris, dir)
+            if (result.paths.isNotEmpty()) state.addChatImages(result.paths)
+            state.toast(
+                buildString {
+                    if (result.paths.isNotEmpty()) append("已添加 ${result.paths.size} 张图片（发送时随消息一起走）")
+                    if (result.skipped > 0) {
+                        if (isNotEmpty()) append("；")
+                        append("${result.skipped} 张读不动，已跳过")
+                    }
+                },
+            )
+            state.clearPendingDataAction()
+        }, "hualuo-img-inbox").start()
+    }
+
     LaunchedEffect(state.pendingDataAction) {
         when (val action = state.pendingDataAction) {
             "export" -> exportBackup.launch("hualuo-backup-${state.versionLabel.replace(" ", "-")}.zip")
@@ -285,6 +314,9 @@ fun HualuoApp(versionLabel: String) {
             AppUiState.ACTION_COURIER_DELIVER -> Thread({
                 CourierDelivery.run(context, kernel, state)
             }, "hualuo-courier").start()
+            AppUiState.ACTION_CHAT_PICK_IMAGES -> chatPickImages.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
             else -> Unit
         }
     }
