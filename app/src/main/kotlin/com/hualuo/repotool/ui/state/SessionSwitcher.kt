@@ -6,10 +6,12 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * 会话切换三口 + 对话搜索（999 行红线拆件，2026-10-16 排雷刀）。
+ * 会话切换三口 + 对话搜索的实现件（999 行红线拆件，2026-10-16 排雷刀）。
  *
  * 为什么拆出来：AppUiState 加装 busy 闸后冲到 1005 行撞红线三，同 ProxyCardField
- * 前例拆独立文件。扩展函数写在同包，调用点（Drawer/搜索页）一字不用改。
+ * 前例拆独立文件。名字带 Impl 的原因：扩展函数跨包调用要逐个 import
+ * （Drawer/SettingsOverlay/TaskWorker 都在别的包，run #738 编译段抓过），
+ * 所以 AppUiState 里留一行壳成员转调这里——调用点零改动，实现住这边。
  *
  * 本文件的规矩（与 AppUiState 类 KDoc 会话库条目同源）：
  * 生成中（chat.busy）新建/切换/删当前会话一律拦下出声——流式追加与收场落盘
@@ -22,7 +24,7 @@ internal fun fmtConvMeta(ms: Long): String =
     SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
 
 /** 抽屉「新建会话」：生成中拒开（串台防护）；真库建文件，没接库走老演示路径。 */
-fun AppUiState.newConversation() {
+internal fun AppUiState.newConversationImpl() {
     // 生成中不许换户：流式追加与收场落盘都认「当前户头」，半途新开就把这条的后半截写进新会话
     if (chat.busy) {
         toast("正在生成：先按停止再开新会话，别让两条话串台")
@@ -55,7 +57,7 @@ fun AppUiState.newConversation() {
 }
 
 /** 抽屉点某条会话：同步读那份 JSONL 摆上屏；读不出就出声，绝不摆空壳。生成中拒切。 */
-fun AppUiState.openConversation(id: String) {
+internal fun AppUiState.openConversationImpl(id: String) {
     if (store == null) return
     if (id == chat.sessionId) {
         closeSheets()
@@ -77,7 +79,7 @@ fun AppUiState.openConversation(id: String) {
 }
 
 /** 批删确认：含当前会话且正在生成 = 整批拦下（删掉户头，在跑这条的后半截无家可落）。 */
-fun AppUiState.askDeleteSelected() {
+internal fun AppUiState.askDeleteSelectedImpl() {
     val n = selectedIds.size
     if (n == 0) return
     if (chat.busy && selectedIds.contains(chat.sessionId)) {
@@ -104,7 +106,7 @@ fun AppUiState.askDeleteSelected() {
 
 /** 对话搜索（chatsearch 页实装刀）：关键词逐会话逐行真搜，返回（标题, id, 命中行）。
  *  后台线程调用（IO）；一次最多回 50 条，界面端再截 20。 */
-fun AppUiState.searchConversations(query: String): List<Triple<String, String, String>> {
+internal fun AppUiState.searchConversationsImpl(query: String): List<Triple<String, String, String>> {
     val s = store ?: return emptyList()
     val q = query.trim()
     if (q.isEmpty()) return emptyList()
