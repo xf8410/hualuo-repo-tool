@@ -45,6 +45,8 @@ data class CourierPick(
  *  - **会话库（M2 接线）**：store 不为 null 时，启动**同步**接上最近一次会话（没有异步首读，
  *    白屏和「多进几次才出来」没有土壤）、抽屉列表来自真库、新建/删除都动真文件；
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
+ *    切换三口（新建/切换/批删）与对话搜索的实现拆在 SessionSwitcher.kt（999 行红线拆件，
+ *    本类里是一行壳转调）：生成中（chat.busy）一律拦下出声——半途换户就把 A 的后半截写进 B。
  *  - **GitHub 登录（2026-09-22 补）**：整体住 [githubLogin]（[GithubLoginState]，进程级）；
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
  *  - **仓库工作台（浏览 + 改码）**：整体住 [repo]（[RepoWorkbenchState] 状态舱，
@@ -70,7 +72,8 @@ data class CourierPick(
  */
 class AppUiState(
     private val persist: UiPersistence = UiPersistence.None,
-    private val store: SessionStore? = null,
+    /** 会话仓；internal = SessionSwitcher.kt 拆件要用（同包跨文件，最低可见度）。 */
+    internal val store: SessionStore? = null,
     /** 模型设置句柄（聊天空态检测用）：null=纯 JVM 测试。 */
     val modelSettings: ModelSettingsState? = null,
     /** 写类工具的确认闸门；null = 不注册写工具（默认拒写的另一半）。 */
@@ -96,6 +99,8 @@ class AppUiState(
     val watchInboxDir: File? = null,
     /** 帧缓存目录（导入时抽好的 JPEG）。 */
     val watchFramesDir: File? = null,
+    /** 生成线程出口（透给 ChatRuntime；测试传吞线程的 lambda 好让 busy 恒真）。 */
+    private val chatWorker: (Thread) -> Unit = { it.start() },
 ) {
 
     // ── 已接持久化 ──────────────────────────────────────────────────────────
@@ -254,6 +259,7 @@ class AppUiState(
     val chat = ChatRuntime(
         persist,
         autoRetryCostly = { flag(RETRY_COSTLY_KEY, RETRY_COSTLY_DEFAULT) },
+        worker = chatWorker,
         store = store,
         maxHistoryTurns = { readInt(UiKeys.MAX_HISTORY, ChatRuntime.MAX_HISTORY_TURNS).coerceIn(1, 500) },
         // 旧 Agora 语义（2026-10-14 修）：没动过滑块就**不带这个字段**，用端点默认。
@@ -468,7 +474,7 @@ class AppUiState(
 
     /**
      * 长任务页「选文件」「选目录」：只发动作请求，系统选择器走跟备份同款桥
-     * （纯 JVM 状态层不认识 ActivityResult）。
+     * （纯 JVM 状态层不认识安卓的 ActivityResult）。
      */
     fun requestCourierPick(tree: Boolean) {
         if (courierBusy) {
@@ -727,32 +733,16 @@ class AppUiState(
         thumbs = thumbs.filterIndexed { i, _ -> i != index }
     }
 
-    fun newConversation() {
-        val s = store
-        if (s == null) {
-            // 没接库（纯 JVM 测试/会话库没建成）：老演示路径，一字不动
-            val c = Conv("c" + (convs.size + 1) + "-" + System.currentTimeMillis(), "新会话 · 刚刚", "刚刚")
-            convs = listOf(c) + convs
-            selecting = false
-            selectedIds = emptySet()
-            closeSheets()
-            toast("已新建会话（演示数据）")
-            return
-        }
-        val id = runCatching { s.create(currentModel) }.getOrNull()
-        if (id == null) {
-            toast("新会话没建成（盘上出事了）：还接着当前会话聊，字不会丢")
-            closeSheets()
-            return
-        }
-        chat.startFreshSession(id)
-        // 标题允许空——还没说话就是没标题，屏上标「（未命名）」是明示不是编造
-        convs = listOf(Conv(id, "（未命名）", fmtConvMeta(System.currentTimeMillis()))) + convs
-        selecting = false
-        selectedIds = emptySet()
-        closeSheets()
-        toast("已新建会话")
-    }
+    // 会话切换三口与对话搜索：实现拆在 SessionSwitcher.kt（红线三拆件），
+    // 这里留一行壳转调——成员函数跨包不用 import，扩展函数要
+    // （Drawer/SettingsOverlay/TaskWorker 都在别的包，run #738 编译段抓过）。
+    fun newConversation() = newConversationImpl()
+
+    fun openConversation(id: String) = openConversationImpl(id)
+
+    fun askDeleteSelected() = askDeleteSelectedImpl()
+
+    fun searchConversations(query: String) = searchConversationsImpl(query)
 
     /** 图像转述（caption 页实装刀）：瞬时态；失败明示，不留旧文顶数。 */
     var captionBusy by mutableStateOf(false)
@@ -805,64 +795,6 @@ class AppUiState(
             captionResult = outcome.ifBlank { "模型回了空文本（换个模型或重试）" }
             captionBusy = false
         }, "hualuo-caption").start()
-    }
-
-    /** 对话搜索（chatsearch 页实装刀）：关键词逐会话逐行真搜，返回（标题, id, 命中行）。
-     *  后台线程调用（IO）；一次最多回 50 条，界面端再截 20。 */
-    fun searchConversations(query: String): List<Triple<String, String, String>> {
-        val s = store ?: return emptyList()
-        val q = query.trim()
-        if (q.isEmpty()) return emptyList()
-        val out = ArrayList<Triple<String, String, String>>()
-        for ((id, head) in s.list().heads) {
-            if (out.size >= 50) break
-            val loaded = s.load(id) ?: continue
-            for (m in loaded.messages) {
-                if (m.text.contains(q, ignoreCase = true)) {
-                    out.add(Triple(head.title.ifBlank { "（未命名）" }, id, m.text))
-                    break  // 一个会话只报第一处命中
-                }
-            }
-        }
-        return out
-    }
-
-    /** 抽屉点某条会话：同步读那份 JSONL 摆上屏；读不出就出声，绝不摆空壳。 */
-    fun openConversation(id: String) {
-        if (store == null) return
-        if (id == chat.sessionId) {
-            closeSheets()
-            return
-        }
-        val note = chat.restoreFromStore(id)
-        closeSheets()
-        when {
-            note == null -> toast("这个会话读不到了：文件可能已被删")
-            note.badLines > 0 -> toast("已切到该会话（${note.count} 条）；另有 ${note.badLines} 行读不出，已跳过")
-            note.headMissing -> toast("已切到该会话（${note.count} 条）；这份会话头损坏，标题时间失真")
-            else -> toast("已切到该会话（${note.count} 条）")
-        }
-    }
-
-    fun askDeleteSelected() {
-        val n = selectedIds.size
-        if (n == 0) return
-        confirmText = "删除 $n 个会话？"
-        confirmAction = {
-            val ids = selectedIds
-            // 真库：删会话就是删文件（SessionStore 的家规，不留墓碑）
-            store?.let { s -> ids.forEach { id -> runCatching { s.delete(id) } } }
-            if (ids.contains(chat.sessionId)) {
-                // 删的是当前正开的会话：屏上消息清掉、户头摘掉，下条消息自动开新户
-                chat.startFreshSession(null)
-            }
-            convs = convs.filter { it.id !in ids }
-            selectedIds = emptySet()
-            selecting = false
-            confirmOpen = false
-            drawerOpen = false
-        }
-        confirmOpen = true
     }
 
     fun openSettings(anchorSub: String? = null) {
@@ -921,9 +853,6 @@ class AppUiState(
 
     private fun readInt(key: String, default: Int): Int =
         persist.load(key)?.trim()?.toIntOrNull() ?: default
-
-    private fun fmtConvMeta(ms: Long): String =
-        SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(ms))
 
     /** 代理启动恢复：见 [restoreSavedProxy]（AppUiState 1005 行撞红线三，拆文件）。 */
     init { restoreSavedProxy(persist, ::toast) }
