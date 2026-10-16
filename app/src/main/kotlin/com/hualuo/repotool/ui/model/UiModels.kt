@@ -48,6 +48,8 @@ data class ChatMsg(
     val dropBody: String? = null,
     val ops: List<String> = emptyList(),
     val isError: Boolean = false,
+    /** 随这条用户消息发走的图片（本机路径，收件时已降采样落盘）；助手/系统卡恒空。 */
+    val imagePaths: List<String> = emptyList(),
 )
 
 /** 抽屉里的会话行。 */
