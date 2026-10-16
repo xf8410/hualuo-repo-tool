@@ -26,6 +26,12 @@ run-name: "${{ github.event.inputs.feature_no && format('功能 #{0}·{1}', gith
 #   由 CI 首跑铸造一次并提交回仓（私有仓），此后每一次构建都是同一把钥匙。
 #   这是对红线一的一次**公开、可审计的例外**：只写 signing/ 两个文件，
 #   不含源码半个字节；检查里用「密钥首铸」标记排除，方便以后审计这一处。
+#
+# proot 执行件（2026-10-16 沙盒真机接线刀）：
+#   「构建 proot 执行件」一步从钉死源码（talloc 2.5.0 + proot v5.1.107.96，
+#   sha256 都来自 termux 打包配方）现场交叉编译三个 .so 放进 jniLibs 再打包。
+#   产物不进 git、每次构建可复现——性质与 Gradle 拉依赖相同（构建输入，非源码改写），
+#   红线一 grep 的四种改源码形态一个不沾。
 
 on:
   push:
@@ -219,6 +225,79 @@ jobs:
           mkdir -p 日志
           gradle --no-daemon --stacktrace :app:testDebugUnitTest 2>&1 | tee 日志/界面测试.log
 
+      - name: 构建 proot 执行件（沙盒真执行层：源码与哈希钉死，产物只进 jniLibs 进 APK）
+        run: |
+          set -euo pipefail
+          # NDK 给交叉编译器；patchelf 改 SONAME 与依赖名
+          sdkmanager --install "ndk;28.2.13676358" > /dev/null
+          sudo apt-get update -qq > /dev/null && sudo apt-get install -y -qq patchelf > /dev/null
+          NDK="$ANDROID_HOME/ndk/28.2.13676358"
+          TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC="$TC/aarch64-linux-android24-clang"
+          B="$PWD/.proot-build"
+          JNI="$PWD/app/src/main/jniLibs/arm64-v8a"
+          mkdir -p "$B" "$JNI"
+
+          # ① talloc 2.5.0：proot 唯一动态依赖。版本与 sha256 取自 termux 打包配方（第三方替我们验过）
+          curl -fsSL --retry 3 -o "$B/talloc.tar.gz" https://www.samba.org/ftp/talloc/talloc-2.5.0.tar.gz
+          echo "912afa237510ae542a7733998eb18a12bcda35ab6729c8e2ddb43e8d0ebab007  $B/talloc.tar.gz" | sha256sum -c -
+          tar -C "$B" -xf "$B/talloc.tar.gz"
+          cat > "$B/cross-answers.txt" <<'ANSWERS'
+          Checking uname sysname type: "Linux"
+          Checking uname machine type: "dontcare"
+          Checking uname release type: "dontcare"
+          Checking uname version type: "dontcare"
+          Checking simple C program: OK
+          building library support: OK
+          Checking for large file support: OK
+          Checking for -D_FILE_OFFSET_BITS=64: OK
+          Checking for WORDS_BIGENDIAN: OK
+          Checking for C99 vsnprintf: OK
+          Checking for HAVE_SECURE_MKSTEMP: OK
+          rpath library support: OK
+          -Wl,--version-script support: FAIL
+          Checking correct behavior of strtoll: OK
+          Checking correct behavior of strptime: OK
+          Checking for HAVE_IFACE_GETIFADDRS: OK
+          Checking for HAVE_IFACE_IFCONF: OK
+          Checking for HAVE_IFACE_IFREQ: OK
+          Checking getconf LFS_CFLAGS: OK
+          Checking for large file support without additional flags: OK
+          Checking for working strptime: OK
+          Checking for HAVE_SHARED_MMAP: OK
+          Checking for HAVE_MREMAP: OK
+          Checking for HAVE_INCOHERENT_MMAP: OK
+          Checking getconf large file support flags work: OK
+          ANSWERS
+          (cd "$B/talloc-2.5.0" && ./configure --prefix="$B/talloc-out" --disable-rpath --disable-python \
+            --cross-compile --cross-answers=../cross-answers.txt && \
+            ./buildtools/bin/waf build -j2 && ./buildtools/bin/waf install)
+
+          # ② proot v5.1.107.96（termux fork 的 tag；sha256 取自 termux 打包配方）
+          curl -fsSL --retry 3 -o "$B/proot.zip" https://github.com/termux/proot/archive/refs/tags/v5.1.107.96.zip
+          echo "75f654fe60dea92dabff2bf083ae8bfe4f91baa6a1a374786a6bf391015eebaa  $B/proot.zip" | sha256sum -c -
+          unzip -q "$B/proot.zip" -d "$B"
+          # CPPFLAGS/LDFLAGS 走环境变量（走 make 命令行会压掉 GNUmakefile 里的 += 段，坑）
+          (cd "$B/proot-5.1.107.96" && \
+            export CPPFLAGS='-DARG_MAX=131072 -DVERSION="5.1.107.96" -I'"$B"'/talloc-out/include' && \
+            export LDFLAGS='-L'"$B"'/talloc-out/lib' && \
+            export PROOT_UNBUNDLE_LOADER=/libexec/proot && \
+            make -C src -j2 CC="$CC" STRIP="$TC/llvm-strip" OBJCOPY="$TC/llvm-objcopy" OBJDUMP="$TC/llvm-objdump")
+
+          # ③ 三个件改名成 lib*.so 落 jniLibs（AGP 只认这个命名；useLegacyPackaging 解压到 nativeLibraryDir）
+          "$TC/llvm-strip" "$B/proot-5.1.107.96/src/proot"
+          cp "$B/proot-5.1.107.96/src/proot"         "$JNI/libproot_exec.so"
+          cp "$B/proot-5.1.107.96/src/loader/loader" "$JNI/libproot_loader.so"
+          cp -L "$B/talloc-out/lib/libtalloc.so.2"   "$JNI/libtalloc.so"
+          # SONAME 与 proot 的 DT_NEEDED 一并对齐成 libtalloc.so（AGP 只打包 lib*.so 命名件）
+          patchelf --set-soname libtalloc.so "$JNI/libtalloc.so"
+          patchelf --replace-needed libtalloc.so.2 libtalloc.so "$JNI/libproot_exec.so"
+          ls -la "$JNI"
+          test -s "$JNI/libproot_exec.so"
+          test -s "$JNI/libproot_loader.so"
+          test -s "$JNI/libtalloc.so"
+          echo "proot 执行件三件齐：exec / loader / talloc（源码 sha256 对账过）"
+
       - name: 打安卓包（debug 照旧；release 用仓里那把钥匙签名——覆盖安装用包）
         run: |
           set -o pipefail
@@ -240,6 +319,14 @@ jobs:
           # 签名不是"应该签上了"，要当面对证：没有有效签名就不许叫发布包
           bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           "$bt/apksigner" verify --print-certs "$rel" | tee 日志/签名核对.txt
+          # 沙盒执行层对账（2026-10-16）：三个 .so 必须真的进了 APK——缺一个，
+          # 终端功能在真机上就起不来（jniLibs 与 legacy 打包两环哪一环断了都在这现形）
+          for so in libproot_exec.so libproot_loader.so libtalloc.so; do
+            if ! unzip -l "$rel" | grep -q "lib/arm64-v8a/$so"; then
+              echo "APK 里缺 $so：proot 构建或打包链断了"
+              exit 1
+            fi
+          done
           echo "debug 包：$apk"
           echo "release 包：$rel，大小 $(stat -c%s "$rel") 字节"
 
