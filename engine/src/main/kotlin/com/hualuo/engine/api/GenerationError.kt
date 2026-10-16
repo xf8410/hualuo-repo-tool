@@ -57,7 +57,15 @@ sealed class GenerationError {
     data class ToolExecution(val toolName: String, val arguments: String, val message: String) : GenerationError()
 
     /**
-     * 工具回合打到轮次上限（模型连轴转地调工具，迟迟不给答案）：防无限打转的闸门。
+     * 同一批工具调用（名字+参数一模一样）连着来（真打转，不是「题大」）：
+     * 打转侦测器（2026-10-16）抓的。与 [ToolLoopLimit] 的分工：
+     * 那边是保险丝（轮数兜底，防「有进展但太能跑」把钱烧穿）；
+     * 这边是「连着几回一模一样」——没有新进展，再等一百轮也一样。
+     */
+    data class ToolLoopStuck(val callName: String, val streak: Int) : GenerationError()
+
+    /**
+     * 工具回合打到轮次上限（模型连轴转地调工具，迟迟不给答案）：防无限打转的保险丝。
      * 这不是网络错也不是模型错，是「这题该拆小」——出路必须这么指。
      */
     data class ToolLoopLimit(val rounds: Int) : GenerationError()
@@ -142,7 +150,11 @@ sealed class GenerationError {
             "回答撞到输出长度上限被切掉（stop_reason=${stopReason ?: "max_tokens"}）。" +
                 "把设置里的最大输出 token 调大，或把思考预算调小，再重发"
         is ToolExecution -> "工具「$toolName」执行失败：${brief(message)}（参数：${brief(arguments)}）"
-        // 打转闸的出路不是「重试」而是「拆小」：重发同一份问题只会再打一次转。
+        // 打转侦测（2026-10-16）：连着几回一模一样的调用 = 没有新进展，出路是换个问法，
+        // 不是「等它自己想通」——它已经证明这条路上想不通了。
+        is ToolLoopStuck -> "模型在同一调用上原地打转（「$callName」连着 $streak 轮一模一样的参数，没有新进展）：先停下。" +
+            "换个问法、补点线索，或直接点名要哪一步的结果"
+        // 保险丝的出路不是「重试」而是「拆小」：重发同一份问题只会再打一次转。
         is ToolLoopLimit -> "工具来回 $rounds 轮还没给出答案：先停下（防无限打转）。" +
             "把问题拆小一点，或者直接点名要哪一步的结果（比如「先列出我的仓库」）"
         is Transcription -> "${kind}转写失败：${brief(message)}（$path）"
@@ -172,4 +184,3 @@ sealed class GenerationError {
         }
     }
 }
-
