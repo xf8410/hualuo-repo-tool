@@ -26,10 +26,12 @@ import java.io.File
  * 评论 issue / 关 PR / 评论 PR，件件过确认闸门——模型提议摆卡，人点头才动。加这批的
  * 原因：此前模型连「开分支干活」都做不到，任务一卡就是死结（机主原话「避免任务卡住」）。
  *
- * **沙盒族（0.9.0 刀）**：status / list_packages 两件只读直进；
+ * **沙盒族（0.9.0 刀；2026-10-16 真机接线）**：status / list_packages 两件只读直进；
  * run_command / install / remove 三件执行类只有拿到 [sandboxConfirmer] 才注册
  * （对齐 560 功能目录 414「Shell 命令审批」——不给闸门，模型在对话里就碰不到执行）。
  * 沙盒引擎实例随构建创建：rootfs 与缓存都在应用私有目录，装过一次终身覆盖升级。
+ * proot 执行层（exec/loader/talloc 三个 .so 由 CI 构建进 APK）经
+ * [SandboxProotRuntime] 现读——没登记（测试/无执行件构建）回落 PATH 找 proot。
  *
  * **网页族**：搜索走 [ProviderSearchClient]，配置（哪家、密钥、实例地址、条数）在
  * **每一次调用那一刻**从设置现场读（[webSearchConfig] 那个 lambda），改了下一句就生效；
@@ -155,13 +157,33 @@ fun buildGithubToolRegistry(
     }
     if (sandboxConfirmer != null && sandboxRootDir != null) {
         val root = sandboxRootDir
+        // 沙盒真机接线（2026-10-16）：执行层四条路径事实由 app 入口登记，
+        // 这里现读现装——没登记（测试/无执行件构建）就回落 PATH 找 proot。
+        val launch = SandboxProotRuntime.current()
+        if (launch != null) File(launch.tmpDir).mkdirs()
         SandboxToolFamily.register(
             registry = registry,
             manager = SandboxManager(
                 rootfsDir = File(root, "rootfs"),
                 workDir = File(root, "work"),
                 sharedDir = File(root, "shared"),
-                sessionProvider = { rootfs, binds -> ProotSession(rootfsDir = rootfs, sharedDir = File(root, "shared"), bindMounts = binds) },
+                // rootfs 校验真接线（此前占位空串=悄悄关校验）：镜像表里的真值直接带上
+                rootfsSha256 = com.hualuo.engine.sandbox.MirrorPolicy.ROOTFS_SHA256,
+                sessionProvider = { rootfs, binds ->
+                    ProotSession(
+                        rootfsDir = rootfs,
+                        sharedDir = File(root, "shared"),
+                        bindMounts = binds,
+                        prootBinary = launch?.execPath ?: "proot",
+                        env = if (launch != null) mapOf(
+                            "LD_LIBRARY_PATH" to launch.libraryDir,
+                            "PROOT_LOADER" to launch.loaderPath,
+                            "PROOT_TMP_DIR" to launch.tmpDir,
+                            "HOME" to "/root",
+                            "PATH" to "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                        ) else emptyMap(),
+                    )
+                },
             ),
             confirmer = sandboxConfirmer,
         )
