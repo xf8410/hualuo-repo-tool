@@ -9,6 +9,8 @@ import com.hualuo.engine.api.ProviderRouting
 import com.hualuo.repotool.ui.state.AppUiState
 import com.hualuo.repotool.ui.state.ModelSettingsRuntime
 import com.hualuo.repotool.ui.state.ModelSettingsState
+import com.hualuo.repotool.ui.state.SandboxProotLaunch
+import com.hualuo.repotool.ui.state.SandboxProotRuntime
 import com.hualuo.repotool.ui.state.UiPersistenceBundle
 import com.hualuo.repotool.ui.state.WriteConfirmGate
 import com.hualuo.repotool.ui.state.createUiPersistence
@@ -127,7 +129,33 @@ class HualuoApplication : Application() {
         CrashObserver.install(this)
         // 崩溃留档开关（关于页）：设置件此时可读，读一次喂内存值（崩溃回调里只读内存）
         CrashObserver.keepLocal = uiBundle.persistence.load(com.hualuo.repotool.ui.state.UiKeys.CRASH_KEEP_LOCAL) != "false"
+        // 沙盒 proot 执行层登记（2026-10-16 真机接线刀）：必须在 uiState 首次构造前——
+        // 工具装配口（ToolWiring）在那个时刻现读。onCreate 先于一切界面，天然满足。
+        installSandboxProotLaunch()
         warmUpModelSettings()
+    }
+
+    /**
+     * 沙盒 proot 执行层装配（2026-10-16 真机接线刀）：
+     * CI 从钉死源码构建三个 .so（libproot_exec / libproot_loader / libtalloc）打进 APK，
+     * useLegacyPackaging 让系统把它们解压到 nativeLibraryDir（应用唯一合法的可执行目录）。
+     * 这里只登记四条路径事实；工具装配口现读。登记不了（原生库目录异常等）保持
+     * null——引擎回落 PATH 找 proot，找不到时 ProotSession 预检给人话，不装样子。
+     */
+    private fun installSandboxProotLaunch() {
+        runCatching {
+            val libDir = applicationInfo.nativeLibraryDir
+            if (libDir.isNotBlank()) {
+                SandboxProotRuntime.install(
+                    SandboxProotLaunch(
+                        execPath = File(libDir, "libproot_exec.so").absolutePath,
+                        loaderPath = File(libDir, "libproot_loader.so").absolutePath,
+                        libraryDir = libDir,
+                        tmpDir = File(filesDir, "sandbox/work/proot-tmp").absolutePath,
+                    ),
+                )
+            }
+        }
     }
 
     /**
