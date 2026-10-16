@@ -45,8 +45,8 @@ data class CourierPick(
  *  - **会话库（M2 接线）**：store 不为 null 时，启动**同步**接上最近一次会话（没有异步首读，
  *    白屏和「多进几次才出来」没有土壤）、抽屉列表来自真库、新建/删除都动真文件；
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
- *    切换三口（新建/切换/批删）与对话搜索拆在 SessionSwitcher.kt（999 行红线拆件）：
- *    生成中（chat.busy）一律拦下出声——半途换户就把 A 的后半截写进 B（串台）。
+ *    切换三口（新建/切换/批删）与对话搜索的实现拆在 SessionSwitcher.kt（999 行红线拆件，
+ *    本类里是一行壳转调）：生成中（chat.busy）一律拦下出声——半途换户就把 A 的后半截写进 B。
  *  - **GitHub 登录（2026-09-22 补）**：整体住 [githubLogin]（[GithubLoginState]，进程级）；
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
  *  - **仓库工作台（浏览 + 改码）**：整体住 [repo]（[RepoWorkbenchState] 状态舱，
@@ -733,9 +733,16 @@ class AppUiState(
         thumbs = thumbs.filterIndexed { i, _ -> i != index }
     }
 
-    // 会话切换三口（newConversation / openConversation / askDeleteSelected）与
-    // 对话搜索（searchConversations）拆在 SessionSwitcher.kt——999 行红线拆件，
-    // 生成中 busy 闸的规矩也写在那边文件头。
+    // 会话切换三口与对话搜索：实现拆在 SessionSwitcher.kt（红线三拆件），
+    // 这里留一行壳转调——成员函数跨包不用 import，扩展函数要
+    // （Drawer/SettingsOverlay/TaskWorker 都在别的包，run #738 编译段抓过）。
+    fun newConversation() = newConversationImpl()
+
+    fun openConversation(id: String) = openConversationImpl(id)
+
+    fun askDeleteSelected() = askDeleteSelectedImpl()
+
+    fun searchConversations(query: String) = searchConversationsImpl(query)
 
     /** 图像转述（caption 页实装刀）：瞬时态；失败明示，不留旧文顶数。 */
     var captionBusy by mutableStateOf(false)
