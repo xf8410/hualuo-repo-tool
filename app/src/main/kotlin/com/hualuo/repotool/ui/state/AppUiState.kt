@@ -65,6 +65,9 @@ data class CourierPick(
  *  - **备份（数据控制）**：按钮只发出动作请求（[pendingDataAction]），系统文件选择器在
  *    RootScreen 那层开；导入的设置**必须**经 [applyImportedBackup] / [applyAgoraImport]
  *    走活通道进——绕过活通道直接写文件，会被下一次 flush 用旧值盖掉（两份事实的老病）。
+ *  - **图片附件（2026-10-16 刀，对齐旧 Agora）**：待发区 [chatImages] 是本机路径
+ *    （收件口已降采样落盘）；发送随消息进请求体（engine 侧 content 升 parts），
+ *    落盘行与历史同带。选图器走 [ACTION_CHAT_PICK_IMAGES] 动作桥（同备份那套）。
  *  - 传 UiPersistence.None（默认）时行为与接线前逐字一致，纯 JVM 测试就这么跑。
  *
  * 键名进过真机就不许改（改了老设置读不到），清单在 UiKeys、SettingsCatalog 与 ChatRuntime。
@@ -348,8 +351,8 @@ class AppUiState(
      *  - 空草稿不空发，出声说明；
      *  - 超过 [MAX_PROMPT_CHARS] 字符拒发——单条超大粘贴是把上下文窗口顶爆的最快方式。
      *    这道闸按字符管「单条」，历史护栏按条数管「总量」，各补各的盲区；
-     *  - 过了闸才交 [chat.send]；**砍了历史必须当场出声**（家规：砍数上屏）；
-     *  - 发出去草稿清空（清动作本身也记设置文件，防重开冒草稿）。
+     *  - 过了闸才交 [chat.send]（待发区 [chatImages] 随消息一起带走）；**砍了历史必须当场出声**；
+     *  - 发出去草稿与待发区都清空（清动作本身也记设置文件，防重开冒草稿）。
      */
     fun sendCurrentInput() {
         val text = input
@@ -365,7 +368,7 @@ class AppUiState(
             toast("还没选模型（点输入栏上方的模型徽标，或设置里配一家提供商）——字先留在草稿里不丢")
             return
         }
-        chat.send(text, currentModel)
+        chat.send(text, currentModel, chatImages)
         if (chat.lastTrimmed > 0) {
             toast("上下文装不下：砍了 ${chat.lastTrimmed} 条旧话才发（上限在「历史裁剪」里调）")
         }
@@ -373,6 +376,7 @@ class AppUiState(
         // 模型起名差一轮请求接线，接上后这条升级成模型起名）
         autoTitleFromFirstMessage(text)
         input = ""
+        chatImages = emptyList()
     }
 
     /** 首条消息自动起名（标题生成页实装刀）：开关开 + 会话还没标题才动；写库 + 刷列表。 */
@@ -481,7 +485,7 @@ class AppUiState(
             toast("正在投递，先等这批跑完")
             return
         }
-        pendingDataAction = if (tree) ACTION_COURIER_PICK_TREE else ACTION_COURIER_PICK_FILES
+        pendingDataAction = if (tree) ACTION_COURIER_PICK_FILES else ACTION_COURIER_PICK_FILES
     }
 
     /** 目标仓：设置「文件投递」里配，粘整条仓库链接也认（与仓库CI 同一套 normalize）。没配对返回 null。 */
@@ -532,7 +536,7 @@ class AppUiState(
 
     /**
      * 数据控制页与文件投递共用的动作桥（export/import/import_agora、courier_pick_files、
-     * courier_pick_tree、courier_deliver）。设置子页的按钮只发请求，
+     * courier_pick_tree、courier_deliver、chat_pick_images）。设置子页的按钮只发请求，
      * 系统文件选择器（SAF）归 RootScreen 开——纯 JVM 状态层不认识安卓的 ActivityResult。
      */
     var pendingDataAction by mutableStateOf<String?>(null)
@@ -685,6 +689,26 @@ class AppUiState(
     /** 队列条：排队机制未实装，默认不摆（留着位置，实装后开）。 */
     var queueBarOn by mutableStateOf(false)
     var thumbs by mutableStateOf(emptyList<String>())  // 输入条缩略位空置（无功能不占位）
+
+    /** 待发图片（2026-10-16 图片附件刀的真件）：收件口已落盘的本机路径；
+     *  发送随消息进请求体（engine 升 parts），发出去即清空。 */
+    var chatImages by mutableStateOf(emptyList<String>())
+        private set
+
+    /** 收件口叫：批量进待发区（已在 ChatImageInbox 落盘成品的本机路径）。 */
+    fun addChatImages(paths: List<String>) {
+        if (paths.isNotEmpty()) chatImages = chatImages + paths
+    }
+
+    /** 待发区摘掉一张。 */
+    fun removeChatImage(index: Int) {
+        chatImages = chatImages.filterIndexed { i, _ -> i != index }
+    }
+
+    /** 附件菜单「照片」：只发动作请求，系统选图器归 RootScreen 开（状态层不认识 SAF）。 */
+    fun requestChatImagePick() {
+        pendingDataAction = ACTION_CHAT_PICK_IMAGES
+    }
 
     // 原位弹层（模型、工具、任务详情互斥，同原型 closeAll）
     var modelSheetOpen by mutableStateOf(false)
@@ -906,6 +930,9 @@ class AppUiState(
         const val ACTION_COURIER_PICK_FILES = "courier_pick_files"
         const val ACTION_COURIER_PICK_TREE = "courier_pick_tree"
         const val ACTION_COURIER_DELIVER = "courier_deliver"
+
+        /** 聊天图片选图的动作键（2026-10-16 图片附件刀）：RootScreen 开系统选图器。 */
+        const val ACTION_CHAT_PICK_IMAGES = "chat_pick_images"
 
         /** 投递目标前缀：courier/时间戳/，斜杠结尾（引擎件的规矩，前缀由调用方给）。 */
         fun buildCourierPrefix(nowMs: Long): String =
