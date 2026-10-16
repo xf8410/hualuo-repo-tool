@@ -168,6 +168,16 @@ val RealSubPages: Map<String, SubPage> = mapOf(
             SubField.PersistedSlider("温度", GEN_TEMPERATURE_KEY, min = 0.0, max = 2.0, step = 0.1, default = GEN_TEMPERATURE_DEFAULT, digits = 1),
             SubField.PersistedSlider("top_p", GEN_TOP_P_KEY, min = 0.0, max = 1.0, step = 0.05, default = GEN_TOP_P_DEFAULT, digits = 2),
             SubField.PersistedSeg(
+                "思考档位",
+                UiKeys.THINK_LEVEL,
+                listOf(
+                    SubField.SegChoice("低", "1"),
+                    SubField.SegChoice("中", "2"),
+                    SubField.SegChoice("高", "3"),
+                ),
+                default = "2",
+            ),
+            SubField.PersistedSeg(
                 "带多少历史",
                 UiKeys.MAX_HISTORY,
                 listOf(
@@ -177,7 +187,7 @@ val RealSubPages: Map<String, SubPage> = mapOf(
                 ),
                 default = "40",
             ),
-            SubField.Note("温度/top_p 拖动即存，下一条消息生效；历史条数超了砍最旧的，砍数当场出声。"),
+            SubField.Note("温度/top_p 拖动过才进请求体（没碰过 = 不带该字段、用端点默认——只认 temperature=1 的挑剔端点因此能直通）；思考开关在输入区「思考」胶囊（点按开/关），档位在这里调，胶囊上会显示档位名。思考段流回来时落在回答卡的折叠区，关掉就不显示。档位只对认 effort 类参数的提供商影响请求，通用兼容端点不多发字段。"),
         ),
     ),
     "appearance" to SubPage(
@@ -257,7 +267,7 @@ val RealSubPages: Map<String, SubPage> = mapOf(
     "courier" to SubPage(
         "文件投递",
         listOf(
-            SubField.PersistedText("目标仓库", UiKeys.COURIER_REPO, "owner/name，粘整条仓库链接也认"),
+            SubField.PersistedText("目标仓库", UiKeys.COURIER_REPO, "owner/name，粘整条链接也认"),
             SubField.PersistedText("分支", UiKeys.COURIER_BRANCH, "默认 main"),
             SubField.PersistedText("访问令牌", UiKeys.COURIER_TOKEN, "私有仓库必填；留空借用 GitHub 工作台的令牌", secret = true),
             SubField.Note("按文件边界打包分卷，逐卷上传，manifest 全账。"),
