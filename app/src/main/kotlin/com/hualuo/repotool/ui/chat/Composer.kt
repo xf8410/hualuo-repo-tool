@@ -64,6 +64,10 @@ import com.hualuo.repotool.ui.theme.WarnAmber
  * 档位在「设置·生成参数」调。开着时流上的 reasoning_content 落回答卡的思考折叠区
  * （ChatScreen 的渲染早已就位），关着不上屏。键名复用接线前就存在的 THINK_ON/THINK_LEVEL。
  *
+ * **附件菜单（2026-10-16 图片附件刀）**：「照片」是真电——开系统选图器，收件口
+ * （ChatImageInbox）克隆落盘 + 降采样，待发区（state.chatImages）摆真缩略图，
+ * 发送随消息进请求体。「视频」「文件」两格还是演示（addThumb 老路），实装是另外一刀。
+ *
  * 图形字符一律走资源（`stringResource(IconKey.X.resId)`）—— 家规，闸门 NoEmojiInSourceTest。
  * 缩略列表存的是 IconKey 键名字符串，解不出键就照原样显示并染成警告色，不许悄悄换成别的图标。
  */
@@ -142,6 +146,31 @@ fun Composer(state: AppUiState) {
                     color = Accent,
                     modifier = Modifier.clickable { state.queueBarOn = false },
                 )
+            }
+        }
+
+        // 待发真图片（2026-10-16 刀）：收件口落盘后的真缩略图，叉掉即摘
+        if (state.chatImages.isNotEmpty()) {
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                state.chatImages.forEachIndexed { i, path ->
+                    Box(modifier = Modifier.size(44.dp)) {
+                        ChatImageThumb(path, 44)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x73000000))
+                                .clickable { state.removeChatImage(i) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(crossGlyph, color = Color.White, fontSize = 10.sp)
+                        }
+                    }
+                }
             }
         }
 
@@ -231,9 +260,14 @@ fun Composer(state: AppUiState) {
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(9.dp))
                             .clickable {
-                                state.addThumb(iconKey.name)
+                                if (iconKey == IconKey.Picture) {
+                                    // 照片是真件：发动作请求，系统选图器归 RootScreen 开
+                                    state.requestChatImagePick()
+                                } else {
+                                    state.addThumb(iconKey.name)
+                                    state.toast("已添加附件（演示）：" + label)
+                                }
                                 state.addMenuOpen = false
-                                state.toast("已添加附件（演示）：" + label)
                             }
                             .padding(horizontal = 12.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
