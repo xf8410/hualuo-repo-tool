@@ -48,10 +48,14 @@ import java.util.Locale
  * 不占历史条数，空指令就一个字都不多发。
  *
  * **工具回合（0.7.0 协议刀）**：注入了 [toolRegistry]（非空）时，请求带上 tools 清单；
- * 模型回工具调用就执行、把结果回填历史、再发下一轮——轮次有上限（[maxToolRounds]），
- * 打到上限按 ToolLoopLimit 收场（出路是「拆小问题」不是重试）。每一轮的工具动作在
- * 当前卡上以 toolLine 回显（每步出声），轮与轮之间**停止键照样管用**（stopRequested
- * 在两轮检查点收线）。注册表为空时走老路（不带 tools 字段），行为与接线前逐字一致。
+ * 模型回工具调用就执行、把结果回填历史、再发下一轮。防打转有两道（2026-10-16 分家）：
+ *  1. **打转侦测**（主防）：同一批调用（名字+参数）连着 3 轮一模一样 = 没有新进展，
+ *     按 ToolLoopStuck 收场——这种再等一百轮也一样，三轮就抓；
+ *  2. **轮数保险丝**（兜底）：[maxToolRounds] 默认 100——不是「干活上限」，
+ *     是防「有进展但太能跑」把钱烧穿的保险丝；正经调查几十轮不该被误杀。
+ * 每一轮的工具动作在当前卡上以 toolLine 回显（每步出声），轮与轮之间**停止键照样管用**
+ * （stopRequested 在两轮检查点收线）。注册表为空时走老路（不带 tools 字段），
+ * 行为与接线前逐字一致。
  *
  * **思考段（2026-10-14 接线）**：流上的 reasoning_content 走 [appendThoughtGated]
  * 进当前卡的 thinkLabel/thinkBody 折叠区（渲染在 ChatScreen 早已就位），开关关着就丢
@@ -100,7 +104,7 @@ class ChatRuntime(
     val systemPrompt: () -> String = { "" },
     /** 模型可调用的工具表；空表 = 不带 tools 字段（行为与接线前逐字一致）。 */
     private val toolRegistry: ToolRegistry = ToolRegistry(),
-    /** 工具回合的轮次上限（防模型连轴转地调工具不给答案）。 */
+    /** 工具回合的轮数保险丝（兜底，不是干活上限；真打转由签名侦测三轮抓住）。 */
     private val maxToolRounds: Int = MAX_TOOL_ROUNDS,
     private val clock: () -> Long = System::currentTimeMillis,
     /** 生成收尾回调（会话循环页实装刀）：每轮生成落定（成功/失败/按停）后调一次，
@@ -266,11 +270,14 @@ class ChatRuntime(
      *
      * 每条消息自己的 transport 与槽（与老版一致）：停止键掐的是当前这一轮。
      * 轮与轮之间的检查点（每轮开头、每个工具执行前）看 [stopRequested]——
-     * 按过停止就不再发下一轮。轮次打到上限按 ToolLoopLimit 收场，不许无限打转。
+     * 按过停止就不再发下一轮。防打转两道：轮数保险丝先查（显式配置优先），
+     * 签名打转侦测随后（连着几回一模一样的调用，三轮就抓）。
      */
     private fun runGeneration(profile: ProviderProfile, historyInit: List<ChatTurn>) {
         var history = historyInit
         var rounds = 0
+        var lastSignature: String? = null
+        var sameStreak = 0
         while (true) {
             if (stopRequested) {
                 settleCancelled()
@@ -288,8 +295,16 @@ class ChatRuntime(
                 is RoundOutcome.Calls -> {
                     rounds += 1
                     if (rounds > maxToolRounds) {
-                        // 打转闸：不是网络错也不是模型错，是「这题该拆小」——出路话在分类那边
+                        // 保险丝：不是网络错也不是模型错，是「这题该拆小」——出路话在分类那边
                         settleError(GenerationError.ToolLoopLimit(rounds))
+                        return
+                    }
+                    // 打转侦测（主防）：同一批调用（名字+参数）连着来 = 没有新进展，
+                    // 这种再等一百轮也一样，三轮就收——别等保险丝烧。
+                    val signature = round.calls.joinToString("|") { it.name + " " + it.argumentsJson }
+                    if (signature == lastSignature) sameStreak += 1 else { lastSignature = signature; sameStreak = 1 }
+                    if (sameStreak >= STUCK_STREAK_LIMIT) {
+                        settleError(GenerationError.ToolLoopStuck(round.calls.first().name, sameStreak))
                         return
                     }
                     // 工具动作的账：先回填 assistant（带 tool_calls），再逐条执行、逐条回填结果。
@@ -547,8 +562,15 @@ class ChatRuntime(
         /** 历史上限的兜底默认（设置里可配，读不到就用它）。 */
         const val MAX_HISTORY_TURNS = 40
 
-        /** 工具回合轮次上限（防模型连轴转地调工具不给答案）；打到上限按拆小问题收场。 */
-        const val MAX_TOOL_ROUNDS = 6
+        /**
+         * 工具回合的轮数保险丝（2026-10-16 从 6 提到 100）：这是防「有进展但太能跑」
+         * 把钱烧穿的兜底，**不是干活上限**——正经调查几十轮是常态；真打转
+         * （同一调用连着来）由签名侦测 [STUCK_STREAK_LIMIT] 轮就抓，不靠它。
+         */
+        const val MAX_TOOL_ROUNDS = 100
+
+        /** 打转侦测的连击阈值：同一批调用（名字+参数）连着这么多次 = 没有新进展。 */
+        const val STUCK_STREAK_LIMIT = 3
     }
 }
 
