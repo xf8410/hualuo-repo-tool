@@ -47,6 +47,8 @@ data class CourierPick(
  *  - **会话库（M2 接线）**：store 不为 null 时，启动**同步**接上最近一次会话（没有异步首读，
  *    白屏和「多进几次才出来」没有土壤）、抽屉列表来自真库、新建/删除都动真文件；
  *    store 为 null（纯 JVM 测试、或会话库没建成）时一切照演示版走，行为不变。
+ *    生成中（chat.busy）三个切换口——[openConversation]、[newConversation]、删当前会话——
+ *    一律拦下出声：流式追加与收场落盘都认「当前户头」，半途换户就把 A 的后半截写进 B。
  *  - **GitHub 登录（2026-09-22 补）**：整体住 [githubLogin]（[GithubLoginState]，进程级）；
  *    拿令牌验证 /user 并记登录态与权限；令牌一改登录当场作废（防撒谎态）。
  *  - **仓库工作台（浏览 + 改码）**：整体住 [repo]（[RepoWorkbenchState] 状态舱，
@@ -98,6 +100,8 @@ class AppUiState(
     val watchInboxDir: File? = null,
     /** 帧缓存目录（导入时抽好的 JPEG）。 */
     val watchFramesDir: File? = null,
+    /** 生成线程出口（透给 ChatRuntime；测试传吞线程的 lambda 好让 busy 恒真）。 */
+    private val chatWorker: (Thread) -> Unit = { it.start() },
 ) {
 
     // ── 已接持久化 ──────────────────────────────────────────────────────────
@@ -256,6 +260,7 @@ class AppUiState(
     val chat = ChatRuntime(
         persist,
         autoRetryCostly = { flag(RETRY_COSTLY_KEY, RETRY_COSTLY_DEFAULT) },
+        worker = chatWorker,
         store = store,
         maxHistoryTurns = { readInt(UiKeys.MAX_HISTORY, ChatRuntime.MAX_HISTORY_TURNS).coerceIn(1, 500) },
         temperature = { readDouble(GEN_TEMPERATURE_KEY, GEN_TEMPERATURE_DEFAULT)?.coerceIn(0.0, 2.0) },
@@ -465,7 +470,7 @@ class AppUiState(
 
     /**
      * 长任务页「选文件」「选目录」：只发动作请求，系统选择器走跟备份同款桥
-     * （纯 JVM 状态层不认识 ActivityResult）。
+     * （纯 JVM 状态层不认识安卓的 ActivityResult）。
      */
     fun requestCourierPick(tree: Boolean) {
         if (courierBusy) {
@@ -725,6 +730,11 @@ class AppUiState(
     }
 
     fun newConversation() {
+        // 生成中不许换户：流式追加与收场落盘都认「当前户头」，半途新开就把这条的后半截写进新会话
+        if (chat.busy) {
+            toast("正在生成：先按停止再开新会话，别让两条话串台")
+            return
+        }
         val s = store
         if (s == null) {
             // 没接库（纯 JVM 测试/会话库没建成）：老演示路径，一字不动
@@ -831,6 +841,11 @@ class AppUiState(
             closeSheets()
             return
         }
+        // 生成中不许切：worker 还握着旧户头的卡，半途换户后半截话就落进这份会话
+        if (chat.busy) {
+            toast("正在生成：先按停止再切会话，别让两条话串台")
+            return
+        }
         val note = chat.restoreFromStore(id)
         closeSheets()
         when {
@@ -844,6 +859,11 @@ class AppUiState(
     fun askDeleteSelected() {
         val n = selectedIds.size
         if (n == 0) return
+        // 批里有当前会话且正在生成：整批拦下——删掉户头，在跑这条的后半截就无家可落
+        if (chat.busy && selectedIds.contains(chat.sessionId)) {
+            toast("正在生成：这批里有当前会话，先按停止再删")
+            return
+        }
         confirmText = "删除 $n 个会话？"
         confirmAction = {
             val ids = selectedIds
