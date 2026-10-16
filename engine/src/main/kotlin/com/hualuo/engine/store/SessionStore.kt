@@ -362,7 +362,8 @@ class SessionStore(private val dir: File) {
     private companion object {
         val SEQ = java.util.concurrent.atomic.AtomicInteger()
 
-        /** 图片路径集的行内分隔符：单元分隔符（US, U+001F），正常路径不可能含它。 */
-        val IMG_SEP: String = ""
+        /** 图片路径集的行内分隔符：单元分隔符（US，码位 31），正常路径不可能含它。
+         *  用码位构造而不用转义字面量：源码里不落裸控制字符，肉眼与词法闸都友好。 */
+        val IMG_SEP: String = 31.toChar().toString()
     }
 }
