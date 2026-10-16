@@ -18,6 +18,11 @@ import java.security.MessageDigest
  *  - sha256 期望值非空时流式计算并比对（VERIFY 失败带实际值）；
  *    **期望值为空时跳过比对但在结果里明说**——不编一个假校验值装样子（假绿零容忍）。
  *
+ * 2026-10-16 补续传校验缺口（接 rootfs sha256 真值时挖出）：断点续传时流式摘要
+ * 只覆盖「本次新下的字节」，与期望值必然对不上——旧逻辑在这里判 VERIFY 失败、
+ * 删 .part、换下一家从零重下（能收敛但白扔已下的部分）。现在续传收尾后改用
+ * [sha256Of] 对整文件重算（流式读盘，不进内存），续传真正可用。
+ *
  * 铁律（红线二）：响应体逐块写盘，任何文件都不整读进内存。
  */
 class RootfsInstaller(
@@ -106,9 +111,6 @@ class RootfsInstaller(
                 conn.inputStream.use { input ->
                     java.io.FileOutputStream(part, actuallyResumed).use { out ->
                         val buf = ByteArray(64 * 1024)
-                        // 续传时哈希要覆盖「已下部分 + 本次」，先把 .part 里已有的字节数留账：
-                        // 简化且安全的口径——续传场景下哈希只对本次新下字节做账并在终态行说明；
-                        // 期望值非空且发生续传时，改为整文件事后校验（读盘重算，不进内存）。
                         while (true) {
                             val n = input.read(buf)
                             if (n < 0) break
@@ -126,7 +128,9 @@ class RootfsInstaller(
                     }
                 }
                 val size = part.length()
-                val digest = md.digest().joinToString("") { "%02x".format(it) }
+                // 摘要口径：续传时流式 md 只覆盖新字节，对不上期望——改对整文件重算（流式读盘）。
+                val digest = if (actuallyResumed) sha256Of(part)
+                else md.digest().joinToString("") { "%02x".format(it) }
                 val verified = expectedSha256?.isNotBlank() == true
                 if (expectedSha256?.isNotBlank() == true) {
                     if (!digest.equals(expectedSha256, ignoreCase = true)) {
