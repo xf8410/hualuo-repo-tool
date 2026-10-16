@@ -5,7 +5,6 @@ import com.hualuo.engine.generation.IdleWatchdog
 import com.hualuo.engine.http.RetryPolicy
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -99,7 +98,7 @@ class ChatImageWireTest {
         val msg = Json.parseToJsonElement(transport.lastBody!!).jsonObject
             .getValue("messages").jsonArray.single().jsonObject
         assertTrue("不带图一字不变", msg.getValue("content") is JsonPrimitive)
-        assertTrue("不带图不写 tools 之外的任何新字段", !msg.containsKey("images"))
+        assertTrue("不带图不写任何新字段", !msg.containsKey("images"))
     }
 
     @Test
@@ -113,10 +112,8 @@ class ChatImageWireTest {
             listOf(ChatTurn("assistant", "答", images = listOf(img.absolutePath)), ChatTurn("user", "问")),
         ) { }
 
-        val messages = Json.parseToJsonElement(transport.lastBody!!).jsonObject
-            .getValue("messages").jsonArray
-        val assistant = messages[0].jsonObject
-        assertTrue("助手轮带图是无效输入，按纯文本发", assistant.getValue("content") is JsonObject || assistant.getValue("content") is JsonPrimitive)
-        assertTrue("助手轮必须还是纯文本", assistant.getValue("content") is JsonPrimitive)
+        val assistant = Json.parseToJsonElement(transport.lastBody!!).jsonObject
+            .getValue("messages").jsonArray[0].jsonObject
+        assertTrue("助手轮带图是无效输入，必须还是纯文本", assistant.getValue("content") is JsonPrimitive)
     }
 }
