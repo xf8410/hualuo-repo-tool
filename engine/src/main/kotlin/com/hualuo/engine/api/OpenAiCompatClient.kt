@@ -22,7 +22,12 @@ import kotlinx.serialization.json.putJsonObject
 
 data class ProviderProfile(val name: String, val baseUrl: String, val apiKey: String, val model: String)
 data class WireToolCall(val id: String, val name: String, val argumentsJson: String)
-data class ChatTurn(val role: String, val content: String, val toolCalls: List<WireToolCall> = emptyList(), val toolCallId: String? = null)
+
+/**
+ * 一轮对话。images = 随这条用户消息一起发的图片文件路径（本机已降采样的成品），
+ * 只对 user 角色有意义；读不动的图在组请求体时如实跳过（文本照发），见 ImagePayload。
+ */
+data class ChatTurn(val role: String, val content: String, val toolCalls: List<WireToolCall> = emptyList(), val toolCallId: String? = null, val images: List<String> = emptyList())
 sealed class ChatOutcome {
     object Text : ChatOutcome()
     data class Calls(val calls: List<AssembledToolCall>) : ChatOutcome()
@@ -42,7 +47,7 @@ class OpenAiCompatClient(
         if (routed != null && routed.protocol != ProviderProtocol.OPENAI_COMPAT) return ProviderClient(transport, slot, watchdog).chatTurns(routed, history, tools, onText)
         val active = routed?.profile ?: profile
         if (active.baseUrl.isBlank()) return ChatOutcome.Failed(GenerationError.Configuration("「${active.name}」没填 base URL，没东西可发"))
-        if (history.none { it.content.isNotBlank() || it.toolCalls.isNotEmpty() || it.role == "tool" }) return ChatOutcome.Failed(GenerationError.Configuration("这条对话是空的，不花这个钱"))
+        if (history.none { it.content.isNotBlank() || it.toolCalls.isNotEmpty() || it.images.isNotEmpty() || it.role == "tool" }) return ChatOutcome.Failed(GenerationError.Configuration("这条对话是空的，不花这个钱"))
         val request = WireRequest(url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(active.baseUrl), CHAT_SUFFIX), method = "POST", headers = headersFor(active, true), body = chatBody(active, history, temperature, topP, maxTokens, tools))
         val runner = ChatWireRunner(transport, slot, policy, watchdog, providerLabel = active.name, sleeper = sleeper)
         return when (val result = runner.run(request, RequestCost.Costly, onText, onThought)) {
@@ -88,12 +93,22 @@ class OpenAiCompatClient(
 
     // 请求体只带调用方显式给了的字段（temperature/top_p 为 null 就不写）：旧 Agora 同款语义——
     // 空手用端点默认。有端点（Kimi coding k 系）只认 temperature=1，硬塞默认值会被 400 拒掉。
+    // 带图的 user 消息：content 升成 parts 数组（text 在前，image_url 在后），对齐旧 Agora
+    // convertToOpenAiMessages 的形状；图读不动就只发文本（ImagePayload 的 null 语义）。
     private fun chatBody(profile: ProviderProfile, history: List<ChatTurn>, temperature: Double?, topP: Double?, maxTokens: Int?, tools: List<ToolSpec>): String = buildJsonObject {
         put("model", profile.model); put("stream", true); temperature?.let { put("temperature", it) }; topP?.let { put("top_p", it) }; maxTokens?.let { put("max_tokens", it) }
         putJsonArray("messages") { history.forEach { turn -> addJsonObject {
             put("role", turn.role)
             if (turn.role == "tool") { put("tool_call_id", turn.toolCallId ?: ""); put("content", turn.content) }
             else if (turn.toolCalls.isNotEmpty()) { put("content", turn.content); putJsonArray("tool_calls") { turn.toolCalls.forEach { call -> addJsonObject { put("id", call.id); put("type", "function"); putJsonObject("function") { put("name", call.name); put("arguments", call.argumentsJson) } } } } }
+            else if (turn.role == "user" && turn.images.isNotEmpty()) {
+                val parts = turn.images.mapNotNull { ImagePayload.partFor(it) }
+                if (parts.isEmpty()) put("content", turn.content)
+                else putJsonArray("content") {
+                    addJsonObject { put("type", "text"); put("text", turn.content) }
+                    parts.forEach { add(it) }
+                }
+            }
             else put("content", turn.content)
         } } }
         if (tools.isNotEmpty()) putJsonArray("tools") { tools.forEach { spec -> addJsonObject { put("type", "function"); putJsonObject("function") { put("name", spec.name); put("description", spec.description); put("parameters", parseSchemaOrEmpty(spec.parametersJson)) } } } }

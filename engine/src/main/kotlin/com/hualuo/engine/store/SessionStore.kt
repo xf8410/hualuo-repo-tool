@@ -2,8 +2,7 @@ package com.hualuo.engine.store
 
 import java.io.File
 
-/**
- * 会话头（jsonl 首行）：标题、用的模型、创建时刻。
+/** 会话头（jsonl 首行）：标题、用的模型、创建时刻。
  * title 允许空——新建会话还没说过话时就是没标题，不许编一个装样子。
  */
 data class SessionHead(
@@ -21,12 +20,15 @@ data class SessionListing(val heads: List<Pair<String, SessionHead>>, val unread
  *  - error：我方对失败的说明卡——它照实存，但喂回模型时永远剔掉，
  *    「错误卡不进历史」的老规矩从内存一路贯到盘上。
  * incomplete 标半截回答：重载回来还带着这个标记，不拿断话冒充成品。
+ * images = 随这条消息一起发过的图片路径（用户消息才有；2026-10-16 图片附件刀）。
+ * 默认空表：老会话文件里没有 imgs 字段，读回来就是空——逐位兼容。
  */
 data class StoredMsg(
     val role: String,
     val text: String,
     val atMs: Long,
     val incomplete: Boolean = false,
+    val images: List<String> = emptyList(),
 ) {
     init {
         require(role == ROLE_USER || role == ROLE_ASSISTANT || role == ROLE_ERROR) {
@@ -230,6 +232,9 @@ class SessionStore(private val dir: File) {
         append("\"text\":").append(jsonEscape(m.text)).append(',')
         append("\"at\":").append(m.atMs)
         if (m.incomplete) append(",\"incomplete\":true")
+        // 图片路径集（2026-10-16 图片附件刀）：单元分隔符连写，空表不落字段——
+        // 老文件没有这字段，读回就是空表（逐位兼容）
+        if (m.images.isNotEmpty()) append(",\"imgs\":").append(jsonEscape(m.images.joinToString(IMG_SEP)))
         append('}')
     }
 
@@ -265,7 +270,8 @@ class SessionStore(private val dir: File) {
         val text = obj["text"] ?: return null
         val at = obj["at"]?.toLongOrNull() ?: 0L
         val incomplete = obj["incomplete"] == "true"
-        return StoredMsg(role, text, at, incomplete)
+        val images = obj["imgs"]?.split(IMG_SEP)?.filter { it.isNotEmpty() } ?: emptyList()
+        return StoredMsg(role, text, at, incomplete, images)
     }
 
     /**
@@ -355,5 +361,9 @@ class SessionStore(private val dir: File) {
 
     private companion object {
         val SEQ = java.util.concurrent.atomic.AtomicInteger()
+
+        /** 图片路径集的行内分隔符：单元分隔符（US，码位 31），正常路径不可能含它。
+         *  用码位构造而不用转义字面量：源码里不落裸控制字符，肉眼与词法闸都友好。 */
+        val IMG_SEP: String = 31.toChar().toString()
     }
 }

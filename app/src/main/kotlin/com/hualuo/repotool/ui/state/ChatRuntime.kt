@@ -58,6 +58,10 @@ import java.util.Locale
  * （对齐旧 Agora 的 thinkingEnabled 语义）。思考**不进正文、不进历史、不落盘**
  * （StoredMsg 没有思考字段，重开会话思考区不再回摆——先看正文的规矩不破坏）。
  *
+ * **图片附件（2026-10-16，对齐旧 Agora 链路）**：send 带 images（收件时已降采样落盘的
+ * 路径），用户卡与落盘行都带这份清单，历史组包时 user 轮的图随消息进请求体
+ * （engine 侧 content 升 parts 数组）；助手卡与错误卡不带图。
+ *
  * 家规对齐：
  *  - 「生成中」只是徽标文字，不是转圈图形；错误卡走系统红样式，text 就是
  *    GenerationError.userMessage()——出路写在脸上，不弹窗、不静默。
@@ -147,20 +151,21 @@ class ChatRuntime(
      */
     @Volatile private var stopRequested = false
 
-    /** 发一条：先把「用户气泡 + 生成中的空助手卡」摆上屏，再开线程真发。 */
-    fun send(prompt: String, model: String) {
+    /** 发一条：先把「用户气泡 + 生成中的空助手卡」摆上屏，再开线程真发。
+     *  [images] 是随这条消息发走的图片路径（收件时已落盘的成品），用户卡与历史都带。 */
+    fun send(prompt: String, model: String, images: List<String> = emptyList()) {
         val text = prompt.trim()
         if (text.isEmpty()) return
         val (history, trimmed) = historySnapshot()
         lastTrimmed = trimmed
         val profile = profileFor(model)
-        val historyToSend = history + ChatTurn("user", text)
+        val historyToSend = history + ChatTurn("user", text, images = images)
         synchronized(lock) {
             if (busy) return
             busy = true
             stopRequested = false
             messages = messages +
-                ChatMsg(who = emptyList(), time = now(), text = text, fromMe = true) +
+                ChatMsg(who = emptyList(), time = now(), text = text, fromMe = true, imagePaths = images) +
                 ChatMsg(
                     who = listOf(Badge(profile.name, Tone.Neutral), Badge("生成中", Tone.Warn)),
                     time = now(),
@@ -168,7 +173,7 @@ class ChatRuntime(
                 )
             activeSlot = GenerationSlot()
             // 用户话当场落一行（不押退出时机）；顺带给没标题的会话补上「首条话截字」当标题
-            ensureSessionLocked(model, text)
+            ensureSessionLocked(model, text, images)
         }
         val body = Runnable { runGeneration(profile, historyToSend) }
         worker(Thread(body).apply { name = "hualuo-chat" })
@@ -192,7 +197,7 @@ class ChatRuntime(
         val restored = loaded.messages.map { m ->
             when (m.role) {
                 StoredMsg.ROLE_USER ->
-                    ChatMsg(who = emptyList(), time = fmt(m.atMs), text = m.text, fromMe = true)
+                    ChatMsg(who = emptyList(), time = fmt(m.atMs), text = m.text, fromMe = true, imagePaths = m.images)
                 StoredMsg.ROLE_ERROR ->
                     ChatMsg(who = listOf(Badge("系统", Tone.Err)), time = fmt(m.atMs), text = m.text, isError = true)
                 else ->
@@ -459,7 +464,7 @@ class ChatRuntime(
     }
 
     /** 没接库就不动盘；接了库就把当前户头补上（首次发话时创建 + 补标题 + 落用户行）。 */
-    private fun ensureSessionLocked(model: String, firstUserText: String) {
+    private fun ensureSessionLocked(model: String, firstUserText: String, images: List<String> = emptyList()) {
         val s = store ?: return
         // var 属性没有智能转换（第六课补）：解包进局部变量，后面才好当非空传参
         var sid = sessionId
@@ -472,7 +477,7 @@ class ChatRuntime(
             // 首条话截字当标题（截几个字是调用方的权，家规）；补不了标题不影响聊天
             runCatching { s.rename(sid, firstUserText.take(16)) }
         }
-        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock()), sid, s)
+        appendLineLocked(StoredMsg(StoredMsg.ROLE_USER, firstUserText, clock(), images = images), sid, s)
     }
 
     /**
@@ -511,10 +516,11 @@ class ChatRuntime(
     /**
      * 组喂模型的历史：真气泡在前、错误卡与空话剔掉、超上限砍最旧并**报砍数**；
      * 系统指令排最前（system 角色），不占历史条数，空指令一个字不多发。
+     * 用户轮的图片路径随消息带走（engine 侧组 parts 数组；图文件没了就在那头如实跳过）。
      */
     private fun historySnapshot(): Pair<List<ChatTurn>, Int> {
         val feedable = messages.filter { !it.isError && it.text.isNotBlank() }
-            .map { ChatTurn(role = if (it.fromMe) "user" else "assistant", content = it.text) }
+            .map { ChatTurn(role = if (it.fromMe) "user" else "assistant", content = it.text, images = if (it.fromMe) it.imagePaths else emptyList()) }
         val limit = maxHistoryTurns().coerceIn(1, 500)
         val keep = feedable.takeLast(limit)
         val sys = systemPrompt().trim()
