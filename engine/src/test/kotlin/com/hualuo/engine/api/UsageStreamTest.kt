@@ -37,7 +37,7 @@ class UsageStreamTest {
         val u = parser.usage
         assertEquals(900L, u?.promptTokens)
         assertEquals(640L, u?.cachedTokens)
-        assertEquals("未缓存没单独给时按 prompt−cached 推", 260L, u?.uncachedTokens)
+        assertEquals("未缓存没单独给时按 prompt 减 cached 推", 260L, u?.uncachedTokens)
     }
 
     @Test
