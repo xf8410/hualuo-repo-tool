@@ -419,7 +419,7 @@ class OpenAiSseParser(private val onThought: (String) -> Unit = {}, private val 
  * 一次流收尾时 provider 上报的 token 用量；哪个字段没上报就是 null——
  * 引擎只搬运不估算，界面对 null 如实摆「—」。缓存两字段优先认 DeepSeek 系的
  * prompt_cache_hit_tokens / prompt_cache_miss_tokens，退而认 OpenAI 系的
- * prompt_tokens_details.cached_tokens（未缓存没单独给时按 prompt−cached 推，负数归零）。
+ * prompt_tokens_details.cached_tokens（未缓存没单独给时按 prompt 减 cached 推，负数归零）。
  */
 data class SseUsage(
     val promptTokens: Long? = null,
