@@ -59,6 +59,10 @@ sealed class ChatRunResult {
  * [ChatRunResult.ToolCalls]。半路断流而装过碎片时，[GenerationError.IncompleteStream]
  * 的 toolCallInFlight 证据为真（「当时正在写一个工具调用」这句话才有据可查）。
  *
+ * **流尾用量（2026-10-26 顶栏用量条刀）**：OpenAI 兼容家在最后一个 data 块带 usage
+ * （DeepSeek 系默认就带，含缓存命中/未缓存明细），解析器就地接住，run 收场时经
+ * [lastUsage] 交给上层入账。引擎只搬运不估算：没上报就是 null，缺哪个字段记哪个的空。
+ *
  * 线程模型：[run] 设计给**后台线程**调用（内部阻塞读流 + sleeper 等待）；
  * 本层不碰协程库（D-03 纯 JVM）。取消靠 [GenerationSlot.stop]：它会调这里的
  * Cancellable，置停旗并掐断 transport。
@@ -81,6 +85,13 @@ class ChatWireRunner(
     @Volatile private var stopRequested = false
 
     /**
+     * 最近一次成功收场流的 provider 用量（流尾 usage 块，引擎不估算）。
+     * run 开始清空；带重试时以最后一次真跑完的流为准。没上报就是 null。
+     */
+    var lastUsage: SseUsage? = null
+        private set
+
+    /**
      * 跑一次完整的「请求，流式交付，失败按策略重来或放弃」。
      * [onText] 会被多次调用（每段内容一次）；[onThought] 是思考段（reasoning_content）
      * 的独立回调——思考不混进正文（正文要喂历史，思考不喂）。返回 [ChatRunResult.Failed]
@@ -88,6 +99,7 @@ class ChatWireRunner(
      */
     fun run(request: WireRequest, cost: RequestCost, onText: (String) -> Unit, onThought: (String) -> Unit = {}): ChatRunResult {
         stopRequested = false
+        lastUsage = null
         var attempt = 1
         while (true) {
             val claim = slot.tryBegin(
@@ -170,6 +182,8 @@ class ChatWireRunner(
                 parser.onLine(line)
             }
             if (response.status in 200..299) {
+                // 流尾用量以最后一次真跑完的流为准（重试互相覆写；没上报保持 null）。
+                lastUsage = parser.usage
                 AttemptBundle(
                     outcome = RetryPolicy.AttemptOutcome(
                         attempt = attempt,
@@ -279,6 +293,9 @@ class ChatWireRunner(
  * 2026-10-14 从「将来再加」落成真接线，对齐旧 Agora 的 ThoughtChunk 通道）；
  * 行内 think 标签的解析（旧仓 StreamingThinkTagParser 那一路）将来再加。
  *
+ * **流尾用量（2026-10-26）**：`usage` 块在收尾数据里就地解析进 [usage]——
+ * 必须在 choices 判空**之前**取：usage 块的 choices 常是空数组，走到下面就 return 了。
+ *
  * 中途出现 `{"error":...}` 块（200 外壳里的错误）：记下 [streamError] 并收线 ——
  * 这是「对方 HTTP 说 OK、内容说炸了」的经典形状，当成功返回就是骗人。
  *
@@ -316,6 +333,10 @@ class OpenAiSseParser(private val onThought: (String) -> Unit = {}, private val 
     var sawToolCallFrames = false
         private set
 
+    /** 流尾 usage 块解析出来的用量；流上没带就是 null（引擎不估算、不补数）。 */
+    var usage: SseUsage? = null
+        private set
+
     private val toolAssembler = ToolCallAssembler()
 
     /** 装配完整的工具调用清单（可重复取；未收尾时取到的是半份，判官在 ChatWireRunner）。 */
@@ -347,6 +368,8 @@ class OpenAiSseParser(private val onThought: (String) -> Unit = {}, private val 
     private fun parsePayload(payload: String) {
         if (payload.isEmpty()) return
         val root = runCatching { json.parseToJsonElement(payload) }.getOrNull() as? JsonObject ?: return
+        // 流尾用量块：必须在 choices 判空前取（usage 块的 choices 常是空数组，下面就 return 了）。
+        (root["usage"] as? JsonObject)?.let { usage = SseUsage.from(it) }
         (root["error"] as? JsonObject)?.let { err ->
             val rawMessage = (err["message"] as? JsonPrimitive)?.contentOrNull ?: err.toString()
             val code = (err["code"] as? JsonPrimitive)?.contentOrNull
@@ -389,6 +412,40 @@ class OpenAiSseParser(private val onThought: (String) -> Unit = {}, private val 
             finishReason = reason
             finished = true
         }
+    }
+}
+
+/**
+ * 一次流收尾时 provider 上报的 token 用量；哪个字段没上报就是 null——
+ * 引擎只搬运不估算，界面对 null 如实摆「—」。缓存两字段优先认 DeepSeek 系的
+ * prompt_cache_hit_tokens / prompt_cache_miss_tokens，退而认 OpenAI 系的
+ * prompt_tokens_details.cached_tokens（未缓存没单独给时按 prompt 减 cached 推，负数归零）。
+ */
+data class SseUsage(
+    val promptTokens: Long? = null,
+    val completionTokens: Long? = null,
+    val totalTokens: Long? = null,
+    val cachedTokens: Long? = null,
+    val uncachedTokens: Long? = null,
+) {
+    companion object {
+        fun from(obj: JsonObject): SseUsage {
+            val prompt = obj.longOf("prompt_tokens")
+            val details = obj["prompt_tokens_details"] as? JsonObject
+            val cached = obj.longOf("prompt_cache_hit_tokens") ?: details?.longOf("cached_tokens")
+            val uncached = obj.longOf("prompt_cache_miss_tokens")
+                ?: prompt?.let { p -> cached?.let { c -> (p - c).coerceAtLeast(0L) } }
+            return SseUsage(
+                promptTokens = prompt,
+                completionTokens = obj.longOf("completion_tokens"),
+                totalTokens = obj.longOf("total_tokens"),
+                cachedTokens = cached,
+                uncachedTokens = uncached,
+            )
+        }
+
+        private fun JsonObject.longOf(key: String): Long? =
+            (this[key] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
     }
 }
 

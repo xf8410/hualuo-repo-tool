@@ -41,6 +41,10 @@ class OpenAiCompatClient(
     private val watchdog: IdleWatchdog,
     private val sleeper: (Long) -> Unit = ::napQuietly,
 ) {
+    /** 最近一轮的 provider 用量（流尾 usage 透传，见 ChatWireRunner.lastUsage）；没上报就是 null。每次 chatTurns 覆写。 */
+    var lastUsage: SseUsage? = null
+        private set
+
     // route 与 onThought 放在 onText 前，保证旧的 chatTurns(..., tools) { chunk -> } 尾随 lambda 仍绑定 onText。
     fun chatTurns(profile: ProviderProfile, history: List<ChatTurn>, tools: List<ToolSpec> = emptyList(), temperature: Double? = null, topP: Double? = null, maxTokens: Int? = null, route: Boolean = true, onThought: (String) -> Unit = {}, onText: (String) -> Unit): ChatOutcome {
         val routed = if (route) ProviderRouting.sessionFor(profile.model) else null
@@ -50,7 +54,10 @@ class OpenAiCompatClient(
         if (history.none { it.content.isNotBlank() || it.toolCalls.isNotEmpty() || it.images.isNotEmpty() || it.role == "tool" }) return ChatOutcome.Failed(GenerationError.Configuration("这条对话是空的，不花这个钱"))
         val request = WireRequest(url = BaseUrlResolver.endpoint(BaseUrlResolver.withV1(active.baseUrl), CHAT_SUFFIX), method = "POST", headers = headersFor(active, true), body = chatBody(active, history, temperature, topP, maxTokens, tools))
         val runner = ChatWireRunner(transport, slot, policy, watchdog, providerLabel = active.name, sleeper = sleeper)
-        return when (val result = runner.run(request, RequestCost.Costly, onText, onThought)) {
+        val result = runner.run(request, RequestCost.Costly, onText, onThought)
+        // 流尾用量透传给上层（ChatRuntime 据此入账）：成败都透，账以 provider 上报为准
+        lastUsage = runner.lastUsage
+        return when (result) {
             is ChatRunResult.Ok -> ChatOutcome.Text
             is ChatRunResult.ToolCalls -> ChatOutcome.Calls(result.calls)
             is ChatRunResult.Failed -> ChatOutcome.Failed(result.error)

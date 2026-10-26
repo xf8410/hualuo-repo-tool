@@ -67,6 +67,10 @@ import java.util.Locale
  * ——成品卡、落盘行、半截标记三处一律吃剪过尾巴的文本；只回过空白的流按
  * 「一个字都没收到」的诚实错误卡收场，不冒充成品。
  *
+ * **用量入账（2026-10-26 顶栏用量条刀）**：provider 在流尾上报了 usage 就进
+ * [usageLedger]（缓存命中/未缓存输入/输出的真账，顶栏那条的数据源）。
+ * 账认户头：换会话/新开即清；没上报就没有账，条整条不摆——不估算不补数。
+ *
  * 家规对齐：
  *  - 「生成中」只是徽标文字，不是转圈图形；错误卡走系统红样式，text 就是
  *    GenerationError.userMessage()——出路写在脸上，不弹窗、不静默。
@@ -134,6 +138,9 @@ class ChatRuntime(
     /** 最近一次发送砍掉了几条旧历史；>0 时界面必须出声（家规：砍数上屏）。 */
     var lastTrimmed by mutableStateOf(0)
         private set
+
+    /** 当前会话的用量账（provider 流尾上报的真账；顶栏用量条的数据源）。账认户头，换户即清。 */
+    val usageLedger = UsageLedger()
 
     // ── 端点模型清单（客户端 listModels 的真出口，不是又一份演示表） ──────────
 
@@ -217,15 +224,18 @@ class ChatRuntime(
             sessionId = id
             messages = restored
         }
+        // 用量账认户头：换户即清（本进程内、当前会话的账，明细条上有说明）
+        usageLedger.clear()
         return SessionRestoreNote(restored.size, loaded.badLines, head == null)
     }
 
-    /** 开新会话：内存清空、换户头。id 传 null = 回到「没接库」状态（删掉了当前会话时用）。 */
+    /** 开新会话：内存清空、换户头（用量账也清——账认户头）。id 传 null = 回到「没接库」状态（删掉了当前会话时用）。 */
     fun startFreshSession(id: String?) {
         synchronized(lock) {
             sessionId = id
             messages = emptyList()
         }
+        usageLedger.clear()
     }
 
     /** 取走落盘岔子（取走即清），配合 RootScreen 的 toast 出声。 */
@@ -338,7 +348,7 @@ class ChatRuntime(
                 policy = RetryPolicy(retryOnCostlyRequests = autoRetryCostly()),
                 watchdog = IdleWatchdog(IdleWatchdog.GENERATION_IDLE_MS),
             )
-            if (toolRegistry.isEmpty()) {
+            val round: RoundOutcome = if (toolRegistry.isEmpty()) {
                 // 表空：走老形状（不带 tools 字段）。模型回了工具调用按形状异常报错——
                 // 没带清单却回调用，当成功或当文本都说不通（这层的语义在客户端那侧钉过）。
                 val error = client.chat(profile, history, temperature(), topP(), onThought = ::appendThoughtGated) { chunk ->
@@ -348,16 +358,32 @@ class ChatRuntime(
                 if (error == null) RoundOutcome.Text else RoundOutcome.Failed(error)
             } else {
                 when (
-                    val outcome = client.chatTurns(profile, history, tools = toolRegistry.specs(), temperature = temperature(), topP = topP(), onThought = ::appendThoughtGated) { chunk ->
+                    val calls = client.chatTurns(profile, history, tools = toolRegistry.specs(), temperature = temperature(), topP = topP(), onThought = ::appendThoughtGated) { chunk ->
                         roundText.append(chunk)
                         appendStreaming(chunk)
                     }
                 ) {
                     is ChatOutcome.Text -> RoundOutcome.Text
-                    is ChatOutcome.Calls -> RoundOutcome.Calls(outcome.calls, roundText.toString())
-                    is ChatOutcome.Failed -> RoundOutcome.Failed(outcome.error)
+                    is ChatOutcome.Calls -> RoundOutcome.Calls(calls.calls, roundText.toString())
+                    is ChatOutcome.Failed -> RoundOutcome.Failed(calls.error)
                 }
             }
+            // 用量入账（顶栏缓存命中条的数据源）：provider 在流尾上报了 usage 才有账，
+            // 缺哪个字段记哪个的空——不估算、不补数，界面对空字段如实摆「—」。
+            client.lastUsage?.let { u ->
+                usageLedger.add(
+                    UsageRecord(
+                        atMs = clock(),
+                        model = profile.model,
+                        inputTokens = u.promptTokens,
+                        outputTokens = u.completionTokens,
+                        cachedTokens = u.cachedTokens,
+                        uncachedTokens = u.uncachedTokens,
+                        totalTokens = u.totalTokens,
+                    ),
+                )
+            }
+            round
         } finally {
             synchronized(lock) { activeSlot = null }
         }
