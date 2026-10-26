@@ -11,12 +11,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +28,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,11 +37,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +49,7 @@ import com.hualuo.repotool.backup.BackupGateway
 import com.hualuo.repotool.courier.CourierDelivery
 import com.hualuo.repotool.ui.chat.ChatImageInbox
 import com.hualuo.repotool.ui.chat.ChatScreen
+import com.hualuo.repotool.ui.chat.ChatUsageStrip
 import com.hualuo.repotool.ui.chat.Composer
 import com.hualuo.repotool.ui.chat.SheetsLayer
 import com.hualuo.repotool.ui.components.ConfirmDialog
@@ -58,7 +57,6 @@ import com.hualuo.repotool.ui.components.GitHubActionCard
 import com.hualuo.repotool.ui.components.SandboxCard
 import com.hualuo.repotool.ui.components.PrConfirmCard
 import com.hualuo.repotool.ui.components.WriteConfirmCard
-import com.hualuo.repotool.ui.data.DemoCtx
 import com.hualuo.repotool.ui.drawer.DrawerOverlay
 import com.hualuo.repotool.ui.model.NavTab
 import com.hualuo.repotool.ui.observe.ObserveScreen
@@ -100,7 +98,7 @@ private val NavTabIcons = mapOf(
 private val BusyBarAlpha = 0.55f
 
 /**
- * 根界面：顶栏（菜单钮 / 页名 / ctx 账本）+ 五页内容 + 输入区（仅回合流）+ 底栏五签，
+ * 根界面：顶栏（菜单钮 / 页名 / 动作胶囊）+ 六页内容 + 输入区（仅回合流）+ 底栏六签，
  * 上面盖抽屉、设置层、弹层、toast。所有浮层都是「壳内」的 Box 层：
  * 外壳锁高、滚动只发生在各层内部（原型漂移病的根治，Compose 版同方）。
  *
@@ -136,7 +134,7 @@ private val BusyBarAlpha = 0.55f
  * 沉进手势导航条——主因是入口没做让位。修法对齐旧 Agora 的做法（实读其源码）：
  * 入口 enableEdgeToEdge（透明系统栏），这里三处让位——
  *  1) 顶栏吃状态栏（statusBarsPadding）：菜单钮不再压进状态栏、点得到；
- *  2) 底栏吃导航栏（navigationBarsPadding）：五签落在手势条之上，不被裁；
+ *  2) 底栏吃导航栏（navigationBarsPadding）：六签落在手势条之上，不被裁；
  *  3) 整列吃键盘（imePadding）：键盘弹起时输入区与底栏一起抬起，不让键盘盖住
  *     （旧 Agora 底栏是 navigationBarsPadding + imePadding 同款）。
  * 抽屉/设置层/弹层各自在内部让位（见各自文件），版式与配色一字不动。
@@ -374,6 +372,11 @@ fun HualuoApp(versionLabel: String) {
                     .imePadding(),
             ) {
                 TopBar(state)
+                // 会话用量条（对齐 Agora 现行版，顶栏下那一条）：缓存命中/未缓存输入/输出的
+                // 真账，点开逐请求明细。只在回合流页摆；没账（provider 没上报）整条不摆。
+                if (state.tab == NavTab.Chat) {
+                    ChatUsageStrip(state.chat)
+                }
                 // 长活进度行（备份导出/导入/兑换、文件投递）：内核持有，Activity 重建不丢
                 ProgressLine(kernel.backupProgress)
                 ProgressLine(kernel.courierProgress)
@@ -458,55 +461,96 @@ private fun ProgressLine(text: String?) {
 
 @Composable
 private fun TopBar(state: AppUiState) {
+    // 顶栏对齐 Agora 现行版（2026-10-26 刀）：左胶囊=菜单钮+页名，右胶囊=图标动作钮。
+    // 原先右上角的假 ctx 徽标（DemoCtx 演示字）随刀撤除：ctx/用量改由顶栏下的
+    // 用量条真账呈现（ChatUsageStrip），不再摆演示数据。
     // 顶栏吃状态栏让位（系统栏让位三处之一）：菜单钮不再压进状态栏，点得到
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Bg)
             .statusBarsPadding()
-            .padding(start = 14.dp, end = 14.dp, top = 13.dp, bottom = 8.dp),
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+            .height(52.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 三横线 + 「菜单」两个字：图形给人扫，文字给人读，缺一边都会看不懂
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(CardBg)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-                .clickable { state.drawerOpen = !state.drawerOpen }
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        // 左胶囊：菜单钮 + 页名（Agora 同款：图标钮住胶囊里，页名跟在旁边）
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = CardBg,
+            shadowElevation = 2.dp,
+            modifier = Modifier.fillMaxHeight(),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_menu),
-                contentDescription = null,
-                tint = Ink,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text("菜单", fontSize = 13.sp, color = Ink, fontWeight = FontWeight.Medium)
+            Row(
+                modifier = Modifier.fillMaxHeight(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Spacer(Modifier.width(5.dp))
+                IconButton(
+                    onClick = { state.drawerOpen = !state.drawerOpen },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_menu),
+                        contentDescription = "菜单",
+                        tint = Ink,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Text(
+                    state.tab.title,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(14.dp))
+            }
         }
-        Spacer(Modifier.width(10.dp))
-        Text(state.tab.title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
         Spacer(Modifier.weight(1f))
-        Box(
-            modifier = Modifier
-                .background(CardBg, RoundedCornerShape(14.dp))
-                .padding(horizontal = 10.dp, vertical = 3.dp),
+        // 右胶囊：新建会话 + 设置（都是真动作；生成中开新会话会被 newConversation 的
+        // busy 闸拦下出声，与抽屉里那颗同一套规矩）
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = CardBg,
+            shadowElevation = 2.dp,
+            modifier = Modifier.fillMaxHeight(),
         ) {
-            Text(
-                DemoCtx,
-                fontSize = 11.sp,
-                color = SubInk,
-                fontFamily = FontFamily.Monospace,
-            )
+            Row(
+                modifier = Modifier.fillMaxHeight(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(
+                    onClick = { state.newConversation() },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_action_plus),
+                        contentDescription = "新建会话",
+                        tint = Ink,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                IconButton(
+                    onClick = { state.openSettings(null) },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_action_gear),
+                        contentDescription = "设置",
+                        tint = Ink,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Spacer(Modifier.width(5.dp))
+            }
         }
     }
 }
 
 @Composable
 private fun BottomNav(state: AppUiState) {
-    // 底栏吃导航栏让位（系统栏让位三处之一）：五签落在手势条之上，不被裁。
+    // 底栏吃导航栏让位（系统栏让位三处之一）：六签落在手势条之上，不被裁。
     // 底色先铺、再让位——手势条那一条也跟着是 CardBg，看起来是底栏的一部分。
     Row(
         modifier = Modifier
